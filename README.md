@@ -1,0 +1,243 @@
+# P3 Compiler
+
+A Domain-Specific Language (DSL) compiler for defining podcast object models and their relationships. The P3 language provides a simple, UML-inspired syntax for modeling podcast domain objects, which the compiler translates into source code and database schemas.
+
+## Overview
+
+The P3 (Podcast Project Programming) language enables you to define data types, relationships, and constraints for podcast domains using an expressive, type-safe syntax. The compiler generates:
+
+- **C++ classes** with proper inheritance hierarchies
+- **SQLite database schemas** with foreign key relationships
+
+Future targets include additional programming languages and SQL dialects.
+
+## Language Features
+
+### Type System
+
+- **Implicit Base Type**: All user-defined types automatically inherit from the built-in `Fabric` base type, which provides common metadata fields (typeId, creationDate, modificationDate, comment)
+- **User-Defined Types**: Define custom types using the `fabric` keyword
+- **Inheritance**: Support for single inheritance with the `: BaseType` syntax
+- **Primitive Types**: String, Int, Real, Timestamp, Timespan, Date, UUID, Guid
+- **Enumerations**: Define enums for categorical values
+- **Case-Insensitive**: Keywords and type names are case-insensitive
+
+### Relationships
+
+- One-to-one relationships
+- One-to-many relationships (using arrays)
+- Many-to-many relationships
+
+### Field Modifiers
+
+Field cardinality and constraints are specified using square bracket notation:
+
+- `[1]` - Mandatory single value
+- `[0..1]` - Optional single value
+- `[1..*]` - Array with at least one element
+- `[0..*]` - Array that may be empty
+- `[unique]` - Unique constraint
+- Modifiers can be combined: `[1,unique]`
+
+### Design Philosophy
+
+P3 is inspired by UML class diagrams but deliberately simplified. It focuses on data modeling without the complexity of visibility modifiers, abstract types, interfaces, or stereotypes. The goal is an expressive yet approachable language for domain modeling.
+
+## Example
+
+```p3
+// Define an enumeration
+enum MediaType {
+    AUDIO,
+    VIDEO
+}
+
+// Define a base type
+fabric Asset {
+    Guid id[1];
+    String url[1];
+}
+
+// Define a derived type with inheritance
+fabric AudioAsset : Asset {
+    String format[1];
+    Int fileSize[1];
+}
+
+// Define a type with relationships
+fabric Podcast {
+    Guid id[1];
+    String title[1];
+    String description[1];
+    String author[0..1];         // optional field
+    String rssUrl[1,unique];     // mandatory + unique
+    Episode episodes[0..*];      // one-to-many relationship
+}
+
+fabric Episode {
+    Guid id[1];
+    String title[1];
+    Date publishedAt[1];
+    Timespan duration[1];
+    MediaType mediaType[1];
+    AudioAsset audio[1];         // one-to-one relationship
+    Transcript transcript[0..1]; // optional one-to-one
+}
+
+fabric Transcript {
+    Guid id[1];
+    String text[1];
+    String language[1];
+}
+```
+
+## Prerequisites
+
+- CMake 3.20 or higher
+- C11-compatible compiler (GCC or Clang)
+- Flex 2.6+ (lexical analyzer generator)
+- Bison 3.8+ (parser generator)
+- Ninja (build system)
+
+### Installing Prerequisites
+
+**macOS:**
+
+```bash
+brew install cmake flex bison ninja
+```
+
+**Ubuntu/Debian:**
+
+```bash
+sudo apt-get install cmake flex bison gcc ninja-build
+```
+
+## Building
+
+```bash
+# Create build directory
+mkdir _build
+cd _build
+
+# Configure with CMake and Ninja
+cmake -G Ninja ..
+
+# Build
+ninja
+
+# Clean
+ninja clean
+```
+
+## Usage
+
+```bash
+./p3c <source_file.p3>
+```
+
+Example:
+
+```bash
+./p3c ../examples/podcast.p3
+```
+
+## Project Structure
+
+```text
+p3-compiler/
+├── CMakeLists.txt          # CMake build configuration
+├── README.md               # This file
+├── AGENTS.md               # AI agent operating instructions
+├── src/
+│   ├── lexer.l            # Flex lexer specification
+│   ├── parser.y           # Bison parser specification
+│   └── main.c             # Main entry point
+├── include/               # Header files
+├── examples/              # Example P3 programs
+│   └── podcast.p3         # Podcast domain model example
+└── _build/                # Build artifacts (gitignored)
+```
+
+## Compilation Phases
+
+The P3 compiler implements a multi-phase compilation process:
+
+1. **Lexical Analysis** - Tokenizes the input source code
+2. **Syntax Analysis** - Parses tokens into an abstract syntax tree
+3. **Semantic Analysis** - Type checking and validation (planned)
+4. **Code Generation** - Generates target code (planned):
+   - C++ class definitions with inheritance
+   - SQLite database schema with foreign keys
+
+## Type Mappings
+
+| P3 Type | C++ | SQLite |
+|---------|-----|--------|
+| String | std::string | TEXT |
+| Int | int64_t | INTEGER |
+| Real | double | REAL |
+| Timestamp | double | REAL |
+| Timespan | double | REAL |
+| UUID | std::string | TEXT |
+| Guid | std::string | TEXT |
+
+## Current Status
+
+**Implemented:**
+
+- Lexical analysis with case-insensitive keywords
+- Syntax analysis supporting full P3 grammar
+- Enum declarations
+- Fabric type declarations with inheritance
+- Field modifiers (cardinality and constraints)
+- All primitive types
+
+**Planned:**
+
+- Semantic analysis (type checking, inheritance validation)
+- C++ code generation
+- SQLite schema generation
+- Additional target languages and SQL dialects
+
+## Language Specification
+
+### Keywords
+
+- `fabric` - Define a new type
+- `enum` - Define an enumeration
+- `static` - Static field modifier
+- `unique` - Unique constraint modifier
+
+### Primitive Types
+
+- `String` - Text strings
+- `Int` - Integer numbers
+- `Real` - Floating-point numbers
+- `Timestamp` - Points in time (seconds since epoch)
+- `Timespan` - Durations (in seconds)
+- `Date` - Calendar dates
+- `UUID` - Universal unique identifier (type-level)
+- `Guid` - Global unique identifier (instance-level)
+
+### Comments
+
+```p3
+// Single-line comment
+
+/*
+   Multi-line comment
+*/
+```
+
+## Contributing
+
+This is a personal project for experimenting with domain-specific language design and compiler implementation. See AGENTS.md for development guidelines and project decisions.
+
+## License
+
+TBD
+
+## Author
+
+Heiko

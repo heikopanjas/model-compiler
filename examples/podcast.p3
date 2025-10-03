@@ -1,0 +1,41 @@
+// P3 Language - Podcast Object Model Example
+
+enum MediaType {
+    AUDIO,
+    VIDEO
+}
+
+fabric Asset {
+    Guid id[1];
+    String url[1];
+}
+
+fabric AudioAsset : Asset {
+    String format[1];
+    Int fileSize[1];
+}
+
+fabric Podcast {
+    Guid id[1];
+    String title[1];
+    String description[1];
+    String author[0..1];
+    String rssUrl[1,unique];
+    Episode episodes[0..*];
+}
+
+fabric Episode {
+    Guid id[1];
+    String title[1];
+    Date publishedAt[1];
+    Timespan duration[1];
+    MediaType mediaType[1];
+    AudioAsset audio[1];
+    Transcript transcript[0..1];
+}
+
+fabric Transcript {
+    Guid id[1];
+    String text[1];
+    String language[1];
+}
