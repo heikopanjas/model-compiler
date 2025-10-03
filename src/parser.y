@@ -16,7 +16,7 @@ void yyerror(const char *s);
 
 /* Token declarations */
 %token FABRIC ENUM STATIC UNIQUE
-%token STRING_TYPE INT_TYPE REAL_TYPE TIMESTAMP_TYPE TIMESPAN_TYPE DATE_TYPE UUID_TYPE GUID_TYPE
+%token STRING_TYPE INT_TYPE REAL_TYPE TIMESTAMP_TYPE TIMESPAN_TYPE DATE_TYPE GUID_TYPE
 %token LBRACE RBRACE LBRACKET RBRACKET LPAREN RPAREN
 %token SEMICOLON COLON COMMA DOT DOTDOT ASTERISK
 %token <string> IDENTIFIER
@@ -83,7 +83,6 @@ type_spec:
     | TIMESTAMP_TYPE { $$ = strdup("Timestamp"); }
     | TIMESPAN_TYPE { $$ = strdup("Timespan"); }
     | DATE_TYPE     { $$ = strdup("Date"); }
-    | UUID_TYPE     { $$ = strdup("UUID"); }
     | GUID_TYPE     { $$ = strdup("Guid"); }
     | IDENTIFIER    { $$ = $1; }
     ;

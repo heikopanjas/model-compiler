@@ -33,7 +33,6 @@ WHITESPACE  [ \t\r]+
     if (strcasecmp(yytext, "Timestamp") == 0) return TIMESTAMP_TYPE;
     if (strcasecmp(yytext, "Timespan") == 0) return TIMESPAN_TYPE;
     if (strcasecmp(yytext, "Date") == 0) return DATE_TYPE;
-    if (strcasecmp(yytext, "UUID") == 0) return UUID_TYPE;
     if (strcasecmp(yytext, "Guid") == 0) return GUID_TYPE;
     yylval.string = strdup(yytext);
     return IDENTIFIER;

@@ -18,7 +18,7 @@ Future targets include additional programming languages and SQL dialects.
 - **Implicit Base Type**: All user-defined types automatically inherit from the built-in `Fabric` base type, which provides common metadata fields (typeId, creationDate, modificationDate, comment)
 - **User-Defined Types**: Define custom types using the `fabric` keyword
 - **Inheritance**: Support for single inheritance with the `: BaseType` syntax
-- **Primitive Types**: String, Int, Real, Timestamp, Timespan, Date, UUID, Guid
+- **Primitive Types**: String, Int, Real, Timestamp, Timespan, Date, Guid
 - **Enumerations**: Define enums for categorical values
 - **Case-Insensitive**: Keywords and type names are case-insensitive
 
@@ -179,7 +179,6 @@ The P3 compiler implements a multi-phase compilation process:
 | Real | double | REAL |
 | Timestamp | double | REAL |
 | Timespan | double | REAL |
-| UUID | std::string | TEXT |
 | Guid | std::string | TEXT |
 
 ## Current Status
@@ -217,8 +216,7 @@ The P3 compiler implements a multi-phase compilation process:
 - `Timestamp` - Points in time (seconds since epoch)
 - `Timespan` - Durations (in seconds)
 - `Date` - Calendar dates
-- `UUID` - Universal unique identifier (type-level)
-- `Guid` - Global unique identifier (instance-level)
+- `Guid` - Globally unique identifier (for both type and instance identification)
 
 ### Comments
 

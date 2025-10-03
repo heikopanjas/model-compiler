@@ -1,9 +1,0 @@
-program example;
-var
-    x, y : integer;
-    result : integer;
-begin
-    x := 10;
-    y := 20;
-    result := x + y * 2
-end.

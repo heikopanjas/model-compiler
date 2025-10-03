@@ -1,6 +1,6 @@
 # AI Agent Operating Instructions
 
-**Last updated:** October 4, 2025 (19:45)
+**Last updated:** October 4, 2025 (20:00)
 
 ## Primary Instructions
 
@@ -74,7 +74,7 @@ The compiler enables users to define data types and relationships for podcast do
 - **Build Tool**: CMake (version 3.20+)
 - **Generator**: Ninja (preferred over Make for faster parallel builds)
 - **Build Directory**: `_build/` (not `build/`)
-- **C Standard**: C11
+- **C Standard**: C23
 
 ### Project Structure
 
@@ -115,20 +115,20 @@ p3-compiler/
 
 - User-defined types (for podcast domain objects)
 - Base type: `Fabric` - all types automatically inherit from this (built-in, not declared in source)
-  - `typeId` (static UUID) - unique identifier for the type itself
+  - `typeId` (static Guid) - unique identifier for the type itself
   - `creationDate` (Timestamp) - when instance was created
   - `modificationDate` (Timestamp) - when instance was last modified
   - `comment` (String) - user comment/notes
 - Inheritance: All user types inherit from Fabric; inherited fields are not duplicated in generated code
 - User-defined inheritance: Types can inherit from other user types using `: BaseType` syntax
-- Primitive types (String, Int, Real, Timestamp, Timespan, Date, UUID, Guid, etc.)
-  - `Guid` type for instance identifiers (maps to UUID in implementation)
+- Primitive types (String, Int, Real, Timestamp, Timespan, Date, Guid)
+  - `Guid` type for globally unique identifiers (maps to UUID/string in implementation)
+  - Used for both instance identifiers (e.g., `Podcast.id`) and type identifiers (e.g., Fabric's static `typeId`)
   - `Timestamp` type for points in time (maps to double/seconds since epoch)
   - `Timespan` type for durations (maps to double/seconds)
   - `Int` for integers
   - `Real` for floating-point numbers
   - `String` for text
-  - `UUID` for type identifiers (static, per-type)
 - Enums
 - Dynamic arrays
 - Nested types
@@ -165,7 +165,11 @@ p3-compiler/
 
 ```cpp
 // Fabric base type is implicit - not declared in source code
-// All types automatically inherit: typeId, creationDate, modificationDate, comment
+// All types automatically inherit:
+//   - static Guid typeId (unique per type)
+//   - Timestamp creationDate (when instance created)
+//   - Timestamp modificationDate (when instance modified)
+//   - String comment (user notes)
 
 enum MediaType {
     AUDIO,
@@ -227,7 +231,6 @@ fabric Transcript {
 | `Real` | `double` | `REAL` |
 | `Timestamp` | `double` | `REAL` |
 | `Timespan` | `double` | `REAL` |
-| `UUID` | `std::string` | `TEXT` |
 | `Guid` | `std::string` | `TEXT` |
 
 ### Build Commands
@@ -251,6 +254,12 @@ _build/p3c examples/podcast.p3
 ---
 
 ## Recent Updates & Decisions
+
+### October 4, 2025 (20:00)
+
+- **UUID type removal**: Removed `UUID_TYPE` token from lexer and parser
+- **Fabric typeId clarification**: The Fabric base type's static `typeId` field uses the `Guid` type (not a separate `UUID` type)
+- **Reasoning**: Users never write `UUID` in their P3 code. The `Guid` type serves all identifier needs - both for instance IDs (like `Podcast.id`) and type IDs (like Fabric's static `typeId`). This simplifies the language with a single universal identifier type.
 
 ### October 4, 2025 (19:45)
 
@@ -309,11 +318,6 @@ _build/p3c examples/podcast.p3
 - **Timespan type addition**: Added `Timespan` type for durations (maps to double/seconds)
 - **Reasoning**: Consistent naming improves readability and makes the language feel more cohesive; PascalCase distinguishes types from values
 
-### October 4, 2025 (18:40)
-
-- **Id type addition**: Added `Id` primitive type for instance identifiers (separate from static `UUID` type for type identification)
-- **Reasoning**: Semantic distinction between instance IDs and type IDs; `Id` is used for object instances, `UUID` for type metadata
-
 ### October 4, 2025 (18:35)
 
 - **Primitive type naming**: Added `Timestamp` type for temporal data (stored as double/seconds since epoch)
@@ -322,7 +326,7 @@ _build/p3c examples/podcast.p3
 ### October 4, 2025 (18:30)
 
 - **Base type decision**: Introduced `Fabric` base type with common metadata fields
-- **Metadata fields**: All types inherit typeId (UUID), creationDate (double timestamp), modificationDate (double timestamp), and comment (string)
+- **Metadata fields**: All types inherit typeId (Guid), creationDate (Timestamp), modificationDate (Timestamp), and comment (String)
 - **Reasoning**: Provides consistent metadata tracking across all domain objects; typeId is static (per-type), while creation/modification dates are per-instance
 
 ### October 4, 2025 (18:15)

@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.20)
 project(p3_compiler C)
 
-set(CMAKE_C_STANDARD 11)
+set(CMAKE_C_STANDARD 23)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 
 # Find Flex and Bison
