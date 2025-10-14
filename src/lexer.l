@@ -1,9 +1,22 @@
 %{
+#ifdef __cplusplus
+extern "C" {
+#endif
 #include "parser.h"
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#ifdef __cplusplus
+}
+#endif
+
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
 #include <strings.h>
+#include <iostream>
+
+/* Define yylex with C linkage */
+#ifdef __cplusplus
+#define YY_DECL extern "C" int yylex (void)
+#endif
 %}
 
 %option noyywrap
@@ -58,6 +71,6 @@ WHITESPACE  [ \t\r]+
 {WHITESPACE}    { /* ignore whitespace */ }
 \n              { /* ignore newlines */ }
 
-.               { fprintf(stderr, "Unknown character: %s\n", yytext); }
+.               { std::cerr << "Unknown character: " << yytext << "\n"; }
 
 %%

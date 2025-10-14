@@ -1,6 +1,6 @@
 # AI Agent Operating Instructions
 
-**Last updated:** October 4, 2025 (20:00)
+**Last updated:** October 14, 2025 (current session)
 
 ## Primary Instructions
 
@@ -53,7 +53,7 @@ Whenever asked to commit changes:
 
 ## Project Overview
 
-This is a Domain-Specific Language (DSL) compiler for defining podcast object models and their relationships. The compiler is written in C using Flex (lexical analyzer) and Bison (parser generator), built with CMake and Ninja.
+This is a Domain-Specific Language (DSL) compiler for defining podcast object models and their relationships. The compiler is written in C++23 using Flex (lexical analyzer) and Bison (parser generator), built with CMake and Ninja.
 
 ### Project Goals
 
@@ -74,7 +74,7 @@ The compiler enables users to define data types and relationships for podcast do
 - **Build Tool**: CMake (version 3.20+)
 - **Generator**: Ninja (preferred over Make for faster parallel builds)
 - **Build Directory**: `_build/` (not `build/`)
-- **C Standard**: C23
+- **C++ Standard**: C++23
 
 ### Project Structure
 
@@ -84,8 +84,8 @@ p3-compiler/
 ├── src/                    # Source files
 │   ├── lexer.l            # Flex lexer specification
 │   ├── parser.y           # Bison parser specification
-│   └── main.c             # Main entry point
-├── include/               # Header files
+│   └── main.cpp           # Main entry point (C++)
+├── include/               # Header files (to be created)
 ├── examples/              # Test programs
 └── _build/                # Build artifacts (gitignored)
 ```
@@ -254,6 +254,25 @@ _build/p3c examples/podcast.p3
 ---
 
 ## Recent Updates & Decisions
+
+### October 14, 2025
+
+- **C++ conversion**: Converted entire project from C to C++23
+- **Language change**: Project now uses C++23 instead of C23
+- **Source files**: Renamed `main.c` to `main.cpp`; Flex/Bison generate `.cpp` files
+- **C++ features adopted**:
+  - `iostream` for I/O (`std::cout`, `std::cerr` instead of `printf`, `fprintf`)
+  - C++ headers (`<cstdio>`, `<cstdlib>`, `<cstring>` instead of C headers)
+  - Proper extern "C" linkage for Flex/Bison generated code
+- **Build system updates**:
+  - CMakeLists.txt updated to use `CXX` project type
+  - CMAKE_CXX_STANDARD set to 23
+  - Flex/Bison configured to generate C++ compatible code
+- **Linkage strategy**:
+  - YY_DECL macro defines yylex with extern "C" linkage
+  - Parser functions wrapped with extern "C" for proper C/C++ interoperability
+  - %code requires in parser.y ensures correct linkage declarations
+- **Reasoning**: C++23 provides better type safety, modern features (modules, ranges, concepts), and improved standard library while maintaining compatibility with Flex/Bison toolchain. This positions the project for future enhancements using modern C++ features for semantic analysis and code generation phases.
 
 ### October 4, 2025 (20:00)
 

@@ -1,13 +1,26 @@
 %{
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+#include <iostream>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern int yylex(void);
 extern int yylineno;
 extern FILE *yyin;
 void yyerror(const char *s);
+#ifdef __cplusplus
+}
+#endif
 %}
+
+%code requires {
+    #ifdef __cplusplus
+    #define YYPARSE_DECL extern "C" int yyparse (void)
+    #endif
+}
 
 %union {
     int integer;
@@ -29,7 +42,7 @@ void yyerror(const char *s);
 program:
     /* empty */
     | declaration_list
-    { printf("P3 program parsed successfully!\n"); }
+    { std::cout << "P3 program parsed successfully!\n"; }
     ;
 
 declaration_list:
@@ -44,21 +57,21 @@ declaration:
 
 enum_declaration:
     ENUM IDENTIFIER LBRACE enum_value_list RBRACE
-    { printf("Enum: %s\n", $2); free($2); }
+    { std::cout << "Enum: " << $2 << "\n"; free($2); }
     ;
 
 enum_value_list:
     IDENTIFIER
-    { printf("  - %s\n", $1); free($1); }
+    { std::cout << "  - " << $1 << "\n"; free($1); }
     | enum_value_list COMMA IDENTIFIER
-    { printf("  - %s\n", $3); free($3); }
+    { std::cout << "  - " << $3 << "\n"; free($3); }
     ;
 
 fabric_declaration:
     FABRIC IDENTIFIER LBRACE field_list RBRACE
-    { printf("Fabric: %s\n", $2); free($2); }
+    { std::cout << "Fabric: " << $2 << "\n"; free($2); }
     | FABRIC IDENTIFIER COLON IDENTIFIER LBRACE field_list RBRACE
-    { printf("Fabric: %s : %s\n", $2, $4); free($2); free($4); }
+    { std::cout << "Fabric: " << $2 << " : " << $4 << "\n"; free($2); free($4); }
     ;
 
 field_list:
@@ -68,7 +81,7 @@ field_list:
 
 field:
     field_modifiers type_spec IDENTIFIER modifier_spec SEMICOLON
-    { printf("  Field: %s %s\n", $2, $3); free($2); free($3); }
+    { std::cout << "  Field: " << $2 << " " << $3 << "\n"; free($2); free($3); }
     ;
 
 field_modifiers:
@@ -98,17 +111,26 @@ modifier_list:
 
 modifier:
     INTEGER_LITERAL
-    { printf("[%d]", $1); }
+    { std::cout << "[" << $1 << "]"; }
     | INTEGER_LITERAL DOTDOT INTEGER_LITERAL
-    { printf("[%d..%d]", $1, $3); }
+    { std::cout << "[" << $1 << ".." << $3 << "]"; }
     | INTEGER_LITERAL DOTDOT ASTERISK
-    { printf("[%d..*]", $1); }
+    { std::cout << "[" << $1 << "..*]"; }
     | UNIQUE
-    { printf("[unique]"); }
+    { std::cout << "[unique]"; }
     ;
 
 %%
 
+/* Ensure C linkage when compiled as C++ */
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 void yyerror(const char *s) {
-    fprintf(stderr, "Error at line %d: %s\n", yylineno, s);
+    std::cerr << "Error at line " << yylineno << ": " << s << "\n";
 }
+
+#ifdef __cplusplus
+}
+#endif
