@@ -31,7 +31,7 @@ void yyerror(const char *s);
 %token FABRIC ENUM STATIC UNIQUE
 %token STRING_TYPE INT_TYPE REAL_TYPE TIMESTAMP_TYPE TIMESPAN_TYPE DATE_TYPE GUID_TYPE
 %token LBRACE RBRACE LBRACKET RBRACKET LPAREN RPAREN
-%token SEMICOLON COLON COMMA DOT DOTDOT ASTERISK
+%token SEMICOLON COLON COMMA DOT DOTDOT ASTERISK QUESTION
 %token <string> IDENTIFIER
 %token <integer> INTEGER_LITERAL
 
@@ -82,6 +82,10 @@ field_list:
 field:
     field_modifiers type_spec IDENTIFIER modifier_spec SEMICOLON
     { std::cout << "  Field: " << $2 << " " << $3 << "\n"; free($2); free($3); }
+    | field_modifiers type_spec IDENTIFIER SEMICOLON
+    { std::cout << "  Field: " << $2 << " " << $3 << " [1 - default]\n"; free($2); free($3); }
+    | field_modifiers type_spec IDENTIFIER QUESTION SEMICOLON
+    { std::cout << "  Field: " << $2 << " " << $3 << " [0..1 - optional]\n"; free($2); free($3); }
     ;
 
 field_modifiers:

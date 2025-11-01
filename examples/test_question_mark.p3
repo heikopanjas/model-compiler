@@ -1,0 +1,18 @@
+// Test file for question mark optional syntax
+
+fabric Person {
+    // Mandatory fields (default [1])
+    String firstName;
+    String lastName;
+
+    // Optional fields using ? shorthand (equivalent to [0..1])
+    String middleName?;
+    String nickname?;
+    Int age?;
+
+    // Explicit syntax still works
+    String email[0..1];
+
+    // Arrays
+    String phoneNumbers[0..*];
+}

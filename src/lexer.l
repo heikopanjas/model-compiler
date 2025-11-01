@@ -64,6 +64,7 @@ WHITESPACE  [ \t\r]+
 "."             { return DOT; }
 ".."            { return DOTDOT; }
 "*"             { return ASTERISK; }
+"?"             { return QUESTION; }
 
 "//".* { /* single-line comment */ }
 "/*"([^*]|\*+[^*/])*\*+"/" { /* multi-line comment */ }

@@ -1,6 +1,6 @@
 # AI Agent Operating Instructions
 
-**Last updated:** October 14, 2025 (current session)
+**Last updated:** November 1, 2025
 
 ## Primary Instructions
 
@@ -48,6 +48,87 @@ Whenever asked to commit changes:
 - Write a detailed but concise commit message using conventional commits format
 - **NEVER commit automatically** - always wait for explicit confirmation
 - This is CRITICAL!
+
+### **Commit Message Guidelines - CRITICAL**
+
+Follow these rules to prevent VSCode terminal crashes and ensure clean git history:
+
+**Message Format (Conventional Commits):**
+
+```text
+<type>(<scope>): <subject>
+
+<body>
+
+<footer>
+```
+
+**Character Limits:**
+
+- **Subject line**: Maximum 50 characters (strict limit)
+- **Body lines**: Wrap at 72 characters per line
+- **Total message**: Keep under 500 characters total
+- **Blank line**: Always add blank line between subject and body
+
+**Subject Line Rules:**
+
+- Use conventional commit types: `feat`, `fix`, `docs`, `style`, `refactor`, `test`, `chore`, `build`, `ci`, `perf`
+- Scope is optional but recommended: `feat(api):`, `fix(build):`, `docs(readme):`
+- Use imperative mood: "add feature" not "added feature"
+- No period at end of subject line
+- Keep concise and descriptive
+
+**Body Rules (if needed):**
+
+- Add blank line after subject before body
+- Wrap each line at 72 characters maximum
+- Explain what and why, not how
+- Use bullet points (`-`) for multiple items with lowercase text after bullet
+- Keep it concise
+
+**Special Character Safety:**
+
+- Avoid nested quotes or complex quoting
+- Avoid special shell characters: `$`, `` ` ``, `!`, `\`, `|`, `&`, `;`
+- Use simple punctuation only
+- No emoji or unicode characters
+
+**Best Practices:**
+
+- **Break up large commits**: Split into smaller, focused commits with shorter messages
+- **One concern per commit**: Each commit should address one specific change
+- **Test before committing**: Ensure code builds and works
+- **Reference issues**: Use `#123` format in footer if applicable
+
+**Examples:**
+
+Good:
+
+```text
+feat(api): add KStringTrim function
+
+- add trimming function to remove whitespace from
+  both ends of string
+- supports all encodings
+```
+
+Good (short):
+
+```text
+fix(build): correct static library output name
+```
+
+Bad (too long):
+
+```text
+feat(api): add a new comprehensive string trimming function that handles all edge cases including UTF-8, UTF-16LE, UTF-16BE, and ANSI encodings with proper boundary checking and memory management
+```
+
+Bad (special characters):
+
+```text
+fix: update `KString` with "nested 'quotes'" & $special chars!
+```
 
 ---
 
@@ -105,6 +186,9 @@ p3-compiler/
   - Language is case-insensitive for keywords and type names
 - **Field Modifiers**:
   - Modifiers are specified in square brackets `[]` after the field name
+  - **Default modifier**: `[1]` (mandatory single value) - applied when no modifiers are specified
+  - Shorthand syntax: `String name;` is equivalent to `String name[1];`
+  - **Optional shorthand**: `String name?;` is equivalent to `String name[0..1];`
   - Cardinality: `[1]` (mandatory), `[0..1]` (optional), `[0..*]` (optional array), `[1..*]` (required array with at least one element)
   - Constraints: `[unique]` for unique fields
   - Modifiers can be combined: `[1,unique]` for mandatory unique field
@@ -178,47 +262,47 @@ enum MediaType {
 
 fabric Asset {
     // Inherits from implicit Fabric base
-    Guid id[1];
-    String url[1];
+    Guid id;        // Shorthand for [1]
+    String url;     // Shorthand for [1]
 }
 
 fabric AudioAsset : Asset {
     // Inherits from Asset (which inherits from Fabric)
-    String format[1];
-    Int fileSize[1];
+    String format;
+    Int fileSize;
 }
 
 fabric VideoAsset : Asset {
     // Inherits from Asset (which inherits from Fabric)
-    Int width[1];
-    Int height[1];
-    Timespan duration[1];
+    Int width;
+    Int height;
+    Timespan duration;
 }
 
 fabric Podcast {
     // Inherits Fabric fields automatically (not shown in source)
-    Guid id[1];
-    String title[1];
-    String description[1];
-    String author[0..1];         // optional field
-    String rssUrl[1,unique];     // mandatory + unique
+    Guid id;
+    String title;
+    String description;
+    String author?;              // optional field using ? shorthand
+    String rssUrl[1,unique];     // mandatory + unique (explicit modifiers)
     Episode episodes[0..*];      // one-to-many (may be empty)
 }
 
 fabric Episode {
-    Guid id[1];
-    String title[1];
-    Date publishedAt[1];
-    Timespan duration[1];
-    MediaType mediaType[1];
-    AudioAsset audio[1];         // one-to-one relationship
-    Transcript transcript[0..1]; // optional one-to-one
+    Guid id;
+    String title;
+    Date publishedAt;
+    Timespan duration;
+    MediaType mediaType;
+    AudioAsset audio;            // one-to-one relationship
+    Transcript transcript?;      // optional one-to-one using ? shorthand
 }
 
 fabric Transcript {
-    Guid id[1];
-    String text[1];
-    String language[1];
+    Guid id;
+    String text;
+    String language;
 }
 ```
 
@@ -254,6 +338,23 @@ _build/p3c examples/podcast.p3
 ---
 
 ## Recent Updates & Decisions
+
+### November 1, 2025 (14:30)
+
+- **Optional field shorthand**: Implemented `?` syntax for optional fields
+- **Question mark operator**: `String name?;` is now equivalent to `String name[0..1];`
+- **Lexer enhancement**: Added `QUESTION` token to recognize `?` character
+- **Parser enhancement**: Added grammar rule for optional field shorthand syntax
+- **Example updates**: Updated examples to demonstrate the new `?` syntax
+- **Reasoning**: Further reduces verbosity for optional fields, which are very common in data modeling. The `?` syntax is intuitive (borrowed from languages like TypeScript, Swift, Kotlin) and makes optional fields immediately recognizable. Complements the `[1]` default to create a very clean, readable syntax for the most common field types.
+
+### November 1, 2025
+
+- **Shorthand modifier syntax**: Implemented optional modifier syntax where `[1]` is the default
+- **Parser enhancement**: Modified parser to accept fields without explicit modifiers (e.g., `String name;` instead of `String name[1];`)
+- **Backward compatibility**: Explicit modifiers still work; both syntaxes are valid
+- **Example updates**: Updated `podcast.p3` example to demonstrate cleaner shorthand syntax
+- **Reasoning**: Reduces verbosity for the most common case (mandatory single values); makes P3 code cleaner and more readable while maintaining full expressiveness when needed. Since `[1]` is the most common modifier, making it the default eliminates repetitive syntax without losing clarity.
 
 ### October 14, 2025
 

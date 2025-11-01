@@ -1,0 +1,16 @@
+// Test file for shorthand modifier syntax
+
+fabric TestType {
+    // New shorthand syntax - defaults to [1]
+    String name;
+    Int age;
+    Guid id;
+
+    // Optional field using ? shorthand (equivalent to [0..1])
+    String middleName?;
+
+    // Explicit modifiers still work
+    String email[1,unique];
+    String nickname[0..1];      // Same as middleName? above
+    String tags[0..*];
+}

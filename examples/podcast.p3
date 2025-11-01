@@ -6,36 +6,36 @@ enum MediaType {
 }
 
 fabric Asset {
-    Guid id[1];
-    String url[1];
+    Guid id;           // Shorthand for [1]
+    String url;        // Shorthand for [1]
 }
 
 fabric AudioAsset : Asset {
-    String format[1];
-    Int fileSize[1];
+    String format;     // Shorthand for [1]
+    Int fileSize;      // Shorthand for [1]
 }
 
 fabric Podcast {
-    Guid id[1];
-    String title[1];
-    String description[1];
-    String author[0..1];
-    String rssUrl[1,unique];
-    Episode episodes[0..*];
+    Guid id;
+    String title;
+    String description;
+    String author?;              // Optional field using ? shorthand
+    String rssUrl[1,unique];     // Mandatory + unique
+    Episode episodes[0..*];      // One-to-many (may be empty)
 }
 
 fabric Episode {
-    Guid id[1];
-    String title[1];
-    Date publishedAt[1];
-    Timespan duration[1];
-    MediaType mediaType[1];
-    AudioAsset audio[1];
-    Transcript transcript[0..1];
+    Guid id;
+    String title;
+    Date publishedAt;
+    Timespan duration;
+    MediaType mediaType;
+    AudioAsset audio;            // One-to-one relationship
+    Transcript transcript?;      // Optional one-to-one using ? shorthand
 }
 
 fabric Transcript {
-    Guid id[1];
-    String text[1];
-    String language[1];
+    Guid id;
+    String text;
+    String language;
 }
