@@ -1,6 +1,6 @@
 # AI Agent Operating Instructions
 
-**Last updated:** November 1, 2025 (23:45)
+**Last updated:** November 1, 2025 (23:55)
 
 ## Primary Instructions
 
@@ -300,11 +300,15 @@ model-compiler/
 │   ├── model-compiler.y   # Bison parser specification
 │   ├── Driver.cpp         # Compiler driver implementation
 │   ├── AST.cpp            # AST implementation
+│   ├── SemanticAnalyzer.cpp # Semantic analysis implementation
+│   ├── Console.cpp        # Console output utilities
 │   └── main.cpp           # Main entry point (C++)
 ├── include/               # Header files
 │   ├── Common.h           # Common macros and utilities
 │   ├── Driver.h           # Compiler driver interface
-│   └── AST.h              # AST node definitions
+│   ├── AST.h              # AST node definitions
+│   ├── SemanticAnalyzer.h # Semantic analyzer interface
+│   └── Console.h          # Console output interface
 ├── examples/              # Test programs
 └── _build/                # Build artifacts (gitignored)
 ```
@@ -507,6 +511,30 @@ _build/model-compiler examples/podcast.bbfm
 ---
 
 ## Recent Updates & Decisions
+
+### November 1, 2025 (23:55)
+
+- **Console class integration**: Updated codebase to use Console class for all error and status messages
+- **Files updated**: Driver.cpp, SemanticAnalyzer.cpp, main.cpp, model-compiler.y
+- **Changes**:
+  - Replaced `std::cerr` calls with `Console::ReportError()`
+  - Replaced `std::cout` status messages with `Console::ReportStatus()`
+  - Parser (model-compiler.y) now uses Console for error messages
+  - AST dump output remains using `std::cout` directly (structured data output)
+- **Benefits**: Centralized output control, consistent message formatting, easier to redirect or modify output behavior
+- **Testing**: Verified successful compilation, normal output, and error reporting
+- **Reasoning**: Using the Console class throughout the codebase provides a single point of control for all compiler messages. This makes it easier to add features like colored output, logging to files, or different output formats in the future. The separation of error (stderr) and status (stdout) streams is maintained while providing a cleaner API.
+
+### November 1, 2025 (23:50)
+
+- **Console utility class**: Added new Console class for standardized output
+- **Static methods**: ReportError() outputs to stderr, ReportStatus() outputs to stdout
+- **Files added**:
+  - `include/Console.h` - Console class interface
+  - `src/Console.cpp` - Console class implementation
+- **CMakeLists.txt updated**: Added Console.cpp to build
+- **Design**: Static-only class with deleted constructors to prevent instantiation
+- **Reasoning**: Provides a centralized, consistent interface for all compiler output. Using static methods makes the API simple and convenient to call from anywhere in the codebase without requiring object instantiation. Separating error (stderr) and status (stdout) output follows Unix conventions and allows users to redirect output streams independently.
 
 ### November 1, 2025 (23:45)
 

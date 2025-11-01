@@ -1,5 +1,6 @@
 #include "SemanticAnalyzer.h"
 #include "Common.h"
+#include "Console.h"
 #include <iostream>
 
 namespace bbfm {
@@ -365,7 +366,7 @@ const TypeSymbol* SemanticAnalyzer::LookupType(const std::string& typeName) cons
 
 void SemanticAnalyzer::ReportError(const std::string& message)
 {
-    std::cerr << "Semantic error: " << message << std::endl;
+    Console::ReportError("Semantic error: " + message);
     hasErrors_ = true;
 }
 

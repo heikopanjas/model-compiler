@@ -8,6 +8,7 @@
 #include <fstream>
 #include <sstream>
 #include "AST.h"
+#include "Console.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -369,9 +370,12 @@ extern "C" {
 #endif
 
 void yyerror(const char *s) {
-    std::cerr << g_current_filename << ":" << yylloc.first_line
-              << ":" << yylloc.first_column
-              << ": error: " << s << "\n";
+    std::ostringstream errorMsg;
+    errorMsg << g_current_filename << ":" << yylloc.first_line
+             << ":" << yylloc.first_column
+             << ": error: " << s;
+
+    bbfm::Console::ReportError(errorMsg.str());
 
     // Show the source line if available
     if (yylloc.first_line > 0 && yylloc.first_line <= static_cast<int>(g_source_lines.size())) {

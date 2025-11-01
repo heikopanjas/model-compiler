@@ -1,3 +1,4 @@
+#include "Console.h"
 #include "Driver.h"
 #include <iostream>
 #include <memory>
@@ -8,7 +9,7 @@ int main(int argc, char* argv[])
     // Parse command line arguments
     if (argc < 2)
     {
-        std::cout << "Usage: " << argv[0] << " <source_file>\n";
+        bbfm::Console::ReportStatus("Usage: " + std::string(argv[0]) + " <source_file>");
         return 1;
     }
 
@@ -41,6 +42,6 @@ int main(int argc, char* argv[])
         return 1;
     }
 
-    std::cout << "\nCompilation completed successfully!\n";
+    bbfm::Console::ReportStatus("\nCompilation completed successfully!");
     return 0;
 }

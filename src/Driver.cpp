@@ -1,5 +1,6 @@
 #include "Driver.h"
 #include "AST.h"
+#include "Console.h"
 #include "SemanticAnalyzer.h"
 #include <cstdio>
 #include <fstream>
@@ -38,14 +39,14 @@ std::unique_ptr<AST> Driver::Phase0()
     // Multi-file support will be added later
     if (sourceFiles_.empty())
     {
-        std::cerr << "Error: No source files provided\n";
+        Console::ReportError("Error: No source files provided");
         hasErrors_ = true;
         return nullptr;
     }
 
     if (sourceFiles_.size() > 1)
     {
-        std::cerr << "Error: Multi-file compilation not yet supported\n";
+        Console::ReportError("Error: Multi-file compilation not yet supported");
         hasErrors_ = true;
         return nullptr;
     }
@@ -72,7 +73,7 @@ std::unique_ptr<AST> Driver::Phase0()
     yyin = fopen(filename.c_str(), "r");
     if (nullptr == yyin)
     {
-        std::cerr << "Error: Could not open file '" << filename << "'\n";
+        Console::ReportError("Error: Could not open file '" + filename + "'");
         hasErrors_ = true;
         return nullptr;
     }
@@ -96,12 +97,12 @@ std::unique_ptr<AST> Driver::Phase0()
     // Transfer ownership of AST from global to caller
     if (nullptr == g_ast)
     {
-        std::cerr << "Error: Parser succeeded but no AST was created\n";
+        Console::ReportError("Error: Parser succeeded but no AST was created");
         hasErrors_ = true;
         return nullptr;
     }
 
-    std::cout << "Phase 0 (Parsing) completed successfully!\n";
+    Console::ReportStatus("Phase 0 (Parsing) completed successfully!");
     return std::move(g_ast);
 }
 
@@ -109,23 +110,23 @@ std::unique_ptr<SemanticAnalyzer> Driver::Phase1(const AST* ast)
 {
     if (nullptr == ast)
     {
-        std::cerr << "Error: Cannot perform semantic analysis on null AST\n";
+        Console::ReportError("Error: Cannot perform semantic analysis on null AST");
         hasErrors_ = true;
         return nullptr;
     }
 
-    std::cout << "Phase 1 (Semantic Analysis) started...\n";
+    Console::ReportStatus("Phase 1 (Semantic Analysis) started...");
 
     auto analyzer = std::make_unique<SemanticAnalyzer>(ast);
 
     if (!analyzer->Analyze())
     {
-        std::cerr << "Phase 1 (Semantic Analysis) failed with errors.\n";
+        Console::ReportError("Phase 1 (Semantic Analysis) failed with errors.");
         hasErrors_ = true;
         return nullptr;
     }
 
-    std::cout << "Phase 1 (Semantic Analysis) completed successfully!\n";
+    Console::ReportStatus("Phase 1 (Semantic Analysis) completed successfully!");
     return analyzer;
 }
 
