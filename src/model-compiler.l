@@ -33,9 +33,9 @@ WHITESPACE  [ \t\r]+
 
 %%
 
-"fabric"        { return FABRIC; }
+"class"         { return CLASS; }
+"inherits"      { return INHERITS; }
 "enum"          { return ENUM; }
-"static"        { return STATIC; }
 "unique"        { return UNIQUE; }
 
 {ID}            {

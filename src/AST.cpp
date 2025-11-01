@@ -169,11 +169,11 @@ void EnumDeclaration::Dump(const int indent) const
 void FabricDeclaration::Dump(const int indent) const
 {
     PrintIndent(indent);
-    std::cout << "fabric " << name_;
+    std::cout << "class " << name_;
 
     if (false == baseType_.empty())
     {
-        std::cout << " : " << baseType_;
+        std::cout << " inherits " << baseType_;
     }
 
     std::cout << " {\n";

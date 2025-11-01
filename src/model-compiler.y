@@ -51,7 +51,7 @@ std::unique_ptr<bbfm::AST> g_ast;
 }
 
 /* Token declarations */
-%token FABRIC ENUM STATIC UNIQUE
+%token CLASS INHERITS ENUM UNIQUE
 %token STRING_TYPE INT_TYPE REAL_TYPE BOOL_TYPE TIMESTAMP_TYPE TIMESPAN_TYPE DATE_TYPE GUID_TYPE
 %token LBRACE RBRACE LBRACKET RBRACKET LPAREN RPAREN
 %token SEMICOLON COLON COMMA DOT DOTDOT ASTERISK QUESTION
@@ -140,14 +140,14 @@ enum_value_list:
     ;
 
 fabric_declaration:
-    FABRIC IDENTIFIER LBRACE field_list RBRACE
+    CLASS IDENTIFIER LBRACE field_list RBRACE
     {
         auto* fields = static_cast<std::vector<std::unique_ptr<bbfm::Field>>*>($4);
         $$ = new bbfm::FabricDeclaration($2, "", std::move(*fields));
         free($2);
         delete fields;
     }
-    | FABRIC IDENTIFIER COLON IDENTIFIER LBRACE field_list RBRACE
+    | CLASS IDENTIFIER INHERITS IDENTIFIER LBRACE field_list RBRACE
     {
         auto* fields = static_cast<std::vector<std::unique_ptr<bbfm::Field>>*>($6);
         $$ = new bbfm::FabricDeclaration($2, $4, std::move(*fields));
@@ -217,8 +217,6 @@ field:
 field_modifiers:
     /* empty */
     { $$ = 0; }
-    | STATIC
-    { $$ = 1; }
     ;
 
 type_spec:

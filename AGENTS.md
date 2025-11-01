@@ -1,6 +1,6 @@
 # AI Agent Operating Instructions
 
-**Last updated:** November 1, 2025 (21:00)
+**Last updated:** November 1, 2025 (22:45)
 
 ## Primary Instructions
 
@@ -289,7 +289,7 @@ model-compiler/
 - **File Extension**: `.bbfm` for source files
 - **Lexer**: Flex 2.6+
 - **Parser**: Bison 3.8+
-- **Keywords**: `fabric` (define types), `enum` (define enumerations)
+- **Keywords**: `class` (define types), `enum` (define enumerations), `inherits` (specify inheritance)
 - **Naming Conventions**:
   - All type names use PascalCase
   - User-defined types: PascalCase (e.g., `Podcast`, `Episode`)
@@ -309,16 +309,17 @@ model-compiler/
 **Type System:**
 
 - User-defined types (for podcast domain objects)
-- Base type: `Fabric` - all types automatically inherit from this (built-in, not declared in source)
-  - `typeId` (static Guid) - unique identifier for the type itself
+- **Universal metadata fields** - all types automatically have these fields (not user-declared):
+  - `typeId` (Guid) - unique identifier for the type itself (same for all instances of a type)
+  - `id` (Guid) - unique identifier for the type instance (unique per instance)
+  - `cardinality` (Int) - cardinality of the type instance
   - `creationDate` (Timestamp) - when instance was created
   - `modificationDate` (Timestamp) - when instance was last modified
   - `comment` (String) - user comment/notes
-- Inheritance: All user types inherit from Fabric; inherited fields are not duplicated in generated code
-- User-defined inheritance: Types can inherit from other user types using `: BaseType` syntax
-- Primitive types (String, Int, Real, Bool, Timestamp, Timespan, Date, Guid)
+- **Inheritance**: Types can inherit from other user types using `class AudioAsset inherits Asset` syntax
+- **Primitive types** (String, Int, Real, Bool, Timestamp, Timespan, Date, Guid)
   - `Guid` type for globally unique identifiers (maps to UUID/string in implementation)
-  - Used for both instance identifiers (e.g., `Podcast.id`) and type identifiers (e.g., Fabric's static `typeId`)
+  - Used for instance identifiers (e.g., `Podcast.id`)
   - `Timestamp` type for points in time (maps to double/seconds since epoch)
   - `Timespan` type for durations (maps to double/seconds)
   - `Int` for integers
@@ -368,9 +369,10 @@ The Driver does not store the AST internally; instead, `Phase0()` returns owners
 ### Example BBFM Syntax
 
 ```cpp
-// Fabric base type is implicit - not declared in source code
-// All types automatically inherit:
-//   - static Guid typeId (unique per type)
+// All types automatically have these universal metadata fields (not user-declared):
+//   - Guid typeId (unique per type)
+//   - Guid id (unique per instance)
+//   - Int cardinality (cardinality of instance)
 //   - Timestamp creationDate (when instance created)
 //   - Timestamp modificationDate (when instance modified)
 //   - String comment (user notes)
@@ -380,28 +382,26 @@ enum MediaType {
     VIDEO
 }
 
-fabric Asset {
-    // Inherits from implicit Fabric base
-    Guid id;        // Shorthand for [1]
-    String url;     // Shorthand for [1]
+class Asset {
+    // Universal metadata fields are automatic (not declared)
+    String url;
 }
 
-fabric AudioAsset : Asset {
-    // Inherits from Asset (which inherits from Fabric)
+class AudioAsset inherits Asset {
+    // Inherits from Asset + has universal metadata
     String format;
     Int fileSize;
 }
 
-fabric VideoAsset : Asset {
-    // Inherits from Asset (which inherits from Fabric)
+class VideoAsset inherits Asset {
+    // Inherits from Asset + has universal metadata
     Int width;
     Int height;
     Timespan duration;
 }
 
-fabric Podcast {
-    // Inherits Fabric fields automatically (not shown in source)
-    Guid id;
+class Podcast {
+    // Universal metadata fields are automatic (not declared)
     String title;
     String description;
     String author?;              // optional field using ? shorthand
@@ -409,8 +409,7 @@ fabric Podcast {
     Episode episodes[0..*];      // one-to-many (may be empty)
 }
 
-fabric Episode {
-    Guid id;
+class Episode {
     String title;
     Date publishedAt;
     Timespan duration;
@@ -419,8 +418,7 @@ fabric Episode {
     Transcript transcript?;      // optional one-to-one using ? shorthand
 }
 
-fabric Transcript {
-    Guid id;
+class Transcript {
     String text;
     String language;
 }
@@ -459,6 +457,51 @@ _build/model-compiler examples/podcast.bbfm
 ---
 
 ## Recent Updates & Decisions
+
+### November 1, 2025 (22:45)
+
+- **Keyword change**: Replaced `fabric` keyword with `class` for type definitions
+- **Inheritance syntax change**: Changed from `AudioAsset : Asset` to `class AudioAsset inherits Asset`
+- **New keyword**: Added `inherits` keyword for declaring inheritance relationships
+- **Syntax modernization**: The new syntax is more explicit and reads more naturally
+- **Files updated**: AGENTS.md, README.md, examples/podcast.bbfm, and lexer/parser will need updates
+- **Reasoning**: The `class` keyword is more familiar to developers and clearly indicates user-defined types. The `inherits` keyword makes inheritance explicit and readable, avoiding potential confusion with C++ syntax where `:` can mean multiple things. The syntax `class AudioAsset inherits Asset` is self-documenting and easier to understand at a glance than `fabric AudioAsset : Asset`.
+
+### November 1, 2025 (22:30)
+
+- **Fabric base type eliminated**: Removed the Fabric base type entirely from the type system
+- **Unified metadata model**: Moved all Fabric fields (creationDate, modificationDate, comment) into universal metadata
+- **Simplified architecture**: All types now have six universal metadata fields that are automatically present
+- **Universal metadata fields** (complete list):
+  - `typeId` (Guid) - unique per type
+  - `id` (Guid) - unique per instance
+  - `cardinality` (Int) - cardinality of instance
+  - `creationDate` (Timestamp) - when instance created
+  - `modificationDate` (Timestamp) - when instance modified
+  - `comment` (String) - user notes
+- **Inheritance simplified**: User-defined inheritance (e.g., `AudioAsset : Asset`) is now purely for domain modeling, not for inheriting system metadata
+- **Documentation updates**: Updated AGENTS.md and example code to remove all Fabric references
+- **Reasoning**: Eliminating the Fabric base type simplifies the type system by having a single, flat layer of universal metadata instead of a two-tier system (universal metadata + Fabric inheritance). All types get the same six metadata fields automatically, and inheritance is used only for domain-specific type hierarchies. This makes the language easier to understand and implement, with clearer semantics about what fields every type has.
+
+### November 1, 2025 (22:15)
+
+- **Universal metadata fields added**: Added three metadata fields that all types automatically have (separate from Fabric inheritance)
+- **New fields**:
+  - `typeId` (Guid) - unique identifier for the type itself, same for all instances of a given type
+  - `id` (Guid) - unique identifier for each type instance, unique per instance
+  - `cardinality` (Int) - cardinality of the type instance
+- **Design separation**: These universal fields exist at the type system level, NOT as part of the Fabric base type
+- **Field hierarchy**: All types have: universal metadata (typeId, id, cardinality) + Fabric inheritance (creationDate, modificationDate, comment) + user-defined fields
+- **Documentation updates**: Updated AGENTS.md to clearly separate universal metadata from Fabric base type fields
+- **Reasoning**: Separating universal metadata from Fabric provides cleaner architecture. The typeId, id, and cardinality fields are fundamental to the type system itself and apply to ALL types including Fabric. Keeping them separate from Fabric inheritance makes the distinction clear: universal metadata is about the type system mechanics, while Fabric provides domain-level instance tracking (timestamps, comments). This also allows Fabric to be treated as a regular base type that could theoretically be extended or modified without affecting core type system metadata.
+
+### November 1, 2025 (22:00)
+
+- **Fabric typeId removal**: Removed the static `typeId` field from the built-in Fabric base type
+- **Simplified base type**: Fabric now only provides instance-level metadata: creationDate, modificationDate, and comment
+- **Documentation updates**: Updated AGENTS.md and README.md to remove all references to typeId
+- **Guid usage clarification**: The `Guid` type is now exclusively used for instance identifiers (e.g., `Podcast.id`), not for type identification
+- **Reasoning**: Simplifies the type system by removing type-level identification. The typeId field added complexity without clear benefit for the initial use cases. Instance-level identification via Guid fields and runtime type information (RTTI) in generated code are sufficient for podcast domain modeling. This makes the Fabric base type cleaner and more focused on instance metadata tracking.
 
 ### November 1, 2025 (21:00)
 
@@ -666,8 +709,8 @@ _build/model-compiler examples/podcast.bbfm
 ### October 4, 2025 (20:00)
 
 - **UUID type removal**: Removed `UUID_TYPE` token from lexer and parser
-- **Fabric typeId clarification**: The Fabric base type's static `typeId` field uses the `Guid` type (not a separate `UUID` type)
-- **Reasoning**: Users never write `UUID` in their BBFM code. The `Guid` type serves all identifier needs - both for instance IDs (like `Podcast.id`) and type IDs (like Fabric's static `typeId`). This simplifies the language with a single universal identifier type.
+- **Guid type usage**: The `Guid` type serves all identifier needs for instance IDs (like `Podcast.id`)
+- **Reasoning**: Users never write `UUID` in their BBFM code. The `Guid` type is a universal identifier type for domain object instances.
 
 ### October 4, 2025 (19:45)
 
@@ -704,7 +747,7 @@ _build/model-compiler examples/podcast.bbfm
 ### October 4, 2025 (19:10)
 
 - **Fabric as implicit base type**: Fabric is not declared in source code but built into the language; all user types automatically inherit from it
-- **No field duplication**: Inherited Fabric fields (typeId, creationDate, modificationDate, comment) are not redeclared in user types
+- **No field duplication**: Inherited Fabric fields (creationDate, modificationDate, comment) are not redeclared in user types
 - **Reasoning**: Cleaner syntax; users don't have to think about base type boilerplate; ensures all types have consistent metadata
 
 ### October 4, 2025 (19:05)
@@ -734,8 +777,8 @@ _build/model-compiler examples/podcast.bbfm
 ### October 4, 2025 (18:30)
 
 - **Base type decision**: Introduced `Fabric` base type with common metadata fields
-- **Metadata fields**: All types inherit typeId (Guid), creationDate (Timestamp), modificationDate (Timestamp), and comment (String)
-- **Reasoning**: Provides consistent metadata tracking across all domain objects; typeId is static (per-type), while creation/modification dates are per-instance
+- **Metadata fields**: All types inherit creationDate (Timestamp), modificationDate (Timestamp), and comment (String)
+- **Reasoning**: Provides consistent metadata tracking across all domain objects with instance-level timestamps and user comments
 
 ### October 4, 2025 (18:15)
 

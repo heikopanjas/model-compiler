@@ -1,22 +1,28 @@
-// P3 Language - Podcast Object Model Example
+// BBFM Language - Podcast Object Model Example
+//
+// All types automatically have universal metadata fields (not declared):
+//   - Guid typeId (unique per type)
+//   - Guid id (unique per instance)
+//   - Int cardinality
+//   - Timestamp creationDate
+//   - Timestamp modificationDate
+//   - String comment
 
 enum MediaType {
     AUDIO,
     VIDEO
 }
 
-fabric Asset {
-    Guid id;           // Shorthand for [1]
-    String url;        // Shorthand for [1]
+class Asset {
+    String url;
 }
 
-fabric AudioAsset : Asset {
-    String format;     // Shorthand for [1]
-    Int fileSize;      // Shorthand for [1]
+class AudioAsset inherits Asset {
+    String format;
+    Int fileSize;
 }
 
-fabric Podcast {
-    Guid id;
+class Podcast {
     String title;
     String description;
     String author?;              // Optional field using ? shorthand
@@ -24,8 +30,7 @@ fabric Podcast {
     Episode episodes[0..*];      // One-to-many (may be empty)
 }
 
-fabric Episode {
-    Guid id;
+class Episode {
     String title;
     Date publishedAt;
     Timespan duration;
@@ -34,8 +39,7 @@ fabric Episode {
     Transcript transcript?;      // Optional one-to-one using ? shorthand
 }
 
-fabric Transcript {
-    Guid id;
+class Transcript {
     String text;
     String language;
 }

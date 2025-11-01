@@ -1,10 +1,9 @@
 // Test file for shorthand modifier syntax
 
-fabric TestType {
+class TestType {
     // New shorthand syntax - defaults to [1]
     String name;
     Int age;
-    Guid id;
 
     // Optional field using ? shorthand (equivalent to [0..1])
     String middleName?;

@@ -1,6 +1,6 @@
 // Test file for question mark optional syntax
 
-fabric Person {
+class Person {
     // Mandatory fields (default [1])
     String firstName;
     String lastName;

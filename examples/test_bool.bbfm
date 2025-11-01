@@ -1,7 +1,6 @@
 // Test file for Bool type
 
-fabric UserPreferences {
-    Guid id;
+class UserPreferences {
     String userId;
     Bool emailNotifications;      // mandatory boolean
     Bool pushNotifications;
@@ -9,7 +8,7 @@ fabric UserPreferences {
     Bool isActive[1];            // explicit mandatory
 }
 
-fabric FeatureFlags {
+class FeatureFlags {
     Bool enableBetaFeatures;
     Bool allowGuestAccess;
     Bool maintenanceMode;

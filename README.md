@@ -15,59 +15,70 @@ Future targets include additional programming languages and SQL dialects.
 
 ### Type System
 
-- **Implicit Base Type**: All user-defined types automatically inherit from the built-in `Fabric` base type, which provides common metadata fields (typeId, creationDate, modificationDate, comment)
-- **User-Defined Types**: Define custom types using the `fabric` keyword
-- **Inheritance**: Support for single inheritance with the `: BaseType` syntax
+- **Universal Metadata**: All types automatically have these metadata fields (never declared by users):
+  - `typeId` (Guid) - Unique identifier for the type itself (same for all instances of a type)
+  - `id` (Guid) - Unique identifier for the instance (unique per instance)
+  - `cardinality` (Int) - Cardinality of the type instance
+  - `creationDate` (Timestamp) - When instance was created
+  - `modificationDate` (Timestamp) - When instance was last modified
+  - `comment` (String) - User comment/notes
+- **User-Defined Types**: Define custom types using the `class` keyword
+- **Inheritance**: Support for single inheritance with the `inherits` keyword
 - **Primitive Types**: String, Int, Real, Bool, Timestamp, Timespan, Date, Guid
 - **Enumerations**: Define enums for categorical values
 - **Case-Insensitive**: Keywords and type names are case-insensitive
 
-### The Fabric Base Type
+### Universal Metadata Fields
 
-All user-defined types automatically inherit from the built-in `Fabric` base type. This type is implicit and never needs to be declared in your source code. The `Fabric` type provides essential metadata fields that every type inherits:
+Every type in the BBFM modeling language automatically has six universal metadata fields. These are part of the type system itself and are never declared in your source code:
 
-- **`typeId`** (static Guid) - A unique identifier for the type itself (not the instance). Each type has its own static `typeId` that identifies the type across the system.
+- **`typeId`** (Guid) - A unique identifier for the type itself. All instances of the same type share the same `typeId`. For example, all `Podcast` instances have the same `typeId`, which is different from the `typeId` of `Episode` instances.
+- **`id`** (Guid) - A unique identifier for each instance. Every object has its own unique `id` that distinguishes it from all other instances, even those of the same type.
+- **`cardinality`** (Int) - The cardinality of the type instance. This tracks relationship cardinality information for the instance.
 - **`creationDate`** (Timestamp) - The date and time when an instance was created. Automatically set when an object is instantiated.
 - **`modificationDate`** (Timestamp) - The date and time when an instance was last modified. Updated whenever the object changes.
 - **`comment`** (String) - A user-provided comment or note field for storing arbitrary text associated with the instance.
 
-**Important**: You never declare these fields in your fabric definitions. They are automatically available on all types. When you create a type like:
+These fields are automatically available on all types. You never declare them in your class definitions. When you create a type like:
 
 ```bbfm
-fabric Podcast {
-    Guid id;
+class Podcast {
     String title;
+    String description;
 }
 ```
 
-The generated code will include the inherited Fabric fields, so the actual structure is:
+The generated code will include the universal metadata fields, so the actual structure is:
 
 ```
-Podcast (inherits from Fabric)
-├── typeId (static Guid)          // from Fabric
-├── creationDate (Timestamp)      // from Fabric
-├── modificationDate (Timestamp)  // from Fabric
-├── comment (String)              // from Fabric
-├── id (Guid)                     // defined in Podcast
-└── title (String)                // defined in Podcast
+Podcast
+├── typeId (Guid)                 // universal metadata
+├── id (Guid)                     // universal metadata
+├── cardinality (Int)             // universal metadata
+├── creationDate (Timestamp)      // universal metadata
+├── modificationDate (Timestamp)  // universal metadata
+├── comment (String)              // universal metadata
+├── title (String)                // defined in Podcast
+└── description (String)          // defined in Podcast
 ```
 
-This inheritance applies to all types, including those with custom inheritance chains. For example:
+User-defined inheritance works as expected. For example:
 
 ```bbfm
-fabric Asset {
-    Guid id;
+class Asset {
     String url;
 }
 
-fabric AudioAsset : Asset {
+class AudioAsset inherits Asset {
     String format;
 }
 ```
 
 Results in:
-- `Asset` inherits from `Fabric` (gets typeId, creationDate, modificationDate, comment)
-- `AudioAsset` inherits from `Asset` (gets all Asset fields, which in turn inherited from Fabric)
+- All types have universal metadata: `typeId`, `id`, `cardinality`, `creationDate`, `modificationDate`, `comment`
+- `AudioAsset` inherits from `Asset` (gets the `url` field)
+
+So an `AudioAsset` instance has: universal metadata (6 fields) + Asset fields (url) + AudioAsset fields (format).
 
 ### Relationships
 
@@ -109,20 +120,18 @@ enum MediaType {
 }
 
 // Define a base type
-fabric Asset {
-    Guid id;              // shorthand for [1] (mandatory)
-    String url;           // shorthand for [1] (mandatory)
+class Asset {
+    String url;
 }
 
 // Define a derived type with inheritance
-fabric AudioAsset : Asset {
+class AudioAsset inherits Asset {
     String format;
     Int fileSize;
 }
 
 // Define a type with relationships
-fabric Podcast {
-    Guid id;
+class Podcast {
     String title;
     String description;
     String author?;              // shorthand for [0..1] (optional)
@@ -130,8 +139,7 @@ fabric Podcast {
     Episode episodes[0..*];      // one-to-many relationship
 }
 
-fabric Episode {
-    Guid id;
+class Episode {
     String title;
     Date publishedAt;
     Timespan duration;
@@ -140,8 +148,7 @@ fabric Episode {
     Transcript transcript?;      // shorthand for [0..1] (optional)
 }
 
-fabric Transcript {
-    Guid id;
+class Transcript {
     String text;
     String language;
 }
@@ -252,7 +259,7 @@ The compiler implements a multi-phase compilation process:
 - Syntax analysis supporting full grammar
 - AST construction with modern C++23
 - Enum declarations
-- Fabric type declarations with inheritance
+- Class type declarations with inheritance
 - Field modifiers (cardinality and constraints)
 - All primitive types
 - Optional field shorthand syntax (?)
@@ -268,9 +275,9 @@ The compiler implements a multi-phase compilation process:
 
 ### Keywords
 
-- `fabric` - Define a new type
+- `class` - Define a new type
 - `enum` - Define an enumeration
-- `static` - Static field modifier
+- `inherits` - Specify inheritance relationship
 - `unique` - Unique constraint modifier
 
 ### Primitive Types
