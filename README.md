@@ -181,6 +181,89 @@ Invariants are validated during semantic analysis to ensure:
 
 The expression system enables declarative constraints that will generate validation code in target languages.
 
+### Computed Features
+
+Computed features are auto-calculated fields whose values are derived from other fields using expressions. They provide a declarative way to define derived attributes without writing imperative code.
+
+- **Syntax**: `feature fieldName: TypeName = expression;`
+- **Expression support**: Full expression system (arithmetic, comparison, logical, field references, member access)
+- **Member access**: Access fields of nested objects using dot notation (`object.field`)
+- **Type safety**: Expression result type must match declared field type
+- **Constraints**: Computed features must have cardinality `[1]` (cannot be arrays or optional)
+
+**Examples:**
+
+```bbfm
+class Rectangle {
+    feature width: Int;
+    feature height: Int;
+    
+    // Simple arithmetic
+    feature area: Int = width * height;
+    
+    // Complex expression
+    feature perimeter: Int = (width + height) * 2;
+}
+
+class Point {
+    feature x: Int;
+    feature y: Int;
+    
+    invariant validX: x >= 0;
+    invariant validY: y >= 0;
+}
+
+class Shape {
+    feature width: Int;
+    feature height: Int;
+    
+    invariant positiveWidth: width > 0;
+    invariant positiveHeight: height > 0;
+}
+
+class Rectangle inherits Shape {
+    feature topLeft: Point;
+    feature bottomRight: Point;
+    
+    // Member access expressions
+    feature computedWidth: Int = bottomRight.x - topLeft.x;
+    feature computedHeight: Int = bottomRight.y - topLeft.y;
+    
+    // Computed features can reference other computed features
+    feature computedArea: Int = computedWidth * computedHeight;
+    
+    // Invariants can reference computed features
+    invariant areaMatchesFields: computedArea == width * height;
+}
+```
+
+**Type Checking:**
+
+The compiler performs comprehensive type checking for computed features:
+
+- **Type inference**: Recursively determines expression result types
+- **Type compatibility**: Validates expression type matches declared field type
+- **Type promotion**: Allows safe widening conversions (Int → Real), rejects narrowing (Real → Int)
+- **Member access types**: Tracks types through `object.field` chains
+
+```bbfm
+class Example {
+    feature intValue: Int;
+    feature realValue: Real;
+    
+    // ✅ Valid: Int → Real promotion (widening)
+    feature computed1: Real = intValue * 2;
+    
+    // ❌ Error: Real → Int would lose precision (narrowing)
+    // feature computed2: Int = realValue * 2.0;
+    
+    // ✅ Valid: Exact type match
+    feature computed3: Int = intValue + 5;
+}
+```
+
+The semantic analyzer ensures all field references exist, member access chains are valid, and type conversions are safe before code generation.
+
 ### Design Philosophy
 
 The BBFM modeling language is inspired by UML class diagrams but deliberately simplified. It focuses on data modeling without the complexity of visibility modifiers, abstract types, interfaces, or stereotypes. The goal is an expressive yet approachable language for domain modeling.
@@ -228,6 +311,10 @@ class Episode {
 class Transcript {
     feature text: String;
     feature language: String;
+    feature wordCount: Int;
+    
+    // Computed feature example
+    feature isLongTranscript: Bool = wordCount > 10000;
 }
 ```
 
@@ -381,6 +468,11 @@ The compiler implements a multi-phase compilation process:
   - Class type declarations with inheritance (`inherits` keyword)
   - Field declarations with `feature` keyword
   - Field modifiers (cardinality and constraints)
+  - **Computed features** with initializer expressions:
+    - Syntax: `feature name: Type = expression;`
+    - Member access expressions: `object.field`
+    - Type inference and validation
+    - Type promotion rules (Int → Real safe, Real → Int error)
   - **Expression system** with full operator support:
     - Arithmetic: `+`, `-`, `*`, `/`, `%`
     - Comparison: `<`, `>`, `<=`, `>=`, `==`, `!=`
@@ -388,6 +480,7 @@ The compiler implements a multi-phase compilation process:
     - Parentheses for grouping
     - Literals: integer, real, string, boolean
     - Field references and complex nested expressions
+    - Member access: `object.field` for nested properties
   - Invariant constraints using expression AST
   - All primitive types (String, Int, Real, Bool, Timestamp, Timespan, Date, Guid)
   - Optional modifier syntax and shorthand syntax
@@ -399,6 +492,12 @@ The compiler implements a multi-phase compilation process:
   - Field uniqueness validation including inherited fields
   - Invariant validation using expression AST traversal
   - Expression field reference validation
+  - **Computed features validation**:
+    - Field reference validation (including inherited fields)
+    - Member access validation (object.field chains)
+    - Type inference for expressions
+    - Type compatibility checking with promotion rules
+    - Cardinality validation (must be `[1]`)
   - Comprehensive error reporting
 
 **🚧 Planned:**
