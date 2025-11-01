@@ -1,6 +1,6 @@
 # AI Agent Operating Instructions
 
-**Last updated:** November 1, 2025 (23:00)
+**Last updated:** November 1, 2025 (23:15)
 
 ## Primary Instructions
 
@@ -182,6 +182,24 @@ The compiler enables users to define data types and relationships for podcast do
 - All abstract/interface classes should have a protected virtual destructor
 - Use the Rule of Zero when possible (let compiler generate special members)
 - When implementing special members, follow the Rule of Five
+- **Scope declaration order**: Always declare scopes in the order: `public`, `protected`, `private`
+  - This makes the public interface immediately visible when reading class definitions
+  - Example:
+
+    ```cpp
+    class MyClass {
+    public:
+        MyClass();
+        virtual ~MyClass();
+        void PublicMethod();
+
+    protected:
+        void ProtectedMethod();
+
+    private:
+        int privateData_;
+    };
+    ```
 
 **Comparison and Conditional Expressions:**
 
@@ -479,6 +497,14 @@ _build/model-compiler examples/podcast.bbfm
 ---
 
 ## Recent Updates & Decisions
+
+### November 1, 2025 (23:15)
+
+- **Class scope declaration order**: Added coding guideline for consistent scope ordering in classes
+- **Guideline**: Always declare scopes in the order: `public`, `protected`, `private`
+- **Rationale**: Makes the public interface immediately visible when reading class definitions, improving code readability and maintainability
+- **Documentation**: Added example showing proper scope ordering with clear separation between public, protected, and private sections
+- **Reasoning**: Consistent scope ordering improves code readability by presenting the most important information (public API) first. This follows the principle of "most important first" and makes it easier for developers to quickly understand a class's public interface without scrolling through implementation details. This convention is also widely adopted in modern C++ codebases and style guides.
 
 ### November 1, 2025 (23:00)
 

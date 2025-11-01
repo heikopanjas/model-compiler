@@ -75,9 +75,6 @@ public:
 /// \brief Type specification for primitive types
 class PrimitiveTypeSpec : public TypeSpec
 {
-private:
-    PrimitiveType type_;
-
 public:
     /// \brief Construct a primitive type specification
     /// \param type The primitive type
@@ -106,14 +103,14 @@ public:
     /// \param type The primitive type to convert
     /// \return String representation of the type
     static const char* TypeToString(const PrimitiveType type);
+
+private:
+    PrimitiveType type_;
 };
 
 /// \brief Type specification for user-defined types
 class UserDefinedTypeSpec : public TypeSpec
 {
-private:
-    std::string typeName_;
-
 public:
     /// \brief Construct a user-defined type specification
     /// \param name The name of the user-defined type
@@ -137,6 +134,9 @@ public:
     }
 
     void Dump(int indent = 0) const override;
+
+private:
+    std::string typeName_;
 };
 
 // ============================================================================
@@ -153,9 +153,6 @@ enum class ModifierType
 /// \brief Base class for field modifiers
 class Modifier : public ASTNode
 {
-private:
-    ModifierType type_;
-
 public:
     /// \brief Construct a modifier
     /// \param type The type of modifier
@@ -169,15 +166,14 @@ public:
     {
         return type_;
     }
+
+private:
+    ModifierType type_;
 };
 
 /// \brief Cardinality modifier for fields (e.g., [1], [0..1], [0..*])
 class CardinalityModifier : public Modifier
 {
-private:
-    int minCardinality_;
-    int maxCardinality_; // -1 for unbounded (*)
-
 public:
     /// \brief Construct a cardinality modifier
     /// \param min Minimum cardinality
@@ -227,6 +223,10 @@ public:
     }
 
     void Dump(int indent = 0) const override;
+
+private:
+    int minCardinality_;
+    int maxCardinality_; // -1 for unbounded (*)
 };
 
 /// \brief Unique constraint modifier for fields
@@ -246,10 +246,6 @@ public:
 /// \brief Represents an invariant constraint in a fabric type
 class Invariant : public ASTNode
 {
-private:
-    std::string name_;
-    std::string expression_;
-
 public:
     /// \brief Construct an invariant
     /// \param name The invariant's name
@@ -271,6 +267,10 @@ public:
     }
 
     void Dump(int indent = 0) const override;
+
+private:
+    std::string name_;
+    std::string expression_;
 };
 
 // ============================================================================
@@ -280,12 +280,6 @@ public:
 /// \brief Represents a field in a fabric type
 class Field : public ASTNode
 {
-private:
-    std::unique_ptr<TypeSpec>              type_;
-    std::string                            name_;
-    std::vector<std::unique_ptr<Modifier>> modifiers_;
-    bool                                   isStatic_;
-
 public:
     /// \brief Construct a field
     /// \param type The field's type specification
@@ -334,6 +328,12 @@ public:
     bool HasUniqueConstraint() const;
 
     void Dump(int indent = 0) const override;
+
+private:
+    std::unique_ptr<TypeSpec>              type_;
+    std::string                            name_;
+    std::vector<std::unique_ptr<Modifier>> modifiers_;
+    bool                                   isStatic_;
 };
 
 // ============================================================================
@@ -343,10 +343,6 @@ public:
 /// \brief Represents an enum declaration
 class EnumDeclaration : public ASTNode
 {
-private:
-    std::string              name_;
-    std::vector<std::string> values_;
-
 public:
     /// \brief Construct an enum declaration
     /// \param name The enum name
@@ -368,6 +364,10 @@ public:
     }
 
     void Dump(int indent = 0) const override;
+
+private:
+    std::string              name_;
+    std::vector<std::string> values_;
 };
 
 // ============================================================================
@@ -377,12 +377,6 @@ public:
 /// \brief Represents a fabric (user-defined type) declaration
 class FabricDeclaration : public ASTNode
 {
-private:
-    std::string                             name_;
-    std::string                             baseType_; // Empty string if no explicit base (inherits from implicit Fabric)
-    std::vector<std::unique_ptr<Field>>     fields_;
-    std::vector<std::unique_ptr<Invariant>> invariants_;
-
 public:
     /// \brief Construct a fabric declaration
     /// \param name The fabric type name
@@ -432,6 +426,12 @@ public:
     }
 
     void Dump(int indent = 0) const override;
+
+private:
+    std::string                             name_;
+    std::string                             baseType_; // Empty string if no explicit base (inherits from implicit Fabric)
+    std::vector<std::unique_ptr<Field>>     fields_;
+    std::vector<std::unique_ptr<Invariant>> invariants_;
 };
 
 // ============================================================================
@@ -449,11 +449,6 @@ public:
         FABRIC
     };
 
-private:
-    Kind                     kind_;
-    std::unique_ptr<ASTNode> declaration_;
-
-public:
     /// \brief Construct a declaration from an enum
     /// \param enumDecl Unique pointer to enum declaration
     Declaration(std::unique_ptr<EnumDeclaration> enumDecl) : kind_(Kind::ENUM), declaration_(std::move(enumDecl)) {}
@@ -484,6 +479,10 @@ public:
     }
 
     void Dump(int indent = 0) const override;
+
+private:
+    Kind                     kind_;
+    std::unique_ptr<ASTNode> declaration_;
 };
 
 // ============================================================================
@@ -493,9 +492,6 @@ public:
 /// \brief Represents a complete P3 program (root AST node)
 class AST : public ASTNode
 {
-private:
-    std::vector<std::unique_ptr<Declaration>> declarations_;
-
 public:
     /// \brief Construct an AST from declarations
     /// \param declarations Vector of top-level declarations
@@ -509,6 +505,9 @@ public:
     }
 
     void Dump(int indent = 0) const override;
+
+private:
+    std::vector<std::unique_ptr<Declaration>> declarations_;
 };
 } // namespace bbfm
 

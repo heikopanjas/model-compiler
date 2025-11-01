@@ -19,10 +19,6 @@ namespace bbfm {
 /// - Phase 2: Code generation (to be implemented)
 class Driver
 {
-private:
-    std::vector<std::string> sourceFiles_;
-    bool                     hasErrors_;
-
 public:
     /// \brief Construct a driver with source files
     /// \param sourceFiles Vector of source file paths to compile
@@ -48,6 +44,10 @@ public:
     /// \brief Check if compilation has encountered errors
     /// \return True if errors were encountered
     bool HasErrors() const;
+
+private:
+    std::vector<std::string> sourceFiles_;
+    bool                     hasErrors_;
 };
 } // namespace bbfm
 

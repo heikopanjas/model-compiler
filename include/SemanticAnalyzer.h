@@ -52,6 +52,26 @@ struct TypeSymbol
 /// - Invariant validation
 class SemanticAnalyzer
 {
+public:
+    /// \brief Construct a semantic analyzer
+    /// \param ast Pointer to the AST to analyze
+    explicit SemanticAnalyzer(const AST* ast);
+
+    /// \brief Destructor
+    virtual ~SemanticAnalyzer() = default;
+
+    /// \brief Perform semantic analysis on the AST
+    /// \return True if analysis succeeded, false if errors occurred
+    bool Analyze();
+
+    /// \brief Check if errors were encountered during analysis
+    /// \return True if errors occurred
+    bool HasErrors() const;
+
+    /// \brief Get the symbol table (for code generation phase)
+    /// \return Reference to the symbol table
+    const std::map<std::string, TypeSymbol>& GetSymbolTable() const;
+
 private:
     const AST*                        ast_;
     std::map<std::string, TypeSymbol> symbolTable_;
@@ -113,26 +133,6 @@ private:
     /// \brief Report a semantic error
     /// \param message The error message
     void ReportError(const std::string& message);
-
-public:
-    /// \brief Construct a semantic analyzer
-    /// \param ast Pointer to the AST to analyze
-    explicit SemanticAnalyzer(const AST* ast);
-
-    /// \brief Destructor
-    virtual ~SemanticAnalyzer() = default;
-
-    /// \brief Perform semantic analysis on the AST
-    /// \return True if analysis succeeded, false if errors occurred
-    bool Analyze();
-
-    /// \brief Check if errors were encountered during analysis
-    /// \return True if errors occurred
-    bool HasErrors() const;
-
-    /// \brief Get the symbol table (for code generation phase)
-    /// \return Reference to the symbol table
-    const std::map<std::string, TypeSymbol>& GetSymbolTable() const;
 };
 } // namespace bbfm
 
