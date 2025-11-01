@@ -22,7 +22,8 @@ class Driver
 public:
     /// \brief Construct a driver with source files
     /// \param sourceFiles Vector of source file paths to compile
-    explicit Driver(std::vector<std::string> sourceFiles);
+    /// \param classPrefix Prefix to add to generated class and enum names (optional)
+    explicit Driver(std::vector<std::string> sourceFiles, const std::string& classPrefix = "");
 
     /// \brief Destructor
     virtual ~Driver() = default;
@@ -45,8 +46,13 @@ public:
     /// \return True if errors were encountered
     bool HasErrors() const;
 
+    /// \brief Get the class prefix for code generation
+    /// \return The class prefix string
+    const std::string& GetClassPrefix() const;
+
 private:
     std::vector<std::string> sourceFiles_;
+    std::string              classPrefix_;
     bool                     hasErrors_;
 };
 } // namespace bbfm

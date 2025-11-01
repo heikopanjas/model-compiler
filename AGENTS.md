@@ -1,6 +1,6 @@
 # AI Agent Operating Instructions
 
-**Last updated:** November 1, 2025 (19:15)
+**Last updated:** November 1, 2025 (19:45)
 
 ## Primary Instructions
 
@@ -517,6 +517,43 @@ _build/model-compiler examples/podcast.fm
 ---
 
 ## Recent Updates & Decisions
+
+### November 1, 2025 (19:45)
+
+- **Class prefix option**: Added new `--class-prefix` command line option for code generation
+- **Features added**:
+  - Command line option `--class-prefix` to specify a prefix for generated class and enum names
+  - Default value is empty string (no prefix)
+  - Prefix stored in Driver class for use in Phase 2 (code generation)
+  - New `GetClassPrefix()` method in Driver class to retrieve the prefix
+  - Status message displayed when prefix is set
+- **Files modified**:
+  - `src/main.cpp` - added command line option, passing prefix to Driver, and status message
+  - `include/Driver.h` - added classPrefix parameter to constructor and GetClassPrefix() method
+  - `src/Driver.cpp` - updated constructor to accept and store classPrefix, implemented GetClassPrefix()
+- **Usage**: `model-compiler --class-prefix "BBFM" source.fm`
+- **Testing**: Verified option appears in help, compiles correctly with and without prefix
+- **Reasoning**: When generating code from BBFM models, users may need to add prefixes to class and enum names to avoid naming conflicts with existing code or to follow project naming conventions. For example, a BBFM model defining a `Podcast` class might generate `BBFMPodcast` in C++ to distinguish it from other Podcast classes in the project. This option prepares the infrastructure for Phase 2 (code generation) where the prefix will be applied to all generated type names. The prefix is stored in the Driver class where it can be accessed during code generation.
+
+### November 1, 2025 (19:30)
+
+- **Symbol table dump feature**: Added new `--dump-symtab` command line option
+- **Features added**:
+  - Command line option `--dump-symtab` to display symbol table after semantic analysis
+  - New `DumpSymbolTable()` method in SemanticAnalyzer class
+  - Comprehensive symbol table output showing:
+    - Total symbol count by category (primitives, enums, classes)
+    - All primitive types
+    - Enumerations with their values
+    - Classes with inheritance, features (fields), and invariants
+    - Field cardinality and constraint modifiers
+- **Files modified**:
+  - `src/main.cpp` - added command line option and call to DumpSymbolTable()
+  - `include/SemanticAnalyzer.h` - added DumpSymbolTable() method declaration
+  - `src/SemanticAnalyzer.cpp` - implemented DumpSymbolTable() method
+- **Output format**: Clean, hierarchical display with section headers and proper indentation
+- **Testing**: Verified with podcast.fm and comprehensive_test.fm examples
+- **Reasoning**: The symbol table is a critical compiler data structure that developers need to inspect during development and debugging. Providing a formatted dump option allows developers to verify that types are being correctly registered and analyzed. This complements the --dump-ast option by showing the semantic view of the program after Phase 1, rather than just the syntactic structure from Phase 0. The feature will be especially useful when implementing Phase 2 (code generation) to verify symbol table contents before generating code.
 
 ### November 1, 2025 (19:15)
 

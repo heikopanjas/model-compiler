@@ -379,4 +379,164 @@ const std::map<std::string, TypeSymbol>& SemanticAnalyzer::GetSymbolTable() cons
 {
     return symbolTable_;
 }
+
+void SemanticAnalyzer::DumpSymbolTable() const
+{
+    std::cout << "========================================\n";
+    std::cout << "Symbol Table\n";
+    std::cout << "========================================\n\n";
+
+    // Count types by kind
+    int primitiveCount = 0;
+    int enumCount      = 0;
+    int classCount     = 0;
+
+    for (const auto& entry : symbolTable_)
+    {
+        if (TypeSymbol::Kind::PRIMITIVE == entry.second.kind)
+        {
+            primitiveCount++;
+        }
+        else if (TypeSymbol::Kind::ENUM == entry.second.kind)
+        {
+            enumCount++;
+        }
+        else if (TypeSymbol::Kind::CLASS == entry.second.kind)
+        {
+            classCount++;
+        }
+    }
+
+    std::cout << "Total Symbols: " << symbolTable_.size() << "\n";
+    std::cout << "  Primitive Types: " << primitiveCount << "\n";
+    std::cout << "  Enumerations: " << enumCount << "\n";
+    std::cout << "  Classes: " << classCount << "\n";
+    std::cout << "\n";
+
+    // Dump primitive types
+    if (primitiveCount > 0)
+    {
+        std::cout << "Primitive Types:\n";
+        std::cout << "----------------\n";
+        for (const auto& entry : symbolTable_)
+        {
+            if (TypeSymbol::Kind::PRIMITIVE == entry.second.kind)
+            {
+                std::cout << "  " << entry.second.name << "\n";
+            }
+        }
+        std::cout << "\n";
+    }
+
+    // Dump enums
+    if (enumCount > 0)
+    {
+        std::cout << "Enumerations:\n";
+        std::cout << "-------------\n";
+        for (const auto& entry : symbolTable_)
+        {
+            if (TypeSymbol::Kind::ENUM == entry.second.kind)
+            {
+                std::cout << "  enum " << entry.second.name << " {\n";
+                const auto& values = entry.second.enumDecl->GetValues();
+                for (size_t i = 0; i < values.size(); ++i)
+                {
+                    std::cout << "    " << values[i];
+                    if (i < values.size() - 1)
+                    {
+                        std::cout << ",";
+                    }
+                    std::cout << "\n";
+                }
+                std::cout << "  }\n\n";
+            }
+        }
+    }
+
+    // Dump classes
+    if (classCount > 0)
+    {
+        std::cout << "Classes:\n";
+        std::cout << "--------\n";
+        for (const auto& entry : symbolTable_)
+        {
+            if (TypeSymbol::Kind::CLASS == entry.second.kind)
+            {
+                std::cout << "  class " << entry.second.name;
+
+                // Show inheritance
+                const std::string& baseType = entry.second.fabricDecl->GetBaseType();
+                if (false == baseType.empty())
+                {
+                    std::cout << " inherits " << baseType;
+                }
+                std::cout << " {\n";
+
+                // Show fields
+                const auto& fields = entry.second.fabricDecl->GetFields();
+                if (false == fields.empty())
+                {
+                    std::cout << "    Features:\n";
+                    for (const auto& field : fields)
+                    {
+                        std::cout << "      " << field->GetName() << ": ";
+
+                        // Get type name based on TypeSpec type
+                        const TypeSpec* typeSpec = field->GetType();
+                        if (typeSpec->IsPrimitive())
+                        {
+                            const PrimitiveTypeSpec* primType = dynamic_cast<const PrimitiveTypeSpec*>(typeSpec);
+                            std::cout << PrimitiveTypeSpec::TypeToString(primType->GetType());
+                        }
+                        else
+                        {
+                            const UserDefinedTypeSpec* userType = dynamic_cast<const UserDefinedTypeSpec*>(typeSpec);
+                            std::cout << userType->GetTypeName();
+                        }
+
+                        // Show modifiers
+                        const auto& modifiers = field->GetModifiers();
+                        if (false == modifiers.empty())
+                        {
+                            std::cout << " [";
+                            for (size_t i = 0; i < modifiers.size(); ++i)
+                            {
+                                if (const CardinalityModifier* cardMod = dynamic_cast<const CardinalityModifier*>(modifiers[i].get()))
+                                {
+                                    std::cout << cardMod->GetMin() << ".." << cardMod->GetMax();
+                                }
+                                else if (dynamic_cast<const UniqueModifier*>(modifiers[i].get()))
+                                {
+                                    std::cout << "unique";
+                                }
+
+                                if (i < modifiers.size() - 1)
+                                {
+                                    std::cout << ", ";
+                                }
+                            }
+                            std::cout << "]";
+                        }
+                        std::cout << "\n";
+                    }
+                }
+
+                // Show invariants
+                const auto& invariants = entry.second.fabricDecl->GetInvariants();
+                if (false == invariants.empty())
+                {
+                    std::cout << "    Invariants:\n";
+                    for (const auto& invariant : invariants)
+                    {
+                        std::cout << "      " << invariant->GetName() << ": " << invariant->GetExpression() << "\n";
+                    }
+                }
+
+                std::cout << "  }\n\n";
+            }
+        }
+    }
+
+    std::cout << "========================================\n";
+}
 } // namespace bbfm

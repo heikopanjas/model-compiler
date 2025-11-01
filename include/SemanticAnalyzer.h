@@ -72,6 +72,9 @@ public:
     /// \return Reference to the symbol table
     const std::map<std::string, TypeSymbol>& GetSymbolTable() const;
 
+    /// \brief Dump the symbol table to stdout
+    void DumpSymbolTable() const;
+
 private:
     const AST*                        ast_;
     std::map<std::string, TypeSymbol> symbolTable_;

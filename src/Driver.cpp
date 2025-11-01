@@ -31,7 +31,10 @@ namespace bbfm {
 // Driver Implementation
 // ============================================================================
 
-Driver::Driver(std::vector<std::string> sourceFiles) : sourceFiles_(std::move(sourceFiles)), hasErrors_(false) {}
+Driver::Driver(std::vector<std::string> sourceFiles, const std::string& classPrefix) :
+    sourceFiles_(std::move(sourceFiles)), classPrefix_(classPrefix), hasErrors_(false)
+{
+}
 
 std::unique_ptr<AST> Driver::Phase0()
 {
@@ -78,6 +81,8 @@ std::unique_ptr<AST> Driver::Phase0()
         return nullptr;
     }
 
+    Console::ReportStatus("Phase 0 (Lexical Analysis) started...");
+
     // Parse the file
     int result = yyparse();
 
@@ -102,7 +107,7 @@ std::unique_ptr<AST> Driver::Phase0()
         return nullptr;
     }
 
-    Console::ReportStatus("Phase 0 (Parsing) completed successfully!");
+    Console::ReportStatus("Phase 0 (Lexical Analysis) completed successfully!");
     return std::move(g_ast);
 }
 
@@ -133,5 +138,10 @@ std::unique_ptr<SemanticAnalyzer> Driver::Phase1(const AST* ast)
 bool Driver::HasErrors() const
 {
     return hasErrors_;
+}
+
+const std::string& Driver::GetClassPrefix() const
+{
+    return classPrefix_;
 }
 } // namespace bbfm
