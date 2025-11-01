@@ -43,12 +43,13 @@ protected:
 // Type Specification
 // ============================================================================
 
-/// \brief Enumeration of primitive types in P3 language
+/// \brief Enumeration of primitive types in BBFM language
 enum class PrimitiveType
 {
     STRING,
     INT,
     REAL,
+    BOOL,
     TIMESTAMP,
     TIMESPAN,
     DATE,

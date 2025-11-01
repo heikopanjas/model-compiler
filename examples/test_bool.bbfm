@@ -1,0 +1,16 @@
+// Test file for Bool type
+
+fabric UserPreferences {
+    Guid id;
+    String userId;
+    Bool emailNotifications;      // mandatory boolean
+    Bool pushNotifications;
+    Bool darkMode?;              // optional boolean
+    Bool isActive[1];            // explicit mandatory
+}
+
+fabric FeatureFlags {
+    Bool enableBetaFeatures;
+    Bool allowGuestAccess;
+    Bool maintenanceMode;
+}

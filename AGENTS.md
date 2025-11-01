@@ -316,13 +316,14 @@ model-compiler/
   - `comment` (String) - user comment/notes
 - Inheritance: All user types inherit from Fabric; inherited fields are not duplicated in generated code
 - User-defined inheritance: Types can inherit from other user types using `: BaseType` syntax
-- Primitive types (String, Int, Real, Timestamp, Timespan, Date, Guid)
+- Primitive types (String, Int, Real, Bool, Timestamp, Timespan, Date, Guid)
   - `Guid` type for globally unique identifiers (maps to UUID/string in implementation)
   - Used for both instance identifiers (e.g., `Podcast.id`) and type identifiers (e.g., Fabric's static `typeId`)
   - `Timestamp` type for points in time (maps to double/seconds since epoch)
   - `Timespan` type for durations (maps to double/seconds)
   - `Int` for integers
   - `Real` for floating-point numbers
+  - `Bool` for boolean values (true/false)
   - `String` for text
 - Enums
 - Dynamic arrays
@@ -432,6 +433,7 @@ fabric Transcript {
 | `String` | `std::string` | `TEXT` |
 | `Int` | `int64_t` | `INTEGER` |
 | `Real` | `double` | `REAL` |
+| `Bool` | `bool` | `INTEGER` |
 | `Timestamp` | `double` | `REAL` |
 | `Timespan` | `double` | `REAL` |
 | `Guid` | `std::string` | `TEXT` |

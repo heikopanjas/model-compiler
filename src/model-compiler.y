@@ -52,7 +52,7 @@ std::unique_ptr<bbfm::AST> g_ast;
 
 /* Token declarations */
 %token FABRIC ENUM STATIC UNIQUE
-%token STRING_TYPE INT_TYPE REAL_TYPE TIMESTAMP_TYPE TIMESPAN_TYPE DATE_TYPE GUID_TYPE
+%token STRING_TYPE INT_TYPE REAL_TYPE BOOL_TYPE TIMESTAMP_TYPE TIMESPAN_TYPE DATE_TYPE GUID_TYPE
 %token LBRACE RBRACE LBRACKET RBRACKET LPAREN RPAREN
 %token SEMICOLON COLON COMMA DOT DOTDOT ASTERISK QUESTION
 %token <string> IDENTIFIER
@@ -225,6 +225,7 @@ type_spec:
     STRING_TYPE     { $$ = new bbfm::PrimitiveTypeSpec(bbfm::PrimitiveType::STRING); }
     | INT_TYPE      { $$ = new bbfm::PrimitiveTypeSpec(bbfm::PrimitiveType::INT); }
     | REAL_TYPE     { $$ = new bbfm::PrimitiveTypeSpec(bbfm::PrimitiveType::REAL); }
+    | BOOL_TYPE     { $$ = new bbfm::PrimitiveTypeSpec(bbfm::PrimitiveType::BOOL); }
     | TIMESTAMP_TYPE { $$ = new bbfm::PrimitiveTypeSpec(bbfm::PrimitiveType::TIMESTAMP); }
     | TIMESPAN_TYPE { $$ = new bbfm::PrimitiveTypeSpec(bbfm::PrimitiveType::TIMESPAN); }
     | DATE_TYPE     { $$ = new bbfm::PrimitiveTypeSpec(bbfm::PrimitiveType::DATE); }

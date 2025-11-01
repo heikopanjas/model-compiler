@@ -30,6 +30,8 @@ const char* PrimitiveTypeSpec::TypeToString(const PrimitiveType type)
             return "Int";
         case PrimitiveType::REAL:
             return "Real";
+        case PrimitiveType::BOOL:
+            return "Bool";
         case PrimitiveType::TIMESTAMP:
             return "Timestamp";
         case PrimitiveType::TIMESPAN:

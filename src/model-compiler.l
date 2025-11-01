@@ -43,6 +43,7 @@ WHITESPACE  [ \t\r]+
     if (strcasecmp(yytext, "String") == 0) return STRING_TYPE;
     if (strcasecmp(yytext, "Int") == 0) return INT_TYPE;
     if (strcasecmp(yytext, "Real") == 0) return REAL_TYPE;
+    if (strcasecmp(yytext, "Bool") == 0) return BOOL_TYPE;
     if (strcasecmp(yytext, "Timestamp") == 0) return TIMESTAMP_TYPE;
     if (strcasecmp(yytext, "Timespan") == 0) return TIMESPAN_TYPE;
     if (strcasecmp(yytext, "Date") == 0) return DATE_TYPE;
