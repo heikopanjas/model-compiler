@@ -51,7 +51,7 @@ std::vector<std::string> g_source_lines;
     void *ast;
     void *declaration;
     void *enumDecl;
-    void *fabricDecl;
+    void *classDecl;
     void *field;
     void *invariant;
     void *typeSpec;
@@ -79,7 +79,7 @@ std::vector<std::string> g_source_lines;
 %type <declarationList> declaration_list
 %type <declaration> declaration
 %type <enumDecl> enum_declaration
-%type <fabricDecl> fabric_declaration
+%type <classDecl> class_declaration
 %type <stringList> enum_value_list
 %type <fieldList> field_list
 %type <invariantList> invariant_list
@@ -129,8 +129,8 @@ declaration_list:
 declaration:
     enum_declaration
     { $$ = new bbfm::Declaration(std::unique_ptr<bbfm::EnumDeclaration>(static_cast<bbfm::EnumDeclaration*>($1))); }
-    | fabric_declaration
-    { $$ = new bbfm::Declaration(std::unique_ptr<bbfm::FabricDeclaration>(static_cast<bbfm::FabricDeclaration*>($1))); }
+    | class_declaration
+    { $$ = new bbfm::Declaration(std::unique_ptr<bbfm::ClassDeclaration>(static_cast<bbfm::ClassDeclaration*>($1))); }
     ;
 
 enum_declaration:
@@ -160,12 +160,12 @@ enum_value_list:
     }
     ;
 
-fabric_declaration:
+class_declaration:
     CLASS IDENTIFIER LBRACE field_list invariant_list RBRACE
     {
         auto* fields = static_cast<std::vector<std::unique_ptr<bbfm::Field>>*>($4);
         auto* invariants = static_cast<std::vector<std::unique_ptr<bbfm::Invariant>>*>($5);
-        $$ = new bbfm::FabricDeclaration($2, "", std::move(*fields), std::move(*invariants));
+        $$ = new bbfm::ClassDeclaration($2, "", std::move(*fields), std::move(*invariants));
         free($2);
         delete fields;
         delete invariants;
@@ -174,7 +174,7 @@ fabric_declaration:
     {
         auto* fields = static_cast<std::vector<std::unique_ptr<bbfm::Field>>*>($6);
         auto* invariants = static_cast<std::vector<std::unique_ptr<bbfm::Invariant>>*>($7);
-        $$ = new bbfm::FabricDeclaration($2, $4, std::move(*fields), std::move(*invariants));
+        $$ = new bbfm::ClassDeclaration($2, $4, std::move(*fields), std::move(*invariants));
         free($2);
         free($4);
         delete fields;

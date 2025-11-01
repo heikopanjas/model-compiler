@@ -13,7 +13,7 @@ int main(int argc, char* argv[])
         cxxopts::Options options("model-compiler", "BBFM Model Compiler - Compiles .fm source files to Swift");
 
         options.add_options()("h,help", "Print usage information")("v,version", "Print version information")(
-            "dump-ast", "Dump the Abstract Syntax Tree after lexical analysis")("dump-symtab", "Dump the Symbol Table after semantic analysis")(
+            "dump-syntax-tree", "Dump the Abstract Syntax Tree after lexical analysis")("dump-symbol-table", "Dump the Symbol Table after semantic analysis")(
             "class-prefix", "Prefix to add to generated class and enum names",
             cxxopts::value<std::string>()->default_value(""))("input", "Input source file(s)", cxxopts::value<std::vector<std::string>>());
 
@@ -68,7 +68,7 @@ int main(int argc, char* argv[])
         }
 
         // Dump the AST if requested
-        if (result.count("dump-ast"))
+        if (result.count("dump-syntax-tree"))
         {
             std::cout << "\n";
             ast->Dump();
@@ -82,7 +82,7 @@ int main(int argc, char* argv[])
         }
 
         // Dump the symbol table if requested
-        if (result.count("dump-symtab"))
+        if (result.count("dump-symbol-table"))
         {
             std::cout << "\n";
             analyzer->DumpSymbolTable();

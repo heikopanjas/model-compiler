@@ -52,6 +52,7 @@ class Episode {
 class Transcript {
     feature text: String;
     feature language: String;
+    feature regions: Region [0..*];          // One-to-many relationship
 }
 
 class Tag {

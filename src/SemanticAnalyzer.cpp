@@ -60,10 +60,10 @@ bool SemanticAnalyzer::BuildSymbolTable()
             // Add to symbol table
             symbolTable_.insert({name, TypeSymbol(enumDecl)});
         }
-        else if (Declaration::Kind::FABRIC == decl->GetKind())
+        else if (Declaration::Kind::CLASS == decl->GetKind())
         {
-            const FabricDeclaration* fabricDecl = decl->AsFabric();
-            const std::string&       name       = fabricDecl->GetName();
+            const ClassDeclaration* classDecl = decl->AsClass();
+            const std::string&     name     = classDecl->GetName();
 
             // Check for duplicate type names
             if (TypeExists(name))
@@ -74,7 +74,7 @@ bool SemanticAnalyzer::BuildSymbolTable()
             }
 
             // Add to symbol table
-            symbolTable_.insert({name, TypeSymbol(fabricDecl)});
+            symbolTable_.insert({name, TypeSymbol(classDecl)});
         }
     }
 
@@ -88,11 +88,11 @@ bool SemanticAnalyzer::ValidateTypeReferences()
     // First pass: Validate type references
     for (const auto& decl : ast_->GetDeclarations())
     {
-        if (Declaration::Kind::FABRIC == decl->GetKind())
+        if (Declaration::Kind::CLASS == decl->GetKind())
         {
-            const FabricDeclaration* fabricDecl = decl->AsFabric();
+            const ClassDeclaration* classDecl = decl->AsClass();
 
-            if (!ValidateFabricDeclaration(fabricDecl))
+            if (!ValidateClassDeclaration(classDecl))
             {
                 success = false;
             }
@@ -103,17 +103,17 @@ bool SemanticAnalyzer::ValidateTypeReferences()
     // This must be done after all types are validated to handle forward references
     for (const auto& decl : ast_->GetDeclarations())
     {
-        if (Declaration::Kind::FABRIC == decl->GetKind())
+        if (Declaration::Kind::CLASS == decl->GetKind())
         {
-            const FabricDeclaration* fabricDecl = decl->AsFabric();
+            const ClassDeclaration* classDecl = decl->AsClass();
 
-            if (fabricDecl->HasExplicitBase())
+            if (classDecl->HasExplicitBase())
             {
                 std::set<std::string> visited;
-                visited.insert(fabricDecl->GetName());
-                if (HasInheritanceCycle(fabricDecl->GetBaseType(), visited))
+                visited.insert(classDecl->GetName());
+                if (HasInheritanceCycle(classDecl->GetBaseType(), visited))
                 {
-                    ReportError("Circular inheritance detected in class '" + fabricDecl->GetName() + "'");
+                    ReportError("Circular inheritance detected in class '" + classDecl->GetName() + "'");
                     success = false;
                 }
             }
@@ -123,18 +123,18 @@ bool SemanticAnalyzer::ValidateTypeReferences()
     return success;
 }
 
-bool SemanticAnalyzer::ValidateFabricDeclaration(const FabricDeclaration* fabric)
+bool SemanticAnalyzer::ValidateClassDeclaration(const ClassDeclaration* classDecl)
 {
     bool success = true;
 
     // Validate base type if specified
-    if (fabric->HasExplicitBase())
+    if (classDecl->HasExplicitBase())
     {
-        const std::string& baseType = fabric->GetBaseType();
+        const std::string& baseType = classDecl->GetBaseType();
 
         if (!TypeExists(baseType))
         {
-            ReportError("Class '" + fabric->GetName() + "' inherits from undefined type '" + baseType + "'");
+            ReportError("Class '" + classDecl->GetName() + "' inherits from undefined type '" + baseType + "'");
             success = false;
         }
         else
@@ -142,7 +142,7 @@ bool SemanticAnalyzer::ValidateFabricDeclaration(const FabricDeclaration* fabric
             const TypeSymbol* baseSym = LookupType(baseType);
             if (TypeSymbol::Kind::CLASS != baseSym->kind)
             {
-                ReportError("Class '" + fabric->GetName() + "' cannot inherit from non-class type '" + baseType + "'");
+                ReportError("Class '" + classDecl->GetName() + "' cannot inherit from non-class type '" + baseType + "'");
                 success = false;
             }
             // Note: Inheritance cycle detection happens in a second pass
@@ -151,7 +151,7 @@ bool SemanticAnalyzer::ValidateFabricDeclaration(const FabricDeclaration* fabric
     }
 
     // Validate field types
-    for (const auto& field : fabric->GetFields())
+    for (const auto& field : classDecl->GetFields())
     {
         const TypeSpec* typeSpec = field->GetType();
 
@@ -162,20 +162,20 @@ bool SemanticAnalyzer::ValidateFabricDeclaration(const FabricDeclaration* fabric
 
             if (!TypeExists(typeName))
             {
-                ReportError("Field '" + field->GetName() + "' in class '" + fabric->GetName() + "' has undefined type '" + typeName + "'");
+                ReportError("Field '" + field->GetName() + "' in class '" + classDecl->GetName() + "' has undefined type '" + typeName + "'");
                 success = false;
             }
         }
     }
 
     // Validate field uniqueness
-    if (!ValidateFieldUniqueness(fabric))
+    if (!ValidateFieldUniqueness(classDecl))
     {
         success = false;
     }
 
     // Validate invariants
-    if (!ValidateInvariants(fabric))
+    if (!ValidateInvariants(classDecl))
     {
         success = false;
     }
@@ -197,14 +197,14 @@ bool SemanticAnalyzer::HasInheritanceCycle(const std::string& className, std::se
         return false;
     }
 
-    if (nullptr == typeSym->fabricDecl)
+    if (nullptr == typeSym->classDecl)
     {
         // This shouldn't happen if symbol table is built correctly
         return false;
     }
 
-    const FabricDeclaration* fabric = typeSym->fabricDecl;
-    if (!fabric->HasExplicitBase())
+    const ClassDeclaration* classDecl = typeSym->classDecl;
+    if (!classDecl->HasExplicitBase())
     {
         return false;
     }
@@ -213,52 +213,92 @@ bool SemanticAnalyzer::HasInheritanceCycle(const std::string& className, std::se
     visited.insert(className);
 
     // Recursively check base type
-    return HasInheritanceCycle(fabric->GetBaseType(), visited);
+    return HasInheritanceCycle(classDecl->GetBaseType(), visited);
 }
 
-void SemanticAnalyzer::GetAllFields(const FabricDeclaration* fabric, std::vector<const Field*>& allFields)
+void SemanticAnalyzer::GetAllFields(const ClassDeclaration* classDecl, std::vector<const Field*>& allFields) const
 {
     // Use a set to track visited classes and prevent infinite recursion on cycles
     std::set<std::string> visited;
-    GetAllFieldsHelper(fabric, allFields, visited);
+    GetAllFieldsHelper(classDecl, allFields, visited);
 }
 
-void SemanticAnalyzer::GetAllFieldsHelper(const FabricDeclaration* fabric, std::vector<const Field*>& allFields, std::set<std::string>& visited)
+void SemanticAnalyzer::GetAllFieldsHelper(const ClassDeclaration* classDecl, std::vector<const Field*>& allFields, std::set<std::string>& visited) const
 {
-    if (nullptr == fabric)
+    if (nullptr == classDecl)
     {
         return;
     }
 
     // If we've already visited this class, stop (cycle detected)
-    if (0 != visited.count(fabric->GetName()))
+    if (0 != visited.count(classDecl->GetName()))
     {
         return;
     }
 
-    visited.insert(fabric->GetName());
+    visited.insert(classDecl->GetName());
 
     // First, get fields from base class if any
-    if (fabric->HasExplicitBase())
+    if (classDecl->HasExplicitBase())
     {
-        const TypeSymbol* baseSym = LookupType(fabric->GetBaseType());
+        const TypeSymbol* baseSym = LookupType(classDecl->GetBaseType());
         if (nullptr != baseSym && TypeSymbol::Kind::CLASS == baseSym->kind)
         {
-            GetAllFieldsHelper(baseSym->fabricDecl, allFields, visited);
+            GetAllFieldsHelper(baseSym->classDecl, allFields, visited);
         }
     }
 
     // Then add this class's fields
-    for (const auto& field : fabric->GetFields())
+    for (const auto& field : classDecl->GetFields())
     {
         allFields.push_back(field.get());
     }
 }
 
-bool SemanticAnalyzer::ValidateFieldUniqueness(const FabricDeclaration* fabric)
+void SemanticAnalyzer::GetAllInvariants(const ClassDeclaration* classDecl, std::vector<const Invariant*>& allInvariants) const
+{
+    // Use a set to track visited classes and prevent infinite recursion on cycles
+    std::set<std::string> visited;
+    GetAllInvariantsHelper(classDecl, allInvariants, visited);
+}
+
+void SemanticAnalyzer::GetAllInvariantsHelper(
+    const ClassDeclaration* classDecl, std::vector<const Invariant*>& allInvariants, std::set<std::string>& visited) const
+{
+    if (nullptr == classDecl)
+    {
+        return;
+    }
+
+    // If we've already visited this class, stop (cycle detected)
+    if (0 != visited.count(classDecl->GetName()))
+    {
+        return;
+    }
+
+    visited.insert(classDecl->GetName());
+
+    // First, get invariants from base class if any
+    if (classDecl->HasExplicitBase())
+    {
+        const TypeSymbol* baseSym = LookupType(classDecl->GetBaseType());
+        if (nullptr != baseSym && TypeSymbol::Kind::CLASS == baseSym->kind)
+        {
+            GetAllInvariantsHelper(baseSym->classDecl, allInvariants, visited);
+        }
+    }
+
+    // Then add this class's invariants
+    for (const auto& invariant : classDecl->GetInvariants())
+    {
+        allInvariants.push_back(invariant.get());
+    }
+}
+
+bool SemanticAnalyzer::ValidateFieldUniqueness(const ClassDeclaration* classDecl)
 {
     std::vector<const Field*> allFields;
-    GetAllFields(fabric, allFields);
+    GetAllFields(classDecl, allFields);
 
     std::set<std::string> fieldNames;
     bool                  success = true;
@@ -268,7 +308,7 @@ bool SemanticAnalyzer::ValidateFieldUniqueness(const FabricDeclaration* fabric)
         const std::string& name = field->GetName();
         if (0 != fieldNames.count(name))
         {
-            ReportError("Duplicate field '" + name + "' in class '" + fabric->GetName() + "' (possibly inherited)");
+            ReportError("Duplicate field '" + name + "' in class '" + classDecl->GetName() + "' (possibly inherited)");
             success = false;
         }
         fieldNames.insert(name);
@@ -277,13 +317,13 @@ bool SemanticAnalyzer::ValidateFieldUniqueness(const FabricDeclaration* fabric)
     return success;
 }
 
-bool SemanticAnalyzer::ValidateInvariants(const FabricDeclaration* fabric)
+bool SemanticAnalyzer::ValidateInvariants(const ClassDeclaration* classDecl)
 {
     bool success = true;
 
     // Get all fields (including inherited) for validation
     std::vector<const Field*> allFields;
-    GetAllFields(fabric, allFields);
+    GetAllFields(classDecl, allFields);
 
     std::set<std::string> fieldNames;
     for (const Field* field : allFields)
@@ -292,7 +332,7 @@ bool SemanticAnalyzer::ValidateInvariants(const FabricDeclaration* fabric)
     }
 
     // Validate each invariant
-    for (const auto& invariant : fabric->GetInvariants())
+    for (const auto& invariant : classDecl->GetInvariants())
     {
         const std::string& expr = invariant->GetExpression();
 
@@ -323,7 +363,7 @@ bool SemanticAnalyzer::ValidateInvariants(const FabricDeclaration* fabric)
 
         if (std::string::npos == opPos)
         {
-            ReportError("Invalid invariant expression '" + expr + "' in class '" + fabric->GetName() + "'");
+            ReportError("Invalid invariant expression '" + expr + "' in class '" + classDecl->GetName() + "'");
             success = false;
             continue;
         }
@@ -341,7 +381,7 @@ bool SemanticAnalyzer::ValidateInvariants(const FabricDeclaration* fabric)
         // Check if field exists
         if (0 == fieldNames.count(fieldName))
         {
-            ReportError("Invariant '" + invariant->GetName() + "' in class '" + fabric->GetName() + "' references undefined field '" + fieldName + "'");
+            ReportError("Invariant '" + invariant->GetName() + "' in class '" + classDecl->GetName() + "' references undefined field '" + fieldName + "'");
             success = false;
         }
     }
@@ -465,19 +505,20 @@ void SemanticAnalyzer::DumpSymbolTable() const
                 std::cout << "  class " << entry.second.name;
 
                 // Show inheritance
-                const std::string& baseType = entry.second.fabricDecl->GetBaseType();
+                const std::string& baseType = entry.second.classDecl->GetBaseType();
                 if (false == baseType.empty())
                 {
                     std::cout << " inherits " << baseType;
                 }
                 std::cout << " {\n";
 
-                // Show fields
-                const auto& fields = entry.second.fabricDecl->GetFields();
-                if (false == fields.empty())
+                // Show fields (including inherited)
+                std::vector<const Field*> allFields;
+                GetAllFields(entry.second.classDecl, allFields);
+                if (false == allFields.empty())
                 {
-                    std::cout << "    Features:\n";
-                    for (const auto& field : fields)
+                std::cout << "    Features:\n";
+                    for (const auto* field : allFields)
                     {
                         std::cout << "      " << field->GetName() << ": ";
 
@@ -521,12 +562,13 @@ void SemanticAnalyzer::DumpSymbolTable() const
                     }
                 }
 
-                // Show invariants
-                const auto& invariants = entry.second.fabricDecl->GetInvariants();
-                if (false == invariants.empty())
+                // Show invariants (including inherited)
+                std::vector<const Invariant*> allInvariants;
+                GetAllInvariants(entry.second.classDecl, allInvariants);
+                if (false == allInvariants.empty())
                 {
                     std::cout << "    Invariants:\n";
-                    for (const auto& invariant : invariants)
+                    for (const auto* invariant : allInvariants)
                     {
                         std::cout << "      " << invariant->GetName() << ": " << invariant->GetExpression() << "\n";
                     }

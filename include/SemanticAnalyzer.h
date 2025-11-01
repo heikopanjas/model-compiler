@@ -23,21 +23,21 @@ struct TypeSymbol
 
     Kind                     kind;
     std::string              name;
-    const EnumDeclaration*   enumDecl;   // Non-null if kind == ENUM
-    const FabricDeclaration* fabricDecl; // Non-null if kind == CLASS
+    const EnumDeclaration*   enumDecl;  // Non-null if kind == ENUM
+    const ClassDeclaration*  classDecl; // Non-null if kind == CLASS
 
     /// \brief Construct a primitive type symbol
     /// \param typeName The primitive type name
-    TypeSymbol(const std::string& typeName) : kind(Kind::PRIMITIVE), name(typeName), enumDecl(nullptr), fabricDecl(nullptr) {}
+    TypeSymbol(const std::string& typeName) : kind(Kind::PRIMITIVE), name(typeName), enumDecl(nullptr), classDecl(nullptr) {}
 
     /// \brief Construct an enum type symbol
     /// \param enumDeclaration Pointer to the enum declaration
-    TypeSymbol(const EnumDeclaration* enumDeclaration) : kind(Kind::ENUM), name(enumDeclaration->GetName()), enumDecl(enumDeclaration), fabricDecl(nullptr) {}
+    TypeSymbol(const EnumDeclaration* enumDeclaration) : kind(Kind::ENUM), name(enumDeclaration->GetName()), enumDecl(enumDeclaration), classDecl(nullptr) {}
 
     /// \brief Construct a class type symbol
-    /// \param classDeclaration Pointer to the fabric declaration
-    TypeSymbol(const FabricDeclaration* classDeclaration) :
-        kind(Kind::CLASS), name(classDeclaration->GetName()), enumDecl(nullptr), fabricDecl(classDeclaration)
+    /// \param classDeclaration Pointer to the class declaration
+    TypeSymbol(const ClassDeclaration* classDeclaration) :
+        kind(Kind::CLASS), name(classDeclaration->GetName()), enumDecl(nullptr), classDecl(classDeclaration)
     {
     }
 };
@@ -91,10 +91,10 @@ private:
     /// \return True if successful, false if errors occurred
     bool ValidateTypeReferences();
 
-    /// \brief Validate a single fabric declaration
-    /// \param fabric The fabric declaration to validate
+    /// \brief Validate a single class declaration
+    /// \param classDecl The class declaration to validate
     /// \return True if valid, false if errors found
-    bool ValidateFabricDeclaration(const FabricDeclaration* fabric);
+    bool ValidateClassDeclaration(const ClassDeclaration* classDecl);
 
     /// \brief Check for cycles in inheritance chain
     /// \param className Name of the class to check
@@ -103,25 +103,36 @@ private:
     bool HasInheritanceCycle(const std::string& className, std::set<std::string>& visited);
 
     /// \brief Get all fields for a class including inherited fields
-    /// \param fabric The fabric declaration
+    /// \param classDecl The class declaration
     /// \param allFields Output vector to store all fields
-    void GetAllFields(const FabricDeclaration* fabric, std::vector<const Field*>& allFields);
+    void GetAllFields(const ClassDeclaration* classDecl, std::vector<const Field*>& allFields) const;
 
     /// \brief Helper function to get all fields with cycle detection
-    /// \param fabric The fabric declaration
+    /// \param classDecl The class declaration
     /// \param allFields Output vector to store all fields
     /// \param visited Set of visited class names for cycle detection
-    void GetAllFieldsHelper(const FabricDeclaration* fabric, std::vector<const Field*>& allFields, std::set<std::string>& visited);
+    void GetAllFieldsHelper(const ClassDeclaration* classDecl, std::vector<const Field*>& allFields, std::set<std::string>& visited) const;
+
+    /// \brief Get all invariants for a class including inherited invariants
+    /// \param classDecl The class declaration
+    /// \param allInvariants Output vector to store all invariants
+    void GetAllInvariants(const ClassDeclaration* classDecl, std::vector<const Invariant*>& allInvariants) const;
+
+    /// \brief Helper function to get all invariants with cycle detection
+    /// \param classDecl The class declaration
+    /// \param allInvariants Output vector to store all invariants
+    /// \param visited Set of visited class names for cycle detection
+    void GetAllInvariantsHelper(const ClassDeclaration* classDecl, std::vector<const Invariant*>& allInvariants, std::set<std::string>& visited) const;
 
     /// \brief Validate field uniqueness within a class
-    /// \param fabric The fabric declaration to validate
+    /// \param classDecl The class declaration to validate
     /// \return True if all fields are unique, false otherwise
-    bool ValidateFieldUniqueness(const FabricDeclaration* fabric);
+    bool ValidateFieldUniqueness(const ClassDeclaration* classDecl);
 
-    /// \brief Validate invariants for a fabric declaration
-    /// \param fabric The fabric declaration to validate
+    /// \brief Validate invariants for a class declaration
+    /// \param classDecl The class declaration to validate
     /// \return True if all invariants are valid, false otherwise
-    bool ValidateInvariants(const FabricDeclaration* fabric);
+    bool ValidateInvariants(const ClassDeclaration* classDecl);
 
     /// \brief Check if a type exists in symbol table
     /// \param typeName The type name to check

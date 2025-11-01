@@ -1,6 +1,6 @@
 # AI Agent Operating Instructions
 
-**Last updated:** November 1, 2025 (20:15)
+**Last updated:** November 1, 2025 (20:45)
 
 ## Primary Instructions
 
@@ -514,6 +514,34 @@ _build/model-compiler examples/podcast.fm
 ---
 
 ## Recent Updates & Decisions
+
+### November 1, 2025 (20:45)
+
+- **FabricDeclaration to ClassDeclaration refactoring**: Renamed FabricDeclaration class to ClassDeclaration throughout the entire codebase
+- **Scope**: Systematic rename across all files (AST.h/cpp, SemanticAnalyzer.h/cpp, model-compiler.y)
+- **Changes made**:
+  - AST.h: Renamed class from FabricDeclaration to ClassDeclaration, updated forward declaration, renamed Declaration::Kind::FABRIC to CLASS, renamed AsFabric() to AsClass()
+  - AST.cpp: Updated all method implementations and comments
+  - SemanticAnalyzer.h: Updated TypeSymbol.fabricDecl to TypeSymbol.classDecl, renamed ValidateFabricDeclaration() to ValidateClassDeclaration(), updated all method parameters
+  - SemanticAnalyzer.cpp: Updated all occurrences (variable names, method calls, symbol table accesses)
+  - model-compiler.y: Updated parser union (fabricDecl→classDecl), renamed fabric_declaration to class_declaration, updated all parser actions creating ClassDeclaration instances
+- **Variable naming**: Changed local variables from `fabric`/`fabricDecl` to `classDecl` for consistency
+- **Testing**: Build succeeded, symbol table dump shows correct functionality with inheritance
+- **Reasoning**: The "Fabric" terminology was a historical artifact from when the language used the `fabric` keyword (before switching to `class` keyword on November 1, 2025 22:45). The refactoring aligns the C++ codebase with the current language syntax, removing confusion and making code more maintainable. Using `ClassDeclaration` is more intuitive and accurately reflects that these AST nodes represent class declarations in the BBFM modeling language.
+
+### November 1, 2025 (20:30)
+
+- **Symbol table dump enhancement**: Updated symbol table dump to show inherited features and invariants
+- **Changes made**:
+  - Added `GetAllInvariants()` and `GetAllInvariantsHelper()` methods to collect inherited invariants (similar to existing `GetAllFields()`)
+  - Updated `DumpSymbolTable()` to use `GetAllFields()` and `GetAllInvariants()` instead of only showing directly declared members
+  - Made helper methods const to allow usage from const `DumpSymbolTable()` method
+- **Impact**: Symbol table dump now shows complete interface of each class including inherited features and invariants
+- **Example**: `Region inherits Tag` now displays both Tag's features (name, timestamp) and invariants (validTimestamp) along with Region's own members
+- **Files modified**:
+  - `include/SemanticAnalyzer.h` - added method declarations
+  - `src/SemanticAnalyzer.cpp` - implemented GetAllInvariants methods and updated DumpSymbolTable
+- **Reasoning**: Symbol table dump is a diagnostic tool, so showing the complete interface (including inherited members) provides better visibility into what's available on each type. This is especially useful when debugging inheritance hierarchies and understanding the full contract of derived classes.
 
 ### November 1, 2025 (20:15)
 

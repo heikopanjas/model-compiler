@@ -282,35 +282,35 @@ void EnumDeclaration::Dump(const int indent) const
 }
 
 // ============================================================================
-// FabricDeclaration Implementation
+// ClassDeclaration Implementation
 // ============================================================================
 
-const std::string& FabricDeclaration::GetName() const
+const std::string& ClassDeclaration::GetName() const
 {
     return name_;
 }
 
-const std::string& FabricDeclaration::GetBaseType() const
+const std::string& ClassDeclaration::GetBaseType() const
 {
     return baseType_;
 }
 
-bool FabricDeclaration::HasExplicitBase() const
+bool ClassDeclaration::HasExplicitBase() const
 {
     return false == baseType_.empty();
 }
 
-const std::vector<std::unique_ptr<Field>>& FabricDeclaration::GetFields() const
+const std::vector<std::unique_ptr<Field>>& ClassDeclaration::GetFields() const
 {
     return fields_;
 }
 
-const std::vector<std::unique_ptr<Invariant>>& FabricDeclaration::GetInvariants() const
+const std::vector<std::unique_ptr<Invariant>>& ClassDeclaration::GetInvariants() const
 {
     return invariants_;
 }
 
-void FabricDeclaration::Dump(const int indent) const
+void ClassDeclaration::Dump(const int indent) const
 {
     PrintIndent(indent);
     std::cout << "class " << name_;
@@ -350,9 +350,9 @@ const EnumDeclaration* Declaration::AsEnum() const
     return Kind::ENUM == kind_ ? static_cast<const EnumDeclaration*>(declaration_.get()) : nullptr;
 }
 
-const FabricDeclaration* Declaration::AsFabric() const
+const ClassDeclaration* Declaration::AsClass() const
 {
-    return Kind::FABRIC == kind_ ? static_cast<const FabricDeclaration*>(declaration_.get()) : nullptr;
+    return Kind::CLASS == kind_ ? static_cast<const ClassDeclaration*>(declaration_.get()) : nullptr;
 }
 
 void Declaration::Dump(const int indent) const

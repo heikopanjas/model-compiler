@@ -14,7 +14,7 @@ class ASTNode;
 class AST;
 class Declaration;
 class EnumDeclaration;
-class FabricDeclaration;
+class ClassDeclaration;
 class Field;
 class Invariant;
 class TypeSpec;
@@ -308,42 +308,42 @@ private:
 };
 
 // ============================================================================
-// Fabric (Type) Declaration
+// Class Declaration
 // ============================================================================
 
-/// \brief Represents a fabric (user-defined type) declaration
-class FabricDeclaration : public ASTNode
+/// \brief Represents a class (user-defined type) declaration
+class ClassDeclaration : public ASTNode
 {
 public:
-    /// \brief Construct a fabric declaration
-    /// \param name The fabric type name
-    /// \param baseType The base type name (empty if inherits from implicit Fabric)
+    /// \brief Construct a class declaration
+    /// \param name The class type name
+    /// \param baseType The base type name (empty if no explicit base)
     /// \param fields Vector of field declarations
     /// \param invariants Vector of invariant declarations
-    FabricDeclaration(
+    ClassDeclaration(
         const std::string& name, const std::string& baseType, std::vector<std::unique_ptr<Field>> fields,
         std::vector<std::unique_ptr<Invariant>> invariants = {}) :
         name_(name), baseType_(baseType), fields_(std::move(fields)), invariants_(std::move(invariants))
     {
     }
 
-    /// \brief Get the fabric type name
-    /// \return The fabric type name
+    /// \brief Get the class type name
+    /// \return The class type name
     const std::string& GetName() const;
 
     /// \brief Get the base type name
-    /// \return The base type name (empty if implicit Fabric)
+    /// \return The base type name (empty if no explicit base)
     const std::string& GetBaseType() const;
 
-    /// \brief Check if fabric has explicit base type
-    /// \return True if fabric explicitly inherits from another type
+    /// \brief Check if class has explicit base type
+    /// \return True if class explicitly inherits from another type
     bool HasExplicitBase() const;
 
-    /// \brief Get the fabric's fields
+    /// \brief Get the class's fields
     /// \return Vector of field declarations
     const std::vector<std::unique_ptr<Field>>& GetFields() const;
 
-    /// \brief Get the fabric's invariants
+    /// \brief Get the class's invariants
     /// \return Vector of invariant declarations
     const std::vector<std::unique_ptr<Invariant>>& GetInvariants() const;
 
@@ -351,16 +351,16 @@ public:
 
 private:
     std::string                             name_;
-    std::string                             baseType_; // Empty string if no explicit base (inherits from implicit Fabric)
+    std::string                             baseType_; // Empty string if no explicit base
     std::vector<std::unique_ptr<Field>>     fields_;
     std::vector<std::unique_ptr<Invariant>> invariants_;
 };
 
 // ============================================================================
-// Declaration (Union of Enum and Fabric)
+// Declaration (Union of Enum and Class)
 // ============================================================================
 
-/// \brief Represents a top-level declaration (enum or fabric)
+/// \brief Represents a top-level declaration (enum or class)
 class Declaration : public ASTNode
 {
 public:
@@ -368,28 +368,28 @@ public:
     enum class Kind
     {
         ENUM,
-        FABRIC
+        CLASS
     };
 
     /// \brief Construct a declaration from an enum
     /// \param enumDecl Unique pointer to enum declaration
     Declaration(std::unique_ptr<EnumDeclaration> enumDecl) : kind_(Kind::ENUM), declaration_(std::move(enumDecl)) {}
 
-    /// \brief Construct a declaration from a fabric
-    /// \param fabricDecl Unique pointer to fabric declaration
-    Declaration(std::unique_ptr<FabricDeclaration> fabricDecl) : kind_(Kind::FABRIC), declaration_(std::move(fabricDecl)) {}
+    /// \brief Construct a declaration from a class
+    /// \param classDecl Unique pointer to class declaration
+    Declaration(std::unique_ptr<ClassDeclaration> classDecl) : kind_(Kind::CLASS), declaration_(std::move(classDecl)) {}
 
     /// \brief Get the kind of declaration
-    /// \return The declaration kind (ENUM or FABRIC)
+    /// \return The declaration kind (ENUM or CLASS)
     Kind GetKind() const;
 
     /// \brief Cast to enum declaration if applicable
     /// \return Pointer to enum declaration or nullptr
     const EnumDeclaration* AsEnum() const;
 
-    /// \brief Cast to fabric declaration if applicable
-    /// \return Pointer to fabric declaration or nullptr
-    const FabricDeclaration* AsFabric() const;
+    /// \brief Cast to class declaration if applicable
+    /// \return Pointer to class declaration or nullptr
+    const ClassDeclaration* AsClass() const;
 
     void Dump(int indent = 0) const override;
 
