@@ -1,6 +1,6 @@
 # AI Agent Operating Instructions
 
-**Last updated:** November 1, 2025 (23:15)
+**Last updated:** November 1, 2025 (23:45)
 
 ## Primary Instructions
 
@@ -182,6 +182,16 @@ The compiler enables users to define data types and relationships for podcast do
 - All abstract/interface classes should have a protected virtual destructor
 - Use the Rule of Zero when possible (let compiler generate special members)
 - When implementing special members, follow the Rule of Five
+- **File organization**: Each class should have a separate header (.h) and implementation (.cpp) file
+  - Filename must match the class name exactly (e.g., `Driver` class → `Driver.h` and `Driver.cpp`)
+  - Header files go in `include/` directory
+  - Implementation files go in `src/` directory
+  - Exception: Template classes may have implementation in header if needed
+  - Exception: Tightly coupled class hierarchies (like AST nodes) may share a single header/implementation file pair
+- **Implementation separation**: Method implementations should be in .cpp files, not inline in headers
+  - Reduces recompilation of dependencies when implementation changes
+  - Only constructors and trivial one-line getters may remain inline in headers if needed for performance
+  - Prefer out-of-line implementations for better compilation times
 - **Scope declaration order**: Always declare scopes in the order: `public`, `protected`, `private`
   - This makes the public interface immediately visible when reading class definitions
   - Example:
@@ -497,6 +507,26 @@ _build/model-compiler examples/podcast.bbfm
 ---
 
 ## Recent Updates & Decisions
+
+### November 1, 2025 (23:45)
+
+- **Implementation separation**: Moved inline method implementations from AST.h to AST.cpp
+- **Guideline added**: Method implementations should be in .cpp files, not inline in headers
+- **Methods moved**: Moved 30+ getter and utility methods from inline in header to out-of-line in implementation file
+- **Exception noted**: Tightly coupled class hierarchies (like AST nodes) may share a single header/implementation file pair
+- **Benefit**: Reduces recompilation of dependencies when implementation changes; improves compilation times
+- **Files updated**: AST.h (declarations only), AST.cpp (added implementations)
+- **Testing**: Verified build succeeds and compiler works correctly with example files
+- **Reasoning**: Separating interface from implementation is a core C++ best practice. Inline implementations in headers force recompilation of all dependent files when any implementation detail changes. Moving implementations to .cpp files means only the implementation file needs recompilation, significantly improving build times in larger projects. This change follows the guideline while recognizing that AST nodes are a cohesive unit that benefits from staying in a single header/implementation pair rather than being split across multiple files.
+
+### November 1, 2025 (23:30)
+
+- **Class file organization**: Added coding guideline requiring separate header and implementation files for each class
+- **Guideline**: Each class must have its own .h and .cpp file with filenames matching the class name exactly
+- **File locations**: Header files in `include/` directory, implementation files in `src/` directory
+- **Example**: `Driver` class must be defined in `Driver.h` (in `include/`) and implemented in `Driver.cpp` (in `src/`)
+- **Exception**: Template classes may have implementation in header file if needed
+- **Reasoning**: Enforces clear organization and makes it easy to locate class definitions and implementations. This convention is standard in professional C++ projects and improves maintainability by establishing a predictable file structure. Having one class per file pair also reduces coupling and makes the codebase easier to navigate.
 
 ### November 1, 2025 (23:15)
 

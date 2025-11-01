@@ -82,20 +82,11 @@ public:
 
     /// \brief Get the primitive type
     /// \return The primitive type
-    PrimitiveType GetType() const
-    {
-        return type_;
-    }
+    PrimitiveType GetType() const;
 
-    bool IsPrimitive() const override
-    {
-        return true;
-    }
+    bool IsPrimitive() const override;
 
-    bool IsUserDefined() const override
-    {
-        return false;
-    }
+    bool IsUserDefined() const override;
 
     void Dump(int indent = 0) const override;
 
@@ -118,20 +109,11 @@ public:
 
     /// \brief Get the type name
     /// \return The name of the user-defined type
-    const std::string& GetTypeName() const
-    {
-        return typeName_;
-    }
+    const std::string& GetTypeName() const;
 
-    bool IsPrimitive() const override
-    {
-        return false;
-    }
+    bool IsPrimitive() const override;
 
-    bool IsUserDefined() const override
-    {
-        return true;
-    }
+    bool IsUserDefined() const override;
 
     void Dump(int indent = 0) const override;
 
@@ -162,10 +144,7 @@ public:
 
     /// \brief Get the modifier type
     /// \return The modifier type
-    ModifierType GetType() const
-    {
-        return type_;
-    }
+    ModifierType GetType() const;
 
 private:
     ModifierType type_;
@@ -182,45 +161,27 @@ public:
 
     /// \brief Get minimum cardinality
     /// \return Minimum cardinality value
-    int GetMin() const
-    {
-        return minCardinality_;
-    }
+    int GetMin() const;
 
     /// \brief Get maximum cardinality
     /// \return Maximum cardinality value (-1 for unbounded)
-    int GetMax() const
-    {
-        return maxCardinality_;
-    }
+    int GetMax() const;
 
     /// \brief Check if cardinality is unbounded
     /// \return True if unbounded (max is *)
-    bool IsUnbounded() const
-    {
-        return maxCardinality_ == -1;
-    }
+    bool IsUnbounded() const;
 
     /// \brief Check if field is optional
     /// \return True if minimum cardinality is 0
-    bool IsOptional() const
-    {
-        return minCardinality_ == 0;
-    }
+    bool IsOptional() const;
 
     /// \brief Check if field is mandatory
     /// \return True if minimum cardinality is greater than 0
-    bool IsMandatory() const
-    {
-        return minCardinality_ > 0;
-    }
+    bool IsMandatory() const;
 
     /// \brief Check if field is an array
     /// \return True if maximum cardinality is unbounded or greater than 1
-    bool IsArray() const
-    {
-        return maxCardinality_ == -1 || maxCardinality_ > 1;
-    }
+    bool IsArray() const;
 
     void Dump(int indent = 0) const override;
 
@@ -254,17 +215,11 @@ public:
 
     /// \brief Get the invariant's name
     /// \return The invariant name
-    const std::string& GetName() const
-    {
-        return name_;
-    }
+    const std::string& GetName() const;
 
     /// \brief Get the invariant's expression
     /// \return The boolean expression
-    const std::string& GetExpression() const
-    {
-        return expression_;
-    }
+    const std::string& GetExpression() const;
 
     void Dump(int indent = 0) const override;
 
@@ -293,31 +248,19 @@ public:
 
     /// \brief Get the field's type specification
     /// \return Pointer to the type specification
-    const TypeSpec* GetType() const
-    {
-        return type_.get();
-    }
+    const TypeSpec* GetType() const;
 
     /// \brief Get the field's name
     /// \return The field name
-    const std::string& GetName() const
-    {
-        return name_;
-    }
+    const std::string& GetName() const;
 
     /// \brief Get the field's modifiers
     /// \return Vector of modifiers
-    const std::vector<std::unique_ptr<Modifier>>& GetModifiers() const
-    {
-        return modifiers_;
-    }
+    const std::vector<std::unique_ptr<Modifier>>& GetModifiers() const;
 
     /// \brief Check if field is static
     /// \return True if field is static
-    bool IsStatic() const
-    {
-        return isStatic_;
-    }
+    bool IsStatic() const;
 
     /// \brief Get the cardinality modifier if present
     /// \return Pointer to cardinality modifier or nullptr
@@ -351,17 +294,11 @@ public:
 
     /// \brief Get the enum name
     /// \return The enum name
-    const std::string& GetName() const
-    {
-        return name_;
-    }
+    const std::string& GetName() const;
 
     /// \brief Get the enum values
     /// \return Vector of enum value names
-    const std::vector<std::string>& GetValues() const
-    {
-        return values_;
-    }
+    const std::vector<std::string>& GetValues() const;
 
     void Dump(int indent = 0) const override;
 
@@ -392,38 +329,23 @@ public:
 
     /// \brief Get the fabric type name
     /// \return The fabric type name
-    const std::string& GetName() const
-    {
-        return name_;
-    }
+    const std::string& GetName() const;
 
     /// \brief Get the base type name
     /// \return The base type name (empty if implicit Fabric)
-    const std::string& GetBaseType() const
-    {
-        return baseType_;
-    }
+    const std::string& GetBaseType() const;
 
     /// \brief Check if fabric has explicit base type
     /// \return True if fabric explicitly inherits from another type
-    bool HasExplicitBase() const
-    {
-        return !baseType_.empty();
-    }
+    bool HasExplicitBase() const;
 
     /// \brief Get the fabric's fields
     /// \return Vector of field declarations
-    const std::vector<std::unique_ptr<Field>>& GetFields() const
-    {
-        return fields_;
-    }
+    const std::vector<std::unique_ptr<Field>>& GetFields() const;
 
     /// \brief Get the fabric's invariants
     /// \return Vector of invariant declarations
-    const std::vector<std::unique_ptr<Invariant>>& GetInvariants() const
-    {
-        return invariants_;
-    }
+    const std::vector<std::unique_ptr<Invariant>>& GetInvariants() const;
 
     void Dump(int indent = 0) const override;
 
@@ -459,24 +381,15 @@ public:
 
     /// \brief Get the kind of declaration
     /// \return The declaration kind (ENUM or FABRIC)
-    Kind GetKind() const
-    {
-        return kind_;
-    }
+    Kind GetKind() const;
 
     /// \brief Cast to enum declaration if applicable
     /// \return Pointer to enum declaration or nullptr
-    const EnumDeclaration* AsEnum() const
-    {
-        return kind_ == Kind::ENUM ? static_cast<const EnumDeclaration*>(declaration_.get()) : nullptr;
-    }
+    const EnumDeclaration* AsEnum() const;
 
     /// \brief Cast to fabric declaration if applicable
     /// \return Pointer to fabric declaration or nullptr
-    const FabricDeclaration* AsFabric() const
-    {
-        return kind_ == Kind::FABRIC ? static_cast<const FabricDeclaration*>(declaration_.get()) : nullptr;
-    }
+    const FabricDeclaration* AsFabric() const;
 
     void Dump(int indent = 0) const override;
 
@@ -499,10 +412,7 @@ public:
 
     /// \brief Get all declarations in the AST
     /// \return Vector of declarations
-    const std::vector<std::unique_ptr<Declaration>>& GetDeclarations() const
-    {
-        return declarations_;
-    }
+    const std::vector<std::unique_ptr<Declaration>>& GetDeclarations() const;
 
     void Dump(int indent = 0) const override;
 

@@ -20,6 +20,21 @@ void ASTNode::PrintIndent(const int indent) const
 // PrimitiveTypeSpec Implementation
 // ============================================================================
 
+PrimitiveType PrimitiveTypeSpec::GetType() const
+{
+    return type_;
+}
+
+bool PrimitiveTypeSpec::IsPrimitive() const
+{
+    return true;
+}
+
+bool PrimitiveTypeSpec::IsUserDefined() const
+{
+    return false;
+}
+
 const char* PrimitiveTypeSpec::TypeToString(const PrimitiveType type)
 {
     switch (type)
@@ -55,6 +70,21 @@ void PrimitiveTypeSpec::Dump(const int indent) const
 // UserDefinedTypeSpec Implementation
 // ============================================================================
 
+const std::string& UserDefinedTypeSpec::GetTypeName() const
+{
+    return typeName_;
+}
+
+bool UserDefinedTypeSpec::IsPrimitive() const
+{
+    return false;
+}
+
+bool UserDefinedTypeSpec::IsUserDefined() const
+{
+    return true;
+}
+
 void UserDefinedTypeSpec::Dump(const int indent) const
 {
     UNREFERENCED_PARAMETER(indent);
@@ -62,8 +92,47 @@ void UserDefinedTypeSpec::Dump(const int indent) const
 }
 
 // ============================================================================
+// Modifier Implementation
+// ============================================================================
+
+ModifierType Modifier::GetType() const
+{
+    return type_;
+}
+
+// ============================================================================
 // CardinalityModifier Implementation
 // ============================================================================
+
+int CardinalityModifier::GetMin() const
+{
+    return minCardinality_;
+}
+
+int CardinalityModifier::GetMax() const
+{
+    return maxCardinality_;
+}
+
+bool CardinalityModifier::IsUnbounded() const
+{
+    return -1 == maxCardinality_;
+}
+
+bool CardinalityModifier::IsOptional() const
+{
+    return 0 == minCardinality_;
+}
+
+bool CardinalityModifier::IsMandatory() const
+{
+    return minCardinality_ > 0;
+}
+
+bool CardinalityModifier::IsArray() const
+{
+    return -1 == maxCardinality_ || maxCardinality_ > 1;
+}
 
 void CardinalityModifier::Dump(const int indent) const
 {
@@ -93,6 +162,26 @@ void UniqueModifier::Dump(const int indent) const
 // ============================================================================
 // Field Implementation
 // ============================================================================
+
+const TypeSpec* Field::GetType() const
+{
+    return type_.get();
+}
+
+const std::string& Field::GetName() const
+{
+    return name_;
+}
+
+const std::vector<std::unique_ptr<Modifier>>& Field::GetModifiers() const
+{
+    return modifiers_;
+}
+
+bool Field::IsStatic() const
+{
+    return isStatic_;
+}
 
 const CardinalityModifier* Field::GetCardinalityModifier() const
 {
@@ -142,6 +231,16 @@ void Field::Dump(const int indent) const
 // Invariant Implementation
 // ============================================================================
 
+const std::string& Invariant::GetName() const
+{
+    return name_;
+}
+
+const std::string& Invariant::GetExpression() const
+{
+    return expression_;
+}
+
 void Invariant::Dump(const int indent) const
 {
     PrintIndent(indent);
@@ -151,6 +250,16 @@ void Invariant::Dump(const int indent) const
 // ============================================================================
 // EnumDeclaration Implementation
 // ============================================================================
+
+const std::string& EnumDeclaration::GetName() const
+{
+    return name_;
+}
+
+const std::vector<std::string>& EnumDeclaration::GetValues() const
+{
+    return values_;
+}
 
 void EnumDeclaration::Dump(const int indent) const
 {
@@ -175,6 +284,31 @@ void EnumDeclaration::Dump(const int indent) const
 // ============================================================================
 // FabricDeclaration Implementation
 // ============================================================================
+
+const std::string& FabricDeclaration::GetName() const
+{
+    return name_;
+}
+
+const std::string& FabricDeclaration::GetBaseType() const
+{
+    return baseType_;
+}
+
+bool FabricDeclaration::HasExplicitBase() const
+{
+    return false == baseType_.empty();
+}
+
+const std::vector<std::unique_ptr<Field>>& FabricDeclaration::GetFields() const
+{
+    return fields_;
+}
+
+const std::vector<std::unique_ptr<Invariant>>& FabricDeclaration::GetInvariants() const
+{
+    return invariants_;
+}
 
 void FabricDeclaration::Dump(const int indent) const
 {
@@ -206,6 +340,21 @@ void FabricDeclaration::Dump(const int indent) const
 // Declaration Implementation
 // ============================================================================
 
+Declaration::Kind Declaration::GetKind() const
+{
+    return kind_;
+}
+
+const EnumDeclaration* Declaration::AsEnum() const
+{
+    return Kind::ENUM == kind_ ? static_cast<const EnumDeclaration*>(declaration_.get()) : nullptr;
+}
+
+const FabricDeclaration* Declaration::AsFabric() const
+{
+    return Kind::FABRIC == kind_ ? static_cast<const FabricDeclaration*>(declaration_.get()) : nullptr;
+}
+
 void Declaration::Dump(const int indent) const
 {
     declaration_->Dump(indent);
@@ -214,6 +363,11 @@ void Declaration::Dump(const int indent) const
 // ============================================================================
 // AST Implementation
 // ============================================================================
+
+const std::vector<std::unique_ptr<Declaration>>& AST::GetDeclarations() const
+{
+    return declarations_;
+}
 
 void AST::Dump(const int indent) const
 {
