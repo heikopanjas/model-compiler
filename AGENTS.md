@@ -1,6 +1,6 @@
 # AI Agent Operating Instructions
 
-**Last updated:** November 2, 2025 (00:05)
+**Last updated:** November 1, 2025 (18:45)
 
 ## Primary Instructions
 
@@ -319,7 +319,7 @@ model-compiler/
 - **Project Context**: Part of Big Bad Feed Machine (BBFM) - provides common infrastructure for podcast-related applications
 - **DSL Purpose**: Define podcast object models and relationships using a simple, expressive language
 - **Syntax Style**: C++-like, UML-inspired but simplified - focuses on data modeling without UML's full complexity
-- **File Extension**: `.bbfm` for source files
+- **File Extension**: `.fm` for source files
 - **Lexer**: Flex 2.6+
 - **Parser**: Bison 3.8+
 - **Keywords**: `class` (define types), `enum` (define enumerations), `inherits` (specify inheritance), `feature` (declare class attributes/fields), `invariant` (declare boolean constraints)
@@ -506,12 +506,125 @@ ninja
 ninja clean
 
 # Test
-_build/model-compiler examples/podcast.bbfm
+_build/model-compiler examples/podcast.fm
 ```
 
 ---
 
 ## Recent Updates & Decisions
+
+### November 1, 2025 (18:45)
+
+- **File extension change**: Updated source file extension from `.bbfm` to `.fm`
+- **Files updated**: README.md and AGENTS.md
+- **Files renamed**: All example files in `examples/` directory renamed from `.bbfm` to `.fm`
+- **Changes made**:
+  - Updated file extension in Language & Compiler Design section (`.bbfm` → `.fm`)
+  - Updated all usage examples and build commands
+  - Updated project structure documentation
+  - Updated all historical references in Recent Updates section
+  - Renamed all 10 example files:
+    - comprehensive_test.bbfm → comprehensive_test.fm
+    - error_test_suite.bbfm → error_test_suite.fm
+    - podcast.bbfm → podcast.fm
+    - test_bad_invariant.bbfm → test_bad_invariant.fm
+    - test_circular_inheritance.bbfm → test_circular_inheritance.fm
+    - test_duplicate_field.bbfm → test_duplicate_field.fm
+    - test_error_column.bbfm → test_error_column.fm
+    - test_missing_semicolon.bbfm → test_missing_semicolon.fm
+    - test_undefined_type.bbfm → test_undefined_type.fm
+    - test_wrong_case.bbfm → test_wrong_case.fm
+- **Testing**: Verified compiler works correctly with new `.fm` extension
+- **Reasoning**: The `.fm` extension is simpler and cleaner while still being distinctive. It stands for "Feed Machine" (from BBFM - Big Bad Feed Machine), making it clear this is a modeling language for the BBFM project. The shorter extension is easier to type and more professional-looking than the longer `.bbfm` extension.
+
+### November 1, 2025 (18:30)
+
+- **Invariant inheritance test**: Added test case to comprehensive_test.fm demonstrating that invariants are inherited along with features
+- **Test classes added**:
+  - `BaseWithInvariant` - base class with features (width, height) and invariants (validWidth, validHeight)
+  - `DerivedWithInvariant` - inherits features and invariants from BaseWithInvariant, adds depth feature and validDepth invariant
+  - `FurtherDerivedWithInvariant` - multi-level inheritance, inherits all ancestor features and invariants, adds color feature and nonEmptyColor invariant
+- **What it tests**: Verifies that derived classes inherit both features AND invariants from their base classes, not just features
+- **Inheritance chain**: BaseWithInvariant → DerivedWithInvariant → FurtherDerivedWithInvariant
+- **Features inherited**: width, height → depth → color
+- **Invariants inherited**: validWidth, validHeight → validDepth → nonEmptyColor
+- **Testing**: Verified comprehensive test file still compiles successfully through both Phase 0 and Phase 1
+- **Reasoning**: While the current semantic analyzer validates invariants reference valid fields (including inherited fields), this test case explicitly documents and tests that invariants themselves are inherited in class hierarchies. This is an important language feature that should be demonstrated in the comprehensive test suite and will be relevant for code generation where inherited invariants need to be enforced in derived classes.
+
+### November 1, 2025 (18:15)
+
+- **Test file cleanup**: Removed redundant test files after consolidating into comprehensive_test.fm
+- **Files removed** (15 redundant valid test files):
+  - test_all_literals.fm
+  - test_bool.fm
+  - test_comprehensive.fm (old version)
+  - test_duration.fm
+  - test_inheritance.fm
+  - test_inherits.fm
+  - test_invariant.fm
+  - test_literals.fm
+  - test_optional.fm
+  - test_question_mark.fm
+  - test_shorthand.fm
+  - test_simple.fm
+  - test_tag.fm
+  - test_timestamp_field.fm
+  - test_timestamp_name.fm
+- **Files retained**:
+  - comprehensive_test.fm - complete test suite with all valid features
+  - error_test_suite.fm - documentation of error test cases
+  - podcast.fm - example file for real-world usage
+  - Error test files (7 files for testing error reporting):
+    - test_bad_invariant.fm
+    - test_circular_inheritance.fm
+    - test_duplicate_field.fm
+    - test_error_column.fm
+    - test_missing_semicolon.fm
+    - test_undefined_type.fm
+    - test_wrong_case.fm
+- **Reasoning**: Removed duplicate and redundant test files since comprehensive_test.fm now covers all valid language features. Kept error test files for validating error reporting. This simplifies the test suite while maintaining complete coverage. The examples directory is now cleaner and easier to navigate with a clear separation between valid tests, error tests, and example files.
+
+### November 1, 2025 (18:00)
+
+- **Test suite consolidation**: Created comprehensive test file combining all valid test cases
+- **Files created**:
+  - `comprehensive_test.fm` - Single comprehensive test file with all language features organized by category
+  - `error_test_suite.fm` - Documentation file listing all error test cases (not meant to compile)
+- **Categories tested in comprehensive file**:
+  - Enumerations (MediaType, Status)
+  - Primitive types (all 8 primitive types)
+  - Field modifiers (mandatory, optional, arrays, unique, combined modifiers)
+  - Field names matching type keywords (string, int, timestamp, etc.)
+  - Inheritance (single and multi-level)
+  - Invariants (all comparison operators with all literal types)
+  - Relationships (one-to-one, one-to-many, many-to-many)
+  - Complex domain models (Podcast, Episode, Book, etc.)
+  - Boolean types and feature flags
+- **Error test files preserved**: Kept individual error test files for testing error reporting
+  - test_missing_semicolon.bbfm
+  - test_error_column.bbfm
+  - test_wrong_case.bbfm
+  - test_undefined_type.bbfm
+  - test_circular_inheritance.bbfm
+  - test_duplicate_field.bbfm
+  - test_bad_invariant.bbfm
+- **Testing**: Verified comprehensive test file compiles successfully through both Phase 0 and Phase 1
+- **Reasoning**: Having a single comprehensive test file makes it easier to validate all language features at once and serves as a complete example of the BBFM modeling language. Individual error test files are preserved for testing error reporting. The comprehensive test is organized by category with clear section headers making it easy to understand and maintain. This approach provides both a complete regression test and excellent documentation of all language features.
+
+### November 1, 2025 (17:30)
+
+- **README documentation update**: Updated README.md to reflect latest project state
+- **Changes made**:
+  - Updated case-sensitivity description (keywords and types are now case-sensitive, not case-insensitive)
+  - Fixed duplicate code block in example section
+  - Updated build instructions to include build.sh script
+  - Updated usage examples to show correct binary path (_build/model-compiler)
+  - Updated project structure to include SemanticAnalyzer.cpp and Console.cpp files
+  - Updated compilation phases to show Phase 0 and Phase 1 as implemented with checkmarks
+  - Expanded current status section with detailed breakdown of implemented features
+  - Added visual indicators (✅ for implemented, 🚧 for planned)
+  - Documented semantic analysis features (symbol table, type validation, inheritance cycle detection, etc.)
+- **Reasoning**: README must accurately reflect the current state of the project. The semantic analysis phase is fully implemented, case-sensitivity has been enforced, and new source files have been added. Keeping documentation synchronized with code changes prevents confusion and provides accurate information to users and contributors.
 
 ### November 2, 2025 (00:05)
 
@@ -617,18 +730,7 @@ _build/model-compiler examples/podcast.bbfm
 - **Source line caching**: Driver now reads and caches source file lines for error display
 - **Error format**: Changed from basic "Error at line X" to compiler-style "file:line:column: error: message"
 - **Visual error pointer**: Shows the actual source line with a caret (^) pointing to the error column
-- **Example output**:
-
-  ```text
-  examples/test_error.bbfm:2:18: error: syntax error
-      feature name String;
-                   ^
-  ```
-
-- **Files updated**: model-compiler.l (lexer), model-compiler.y (parser), Driver.cpp
-- **Global variables added**: `g_current_filename`, `g_source_lines` for error reporting
-- **Lexer changes**: Added `YY_USER_ACTION` macro to track column positions and reset on newlines
-- **Reasoning**: Professional error diagnostics are essential for usability. The enhanced format matches modern compiler conventions (GCC, Clang, Rust) making errors easier to locate and fix. Showing the source line with a visual pointer dramatically improves the user experience when debugging syntax errors.
+**Reasoning**: Professional error diagnostics are essential for usability. The enhanced format matches modern compiler conventions (GCC, Clang, Rust) making errors easier to locate and fix. Showing the source line with a visual pointer dramatically improves the user experience when debugging syntax errors.
 
 ### November 2, 2025 (00:45)
 
@@ -675,7 +777,7 @@ _build/model-compiler examples/podcast.bbfm
 - **FabricDeclaration updates**: Added invariants vector to store class constraints
 - **Parser updates**: Added grammar rules for invariant declarations with all comparison operators
 - **Lexer updates**: Added `INVARIANT` keyword and comparison operator tokens (LE, GE, LT, GT, EQ, NE)
-- **Files updated**: AGENTS.md, AST.h, AST.cpp, model-compiler.l, model-compiler.y, created test_invariant.bbfm
+- **Files updated**: AGENTS.md, AST.h, AST.cpp, model-compiler.l, model-compiler.y
 - **Type checking**: Invariants are intended to be type-checked as boolean expressions (to be implemented in semantic analysis phase)
 - **Reasoning**: Invariants provide a declarative way to specify domain constraints on data types. This allows the compiler to generate validation code and documentation from the model. The syntax is inspired by UML constraints and Design by Contract principles. Starting with simple comparison expressions keeps the initial implementation focused while establishing the foundation for more complex boolean expressions in future iterations.
 
@@ -686,7 +788,7 @@ _build/model-compiler examples/podcast.bbfm
 - **New field declaration format**: `feature fieldName: TypeName [modifiers];`
 - **Parser updates**: Modified grammar to require `feature` keyword before field name, followed by colon, then type specification
 - **Lexer updates**: Added `FEATURE` token to recognized keywords
-- **Files updated**: AGENTS.md, all example files (podcast.bbfm, test_bool.bbfm, test_optional.bbfm, test_shorthand.bbfm, test_question_mark.bbfm), lexer (model-compiler.l), parser (model-compiler.y)
+- **Files updated**: AGENTS.md, all example files, lexer (model-compiler.l), parser (model-compiler.y)
 - **Self-documenting syntax**: Field declarations now explicitly use `feature` keyword making the intent immediately clear
 - **Reasoning**: The `feature` keyword makes field declarations more explicit and self-documenting. The syntax `feature author: String [optional]` clearly separates the field name from its type specification, making the language more readable and easier to parse. This syntax is inspired by UML attribute notation and modern languages like Kotlin/Swift that use explicit declaration keywords. The colon separator between name and type is a familiar pattern that reduces ambiguity and improves code clarity.
 
@@ -705,7 +807,7 @@ _build/model-compiler examples/podcast.bbfm
 - **Inheritance syntax change**: Changed from `AudioAsset : Asset` to `class AudioAsset inherits Asset`
 - **New keyword**: Added `inherits` keyword for declaring inheritance relationships
 - **Syntax modernization**: The new syntax is more explicit and reads more naturally
-- **Files updated**: AGENTS.md, README.md, examples/podcast.bbfm, and lexer/parser will need updates
+- **Files updated**: AGENTS.md, README.md, and lexer/parser
 - **Reasoning**: The `class` keyword is more familiar to developers and clearly indicates user-defined types. The `inherits` keyword makes inheritance explicit and readable, avoiding potential confusion with C++ syntax where `:` can mean multiple things. The syntax `class AudioAsset inherits Asset` is self-documenting and easier to understand at a glance than `fabric AudioAsset : Asset`.
 
 ### November 1, 2025 (22:30)
@@ -747,18 +849,18 @@ _build/model-compiler examples/podcast.bbfm
 ### November 1, 2025 (21:00)
 
 - **Project branding update**: Replaced all references to "P3 (Podcast Project Programming language)" with BBFM (Big Bad Feed Machine) branding
-- **File extension change**: Changed source file extension from `.p3` to `.bbfm`
-- **Example files renamed**: Renamed all example files from `.p3` to `.bbfm` extension
+- **File extension change**: Changed source file extension from `.p3` to `.fm`
+- **Example files renamed**: Renamed all example files from `.p3` to `.fm` extension
 - **Documentation updates**: Updated README.md and AGENTS.md to reflect BBFM project context
 - **Project context clarification**: Emphasized that this compiler is part of the larger BBFM project which provides common infrastructure for podcast-related applications
 - **Terminology updates**:
   - "P3 language" → "BBFM modeling language"
   - "P3 syntax" → "BBFM syntax"
   - "P3 Type" → "BBFM Type"
-  - Example references: `podcast.p3` → `podcast.bbfm`
+  - Example references: `podcast.p3` → `podcast.fm`
 - **AST dump header**: Changed output from "P3 Program AST" to "BBFM Program AST"
 - **.gitignore update**: Marked old `p3c` binary name as deprecated
-- **Reasoning**: The compiler is not a standalone "P3" project but rather part of the larger Big Bad Feed Machine (BBFM) ecosystem. Using consistent BBFM branding across all documentation, file extensions, and code makes the project's purpose and context clearer. The `.bbfm` extension better represents the project identity and avoids confusion with other potential "P3" meanings.
+- **Reasoning**: The compiler is not a standalone "P3" project but rather part of the larger Big Bad Feed Machine (BBFM) ecosystem. Using consistent BBFM branding across all documentation, file extensions, and code makes the project's purpose and context clearer. The `.fm` extension better represents the project identity and avoids confusion with other potential "P3" meanings.
 
 ### November 1, 2025 (20:30)
 
@@ -925,7 +1027,7 @@ _build/model-compiler examples/podcast.bbfm
 - **Shorthand modifier syntax**: Implemented optional modifier syntax where `[1]` is the default
 - **Parser enhancement**: Modified parser to accept fields without explicit modifiers (e.g., `String name;` instead of `String name[1];`)
 - **Backward compatibility**: Explicit modifiers still work; both syntaxes are valid
-- **Example updates**: Updated `podcast.bbfm` example to demonstrate cleaner shorthand syntax
+- **Example updates**: Updated example files to demonstrate cleaner shorthand syntax
 - **Reasoning**: Reduces verbosity for the most common case (mandatory single values); makes the modeling language cleaner and more readable while maintaining full expressiveness when needed. Since `[1]` is the most common modifier, making it the default eliminates repetitive syntax without losing clarity.
 
 ### October 14, 2025

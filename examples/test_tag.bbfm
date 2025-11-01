@@ -1,6 +1,0 @@
-class Tag {
-    feature name: String;
-    feature timestamp: Timestamp;
-
-    invariant validTimestamp: timestamp >= 0;
-}

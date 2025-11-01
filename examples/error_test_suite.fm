@@ -1,0 +1,116 @@
+// BBFM Error Test Suite
+//
+// This file contains test cases that are EXPECTED TO FAIL.
+// Each test demonstrates a specific error condition that the compiler
+// should detect and report during semantic analysis or parsing.
+//
+// DO NOT RUN THIS FILE THROUGH THE COMPILER - IT WILL FAIL!
+// Instead, run individual error tests separately to verify error reporting.
+
+// ============================================================================
+// SYNTAX ERRORS
+// ============================================================================
+
+// ERROR: Missing semicolon after field declaration
+// File: test_missing_semicolon.bbfm
+/*
+class Test {
+    feature name: String
+    feature age: Int;
+}
+*/
+
+// ERROR: Missing colon after field name
+// File: test_error_column.bbfm
+/*
+class Test {
+    feature name String;
+}
+*/
+
+// ERROR: Wrong case for keywords (language is case-sensitive)
+// File: test_wrong_case.bbfm
+/*
+CLASS Test {
+    FEATURE name: STRING;
+}
+*/
+
+// ============================================================================
+// SEMANTIC ERRORS - Type Validation
+// ============================================================================
+
+// ERROR: Undefined type reference
+// File: test_undefined_type.bbfm
+/*
+class Asset {
+    feature url: String;
+    feature media: UndefinedType;  // Error: UndefinedType not declared
+}
+*/
+
+// ============================================================================
+// SEMANTIC ERRORS - Inheritance
+// ============================================================================
+
+// ERROR: Circular inheritance (A inherits B, B inherits A)
+// File: test_circular_inheritance.bbfm
+/*
+class A inherits B {
+    feature name: String;
+}
+
+class B inherits A {  // Error: circular inheritance
+    feature title: String;
+}
+*/
+
+// ============================================================================
+// SEMANTIC ERRORS - Field Validation
+// ============================================================================
+
+// ERROR: Duplicate field name (including inherited fields)
+// File: test_duplicate_field.bbfm
+/*
+class Base {
+    feature name: String;
+}
+
+class Derived inherits Base {
+    feature name: String;  // Error: duplicate field (inherited from Base)
+    feature title: String;
+}
+*/
+
+// ============================================================================
+// SEMANTIC ERRORS - Invariant Validation
+// ============================================================================
+
+// ERROR: Invariant references undefined field
+// File: test_bad_invariant.bbfm
+/*
+class Asset {
+    feature fileSize: Int;
+
+    invariant maxSize: unknownField <= 100;  // Error: unknownField not defined
+}
+*/
+
+// ============================================================================
+// SUMMARY OF ERROR TESTS
+// ============================================================================
+//
+// To test error reporting, run each error case individually:
+//
+// Syntax Errors:
+//   ./_build/model-compiler examples/test_missing_semicolon.bbfm
+//   ./_build/model-compiler examples/test_error_column.bbfm
+//   ./_build/model-compiler examples/test_wrong_case.bbfm
+//
+// Semantic Errors:
+//   ./_build/model-compiler examples/test_undefined_type.bbfm
+//   ./_build/model-compiler examples/test_circular_inheritance.bbfm
+//   ./_build/model-compiler examples/test_duplicate_field.bbfm
+//   ./_build/model-compiler examples/test_bad_invariant.bbfm
+//
+// Each should fail with a clear, descriptive error message.

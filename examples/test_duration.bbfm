@@ -1,5 +1,0 @@
-class Region {
-    feature duration: Timespan;
-
-    invariant validRegion: duration > 0;
-}

@@ -26,7 +26,7 @@ Future targets include additional programming languages and SQL dialects.
 - **Inheritance**: Support for single inheritance with the `inherits` keyword
 - **Primitive Types**: String, Int, Real, Bool, Timestamp, Timespan, Date, Guid
 - **Enumerations**: Define enums for categorical values
-- **Case-Insensitive**: Keywords and type names are case-insensitive
+- **Case-Sensitive**: Keywords are lowercase and case-sensitive; type names are PascalCase and case-sensitive
 
 ### Universal Metadata Fields
 
@@ -200,10 +200,6 @@ class Transcript {
     feature language: String;
 }
 ```
-    String text;
-    String language;
-}
-```
 
 ## Prerequisites
 
@@ -229,6 +225,14 @@ sudo apt-get install cmake flex bison gcc ninja-build
 
 ## Building
 
+**Using the build script (recommended):**
+
+```bash
+./build.sh
+```
+
+**Manual build with CMake:**
+
 ```bash
 # Create build directory
 mkdir _build
@@ -247,13 +251,13 @@ ninja clean
 ## Usage
 
 ```bash
-./model-compiler <source_file.bbfm>
+./_build/model-compiler <source_file.fm>
 ```
 
 Example:
 
 ```bash
-./model-compiler ../examples/podcast.bbfm
+./_build/model-compiler examples/podcast.fm
 ```
 
 ## Project Structure
@@ -261,20 +265,25 @@ Example:
 ```text
 model-compiler/
 ├── CMakeLists.txt          # CMake build configuration
+├── build.sh                # Build script
 ├── README.md               # This file
 ├── AGENTS.md               # AI agent operating instructions
-├── src/
+├── src/                    # Source files
 │   ├── model-compiler.l   # Flex lexer specification
 │   ├── model-compiler.y   # Bison parser specification
 │   ├── Driver.cpp         # Compiler driver implementation
 │   ├── AST.cpp            # AST implementation
+│   ├── SemanticAnalyzer.cpp # Semantic analysis implementation
+│   ├── Console.cpp        # Console output utilities
 │   └── main.cpp           # Main entry point (C++)
 ├── include/               # Header files
 │   ├── Common.h           # Common macros and utilities
 │   ├── Driver.h           # Compiler driver interface
-│   └── AST.h              # AST node definitions
+│   ├── AST.h              # AST node definitions
+│   ├── SemanticAnalyzer.h # Semantic analyzer interface
+│   └── Console.h          # Console output interface
 ├── examples/              # Example programs
-│   └── podcast.bbfm       # Podcast domain model example
+│   └── podcast.fm       # Podcast domain model example
 └── _build/                # Build artifacts (gitignored)
 ```
 
@@ -282,11 +291,14 @@ model-compiler/
 
 The compiler implements a multi-phase compilation process:
 
-1. **Lexical Analysis** - Tokenizes the input source code
-2. **Syntax Analysis** - Parses tokens into an abstract syntax tree
-3. **AST Construction** - Builds complete Abstract Syntax Tree
-4. **Semantic Analysis** - Type checking and validation (planned)
-5. **Code Generation** - Generates target code (planned):
+1. **Phase 0: Lexical Analysis & Parsing** ✅ - Tokenizes input and parses into AST
+2. **Phase 1: Semantic Analysis** ✅ - Type checking and validation
+   - Symbol table construction
+   - Type validation (primitives, enums, user-defined types)
+   - Inheritance validation (cycle detection, base type verification)
+   - Field uniqueness validation (including inherited fields)
+   - Invariant validation (field reference checking)
+3. **Phase 2: Code Generation** 🚧 - Planned:
    - C++ class definitions with inheritance
    - SQLite database schema with foreign keys
 
@@ -304,25 +316,39 @@ The compiler implements a multi-phase compilation process:
 
 ## Current Status
 
-**Implemented:**
+**✅ Implemented:**
 
-- Lexical analysis with case-insensitive keywords
-- Syntax analysis supporting full grammar
-- AST construction with modern C++23
-- Enum declarations
-- Class type declarations with inheritance
-- Field declarations with `feature` keyword
-- Field modifiers (cardinality and constraints)
-- Invariant constraints with comparison operators
-- All primitive types
-- Optional modifier syntax
+- **Phase 0 (Lexical Analysis & Parsing)**:
+  - Lexical analysis with case-sensitive keywords and types
+  - Syntax analysis supporting full grammar
+  - AST construction with modern C++23 and smart pointers
+  - Enhanced error diagnostics with file:line:column format
+  - Visual error pointers showing source context
 
-**Planned:**
+- **Language Features**:
+  - Enum declarations
+  - Class type declarations with inheritance (`inherits` keyword)
+  - Field declarations with `feature` keyword
+  - Field modifiers (cardinality and constraints)
+  - Invariant constraints with comparison operators and literals
+  - All primitive types (String, Int, Real, Bool, Timestamp, Timespan, Date, Guid)
+  - Optional modifier syntax and shorthand syntax
 
-- Semantic analysis (type checking, inheritance validation)
-- C++ code generation
-- SQLite schema generation
-- Additional target languages and SQL dialects
+- **Phase 1 (Semantic Analysis)**:
+  - Symbol table construction
+  - Type validation for all type references
+  - Inheritance validation with cycle detection
+  - Field uniqueness validation including inherited fields
+  - Invariant validation (field reference checking)
+  - Comprehensive error reporting
+
+**🚧 Planned:**
+
+- **Phase 2 (Code Generation)**:
+  - C++ code generation (class definitions, inheritance hierarchies)
+  - SQLite schema generation (tables, foreign keys, constraints)
+  - Additional target languages
+  - Additional SQL dialects
 
 ## Language Specification
 
