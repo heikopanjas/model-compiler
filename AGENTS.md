@@ -1,6 +1,6 @@
 # AI Agent Operating Instructions
 
-**Last updated:** November 1, 2025 (23:55)
+**Last updated:** November 2, 2025 (00:00)
 
 ## Primary Instructions
 
@@ -229,11 +229,12 @@ The compiler enables users to define data types and relationships for podcast do
 - Member variables: camelCase with underscore postfix (e.g., `dataSize_`, `title_`, `description_`)
 - Constants: UPPER_SNAKE_CASE (e.g., `MAX_EPISODE_LENGTH`, `DEFAULT_TIMEOUT`)
 - Remove redundant prefixes from class names (e.g., use `Model` instead of `P3Model`)
-- **Include guards**: Use format `__CLASS_NAME_H_INCL__` where CLASS_NAME matches the class declared in the file
-  - Single word class: `__Driver_H_INCL__` becomes `__DRIVER_H_INCL__`
-  - Multi-word class: `__TestTools_H_INCL__` becomes `__TEST_TOOLS_H_INCL__`
+- **Include guards**: Use format `__BBFM_CLASS_NAME_H_INCL__` where CLASS_NAME matches the class declared in the file
+  - Must start with `__BBFM_` prefix to identify project namespace
+  - Single word class: `Driver` → `__BBFM_DRIVER_H_INCL__`
+  - Multi-word class: `TestTools` → `__BBFM_TEST_TOOLS_H_INCL__`
   - Insert underscore between each word in PascalCase class names
-  - Examples: `Driver` → `__DRIVER_H_INCL__`, `TestTools` → `__TEST_TOOLS_H_INCL__`, `AST` → `__AST_H_INCL__`
+  - Examples: `Driver` → `__BBFM_DRIVER_H_INCL__`, `SemanticAnalyzer` → `__BBFM_SEMANTIC_ANALYZER_H_INCL__`, `AST` → `__BBFM_AST_H_INCL__`
 
 **Header File Structure:**
 
@@ -511,6 +512,17 @@ _build/model-compiler examples/podcast.bbfm
 ---
 
 ## Recent Updates & Decisions
+
+### November 2, 2025 (00:00)
+
+- **Include guard naming convention update**: Updated include guard format to include BBFM project prefix
+- **New format**: `__BBFM_CLASS_NAME_H_INCL__` where CLASS_NAME matches the class in the file
+- **Prefix requirement**: All include guards must start with `__BBFM_` to identify project namespace
+- **Examples updated**:
+  - `Driver` → `__BBFM_DRIVER_H_INCL__` (was `__DRIVER_H_INCL__`)
+  - `SemanticAnalyzer` → `__BBFM_SEMANTIC_ANALYZER_H_INCL__` (was `__SEMANTIC_ANALYZER_H_INCL__`)
+  - `AST` → `__BBFM_AST_H_INCL__` (was `__AST_H_INCL__`)
+- **Reasoning**: Adding the BBFM prefix to include guards prevents potential naming conflicts with other libraries or system headers. This follows best practices for project-specific include guards and makes it immediately clear which project a header belongs to. The prefix serves as a namespace for header guards, similar to how the `bbfm` namespace protects C++ symbols.
 
 ### November 1, 2025 (23:55)
 

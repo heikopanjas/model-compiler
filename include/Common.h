@@ -1,5 +1,5 @@
-#ifndef __COMMON_H_INCL__
-#define __COMMON_H_INCL__
+#ifndef __BBFM_COMMON_H_INCL__
+#define __BBFM_COMMON_H_INCL__
 
 // Set 8-byte alignment for all types in this header
 #pragma pack(push, 8)
@@ -14,4 +14,4 @@
 // Restore previous alignment
 #pragma pack(pop)
 
-#endif // __COMMON_H_INCL__
+#endif // __BBFM_COMMON_H_INCL__

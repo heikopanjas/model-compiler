@@ -1,5 +1,5 @@
-#ifndef __AST_H_INCL__
-#define __AST_H_INCL__
+#ifndef __BBFM_AST_H_INCL__
+#define __BBFM_AST_H_INCL__
 
 // Set 8-byte alignment for all types in this header
 #pragma pack(push, 8)
@@ -424,4 +424,4 @@ private:
 // Restore previous alignment
 #pragma pack(pop)
 
-#endif // __AST_H_INCL__
+#endif // __BBFM_AST_H_INCL__

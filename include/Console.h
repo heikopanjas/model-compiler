@@ -1,5 +1,5 @@
-#ifndef __CONSOLE_H_INCL__
-#define __CONSOLE_H_INCL__
+#ifndef __BBFM_CONSOLE_H_INCL__
+#define __BBFM_CONSOLE_H_INCL__
 
 // Set 8-byte alignment for all types in this header
 #pragma pack(push, 8)
@@ -31,4 +31,4 @@ private:
 // Restore previous alignment
 #pragma pack(pop)
 
-#endif // __CONSOLE_H_INCL__
+#endif // __BBFM_CONSOLE_H_INCL__
