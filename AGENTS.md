@@ -1,6 +1,6 @@
 # AI Agent Operating Instructions
 
-**Last updated:** November 1, 2025 (19:45)
+**Last updated:** November 1, 2025 (20:15)
 
 ## Primary Instructions
 
@@ -141,12 +141,10 @@ This is a Domain-Specific Language (DSL) compiler for defining podcast object mo
 The compiler enables users to define data types and relationships for podcast domains (podcasts, episodes, audio assets, transcripts, etc.) using a simple, expressive language. The compiler then generates:
 
 1. Source code in target programming languages
-2. SQL database schema creation scripts
 
 ### Target Outputs (Initial)
 
-- **Source Code**: C++ (with plans to support additional languages in the future)
-- **Database Schema**: SQLite (with plans to support additional SQL dialects in the future)
+- **Source Code**: Swift (with plans to support additional languages in the future)
 
 ## Coding Standards & Conventions
 
@@ -395,7 +393,6 @@ model-compiler/
   - `[0..*]` - array that may be empty
 - Unique constraints: `[unique]`
 - Modifiers can be combined: `[1,unique]`, `[0..1,unique]`, etc.
-- Foreign key constraints (for database generation)
 
 **Compilation Phases:**
 
@@ -409,15 +406,15 @@ model-compiler/
    - Field uniqueness validation (including inherited fields)
    - Invariant validation (field reference checking)
 5. Code Generation:
-   - C++ class generation - To be implemented
-   - SQLite schema generation - To be implemented
+   - Swift class generation - To be implemented
 
 **Current Status:** The lexer, parser, AST construction, and semantic analysis are complete. The compiler successfully parses the BBFM modeling language, builds an Abstract Syntax Tree, and performs comprehensive semantic validation including type checking, inheritance validation, and constraint verification.
 
 **Architecture:** The compiler uses a `Driver` class to orchestrate compilation phases. The `main.cpp` file only handles command-line argument parsing and delegates all compilation work to the Driver:
+
 - **Phase 0** (Driver::Phase0): Lexical analysis and parsing - returns the AST as a unique_ptr
 - **Phase 1** (Driver::Phase1): Semantic analysis - validates the AST and builds symbol table, returns SemanticAnalyzer as unique_ptr
-- **Phase 2** (to be implemented): Code generation - C++ classes and SQL schemas
+- **Phase 2** (to be implemented): Code generation - Swift classes
 
 The Driver does not store the AST or analyzer internally; instead, each phase returns ownership to the caller, allowing for flexible resource management. The root AST node is represented by the `AST` class.
 
@@ -486,15 +483,15 @@ class Transcript {
 
 ### Type Mapping
 
-| BBFM Type | C++ | SQLite |
-|---------|-----|--------|
-| `String` | `std::string` | `TEXT` |
-| `Int` | `int64_t` | `INTEGER` |
-| `Real` | `double` | `REAL` |
-| `Bool` | `bool` | `INTEGER` |
-| `Timestamp` | `double` | `REAL` |
-| `Timespan` | `double` | `REAL` |
-| `Guid` | `std::string` | `TEXT` |
+| BBFM Type | Swift |
+|---------|-------|
+| `String` | `String` |
+| `Int` | `Int64` |
+| `Real` | `Double` |
+| `Bool` | `Bool` |
+| `Timestamp` | `Double` |
+| `Timespan` | `Double` |
+| `Guid` | `String` |
 
 ### Build Commands
 
@@ -518,6 +515,44 @@ _build/model-compiler examples/podcast.fm
 
 ## Recent Updates & Decisions
 
+### November 1, 2025 (20:15)
+
+- **Swift as primary code generation target**: Changed target language from C++ to Swift
+- **Files modified**:
+  - `src/main.cpp` - updated usage message to "Compiles .fm source files to Swift"
+  - `AGENTS.md` - updated all references from C++ to Swift throughout
+  - `README.md` - updated all references from C++ to Swift throughout
+- **Changes made**:
+  - Updated Target Outputs to Swift
+  - Updated Type Mapping table (C++ types to Swift types)
+  - Updated Phase 2 description to Swift class generation
+  - Updated class prefix example to reference Swift instead of C++
+  - Updated historical references to show Swift as target
+- **Type mappings**:
+  - String → String (was std::string)
+  - Int → Int64 (was int64_t)
+  - Real → Double (was double)
+  - Bool → Bool (was bool)
+  - Timestamp → Double (was double)
+  - Timespan → Double (was double)
+  - Guid → String (was std::string)
+- **Reasoning**: Swift is a better initial target language for the BBFM project as it's widely used in podcast applications (iOS, macOS) and has cleaner syntax for generated code. Swift's strong type system, optional handling, and modern language features align well with the BBFM modeling language design. The compiler infrastructure (C++23, Flex, Bison) remains unchanged; only the code generation target is different.
+
+### November 1, 2025 (20:00)
+
+- **SQL/Database feature removal**: Removed all references to SQL and database generation from codebase and documentation
+- **Files modified**:
+  - `src/main.cpp` - removed "and SQL" from usage message
+  - `AGENTS.md` - removed database schema references, SQLite type mappings, foreign key constraints
+  - `README.md` - removed database schema references and SQLite type mappings
+- **Changes made**:
+  - Removed SQLite from Target Outputs section
+  - Removed foreign key constraints from language features
+  - Updated Type Mapping tables to show only Swift mappings
+  - Updated Phase 2 description to only mention Swift code generation
+  - Updated historical references to remove SQLite/database mentions
+- **Reasoning**: Database/SQL schema generation will be added back later once the Swift code generator is working. Removing these references now simplifies the current focus on implementing Phase 2 (Swift code generation) without the distraction of unimplemented database features. This keeps the documentation accurate to what the compiler currently does and plans to do in the immediate future.
+
 ### November 1, 2025 (19:45)
 
 - **Class prefix option**: Added new `--class-prefix` command line option for code generation
@@ -533,7 +568,7 @@ _build/model-compiler examples/podcast.fm
   - `src/Driver.cpp` - updated constructor to accept and store classPrefix, implemented GetClassPrefix()
 - **Usage**: `model-compiler --class-prefix "BBFM" source.fm`
 - **Testing**: Verified option appears in help, compiles correctly with and without prefix
-- **Reasoning**: When generating code from BBFM models, users may need to add prefixes to class and enum names to avoid naming conflicts with existing code or to follow project naming conventions. For example, a BBFM model defining a `Podcast` class might generate `BBFMPodcast` in C++ to distinguish it from other Podcast classes in the project. This option prepares the infrastructure for Phase 2 (code generation) where the prefix will be applied to all generated type names. The prefix is stored in the Driver class where it can be accessed during code generation.
+- **Reasoning**: When generating code from BBFM models, users may need to add prefixes to class and enum names to avoid naming conflicts with existing code or to follow project naming conventions. For example, a BBFM model defining a `Podcast` class might generate `BBFMPodcast` in Swift to distinguish it from other Podcast classes in the project. This option prepares the infrastructure for Phase 2 (code generation) where the prefix will be applied to all generated type names. The prefix is stored in the Driver class where it can be accessed during code generation.
 
 ### November 1, 2025 (19:30)
 
@@ -567,7 +602,7 @@ _build/model-compiler examples/podcast.fm
   - Professional error messages for parsing errors
 - **Error handling**: Added exception handling for cxxopts parsing errors and general exceptions
 - **User experience improvements**:
-  - Clear usage message: "BBFM Model Compiler - Compiles .fm source files to C++ and SQL"
+  - Clear usage message: "BBFM Model Compiler - Compiles .fm source files to Swift"
   - Helpful error messages when no input file specified
   - Standard command line option conventions
 - **File modified**: src/main.cpp
@@ -1202,10 +1237,10 @@ _build/model-compiler examples/podcast.fm
 
 ### October 4, 2025 (18:15)
 
-- **Project goals defined**: DSL for podcast object model definitions, targeting C++ code generation and SQLite schema
-- **Language features specified**: User-defined types, enums, dynamic arrays, all relationship types, required/optional fields, unique constraints, foreign keys
+- **Project goals defined**: DSL for podcast object model definitions, targeting Swift code generation
+- **Language features specified**: User-defined types, enums, dynamic arrays, all relationship types, required/optional fields, unique constraints
 - **Syntax decision**: C++-like syntax (to be refined iteratively)
-- **Reasoning**: Clear project scope enables focused language design; C++ and SQLite chosen as initial targets with extensibility for future languages/dialects
+- **Reasoning**: Clear project scope enables focused language design; Swift chosen as initial target with extensibility for future languages
 
 ### October 4, 2025 (18:00)
 

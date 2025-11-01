@@ -10,10 +10,10 @@ int main(int argc, char* argv[])
     try
     {
         // Setup command line options
-        cxxopts::Options options("model-compiler", "BBFM Model Compiler - Compiles .fm source files to C++ and SQL");
+        cxxopts::Options options("model-compiler", "BBFM Model Compiler - Compiles .fm source files to Swift");
 
         options.add_options()("h,help", "Print usage information")("v,version", "Print version information")(
-            "dump-ast", "Dump the Abstract Syntax Tree after parsing")("dump-symtab", "Dump the Symbol Table after semantic analysis")(
+            "dump-ast", "Dump the Abstract Syntax Tree after lexical analysis")("dump-symtab", "Dump the Symbol Table after semantic analysis")(
             "class-prefix", "Prefix to add to generated class and enum names",
             cxxopts::value<std::string>()->default_value(""))("input", "Input source file(s)", cxxopts::value<std::vector<std::string>>());
 

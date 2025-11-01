@@ -1,15 +1,14 @@
 # Model Compiler
 
-A Domain-Specific Language (DSL) compiler for defining podcast object models and their relationships. Part of the Big Bad Feed Machine (BBFM) project, this compiler provides common infrastructure for podcast-related applications. The modeling language provides a simple, UML-inspired syntax for modeling podcast domain objects, which the compiler translates into source code and database schemas.
+A Domain-Specific Language (DSL) compiler for defining podcast object models and their relationships. Part of the Big Bad Feed Machine (BBFM) project, this compiler provides common infrastructure for podcast-related applications. The modeling language provides a simple, UML-inspired syntax for modeling podcast domain objects, which the compiler translates into source code.
 
 ## Overview
 
 The BBFM modeling language enables you to define data types, relationships, and constraints for podcast domains using an expressive, type-safe syntax. The compiler generates:
 
-- **C++ classes** with proper inheritance hierarchies
-- **SQLite database schemas** with foreign key relationships
+- **Swift classes** with proper inheritance hierarchies
 
-Future targets include additional programming languages and SQL dialects.
+Future targets include additional programming languages.
 
 ## Language Features
 
@@ -299,20 +298,19 @@ The compiler implements a multi-phase compilation process:
    - Field uniqueness validation (including inherited fields)
    - Invariant validation (field reference checking)
 3. **Phase 2: Code Generation** 🚧 - Planned:
-   - C++ class definitions with inheritance
-   - SQLite database schema with foreign keys
+   - Swift class definitions with inheritance
 
 ## Type Mappings
 
-| BBFM Type | C++ | SQLite |
-|---------|-----|--------|
-| String | std::string | TEXT |
-| Int | int64_t | INTEGER |
-| Real | double | REAL |
-| Bool | bool | INTEGER |
-| Timestamp | double | REAL |
-| Timespan | double | REAL |
-| Guid | std::string | TEXT |
+| BBFM Type | Swift |
+|---------|-------|
+| String | String |
+| Int | Int64 |
+| Real | Double |
+| Bool | Bool |
+| Timestamp | Double |
+| Timespan | Double |
+| Guid | String |
 
 ## Current Status
 
@@ -345,10 +343,8 @@ The compiler implements a multi-phase compilation process:
 **🚧 Planned:**
 
 - **Phase 2 (Code Generation)**:
-  - C++ code generation (class definitions, inheritance hierarchies)
-  - SQLite schema generation (tables, foreign keys, constraints)
+  - Swift code generation (class definitions, inheritance hierarchies)
   - Additional target languages
-  - Additional SQL dialects
 
 ## Language Specification
 
