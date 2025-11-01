@@ -4,6 +4,25 @@ project(model_compiler CXX)
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+# FetchContent for external dependencies
+include(FetchContent)
+
+# Fetch cxxopts for command line parsing
+FetchContent_Declare(
+    cxxopts
+    GIT_REPOSITORY https://github.com/jarro2783/cxxopts.git
+    GIT_TAG v3.3.1
+)
+
+# Disable cxxopts features we don't need
+set(CXXOPTS_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
+set(CXXOPTS_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+set(CXXOPTS_ENABLE_INSTALL OFF CACHE BOOL "" FORCE)
+set(CXXOPTS_ENABLE_WARNINGS OFF CACHE BOOL "" FORCE)
+set(CXXOPTS_USE_UNICODE_HELP OFF CACHE BOOL "" FORCE)
+
+FetchContent_MakeAvailable(cxxopts)
+
 # Find Flex and Bison
 find_package(FLEX REQUIRED)
 find_package(BISON REQUIRED)
@@ -41,6 +60,9 @@ target_compile_options(model-compiler PRIVATE
     -Wextra
     -Wpedantic
 )
+
+# Link cxxopts as static library
+target_link_libraries(model-compiler PRIVATE cxxopts::cxxopts)
 
 # Link with necessary libraries (if flex/bison need them)
 if (APPLE)

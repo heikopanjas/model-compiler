@@ -1,6 +1,6 @@
 # AI Agent Operating Instructions
 
-**Last updated:** November 1, 2025 (18:45)
+**Last updated:** November 1, 2025 (19:15)
 
 ## Primary Instructions
 
@@ -156,6 +156,11 @@ The compiler enables users to define data types and relationships for podcast do
 - **Generator**: Ninja (preferred over Make for faster parallel builds)
 - **Build Directory**: `_build/` (not `build/`)
 - **C++ Standard**: C++23
+- **External Dependencies**:
+  - **cxxopts**: Command line argument parser (v3.3.1)
+    - Fetched via CMake FetchContent
+    - Linked as static library (no runtime dependencies)
+    - Disabled features: examples, tests, install, warnings, unicode help
 
 ### C++ Coding Standards
 
@@ -512,6 +517,41 @@ _build/model-compiler examples/podcast.fm
 ---
 
 ## Recent Updates & Decisions
+
+### November 1, 2025 (19:15)
+
+- **Command line parsing implementation**: Implemented cxxopts-based command line parsing in main.cpp
+- **Features added**:
+  - `--help` / `-h`: Display usage information
+  - `--version` / `-v`: Display version information (v0.1.0)
+  - `--dump-ast`: Dump the Abstract Syntax Tree after parsing (optional)
+  - Positional argument for input source file(s)
+  - Automatic help display when no arguments provided
+  - Professional error messages for parsing errors
+- **Error handling**: Added exception handling for cxxopts parsing errors and general exceptions
+- **User experience improvements**:
+  - Clear usage message: "BBFM Model Compiler - Compiles .fm source files to C++ and SQL"
+  - Helpful error messages when no input file specified
+  - Standard command line option conventions
+- **File modified**: src/main.cpp
+- **Testing**: Verified all options work correctly (--help, --version, normal compilation)
+- **Reasoning**: Using cxxopts provides a professional, user-friendly command line interface with automatic help generation and standard option parsing. The implementation follows modern C++ best practices with exception handling and clear error reporting. This makes the compiler much more polished and easier to use.
+
+### November 1, 2025 (19:00)
+
+- **Command line parser integration**: Added cxxopts library for command line argument parsing
+- **Integration method**: Using CMake FetchContent to fetch cxxopts v3.3.1 from GitHub
+- **Configuration**:
+  - Disabled CXXOPTS_BUILD_EXAMPLES (don't build examples)
+  - Disabled CXXOPTS_BUILD_TESTS (don't build tests)
+  - Disabled CXXOPTS_ENABLE_INSTALL (don't install cxxopts)
+  - Disabled CXXOPTS_ENABLE_WARNINGS (don't add cxxopts warnings)
+  - Disabled CXXOPTS_USE_UNICODE_HELP (don't use unicode in help)
+- **Linking**: Static library linking via `target_link_libraries(model-compiler PRIVATE cxxopts::cxxopts)`
+- **Benefits**: No runtime dependencies, professional command line parsing, automatic help generation
+- **CMakeLists.txt updated**: Added FetchContent setup and cxxopts configuration
+- **Build verified**: Project builds successfully with cxxopts integrated
+- **Reasoning**: Using FetchContent ensures cxxopts is automatically downloaded and built during the CMake configure step, eliminating the need for manual dependency management. Static linking ensures the executable has no runtime dependencies. Disabling unnecessary features keeps the build clean and fast. The cxxopts library provides a modern, type-safe C++ interface for parsing command line arguments with automatic help text generation, which is much better than manual argument parsing.
 
 ### November 1, 2025 (18:45)
 

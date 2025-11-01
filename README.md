@@ -382,15 +382,3 @@ The compiler implements a multi-phase compilation process:
    Multi-line comment
 */
 ```
-
-## Contributing
-
-This is a personal project for experimenting with domain-specific language design and compiler implementation. See AGENTS.md for development guidelines and project decisions.
-
-## License
-
-TBD
-
-## Author
-
-Heiko
