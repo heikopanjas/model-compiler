@@ -37,6 +37,7 @@ WHITESPACE  [ \t\r]+
 "inherits"      { return INHERITS; }
 "enum"          { return ENUM; }
 "feature"       { return FEATURE; }
+"invariant"     { return INVARIANT; }
 "optional"      { return OPTIONAL; }
 "unique"        { return UNIQUE; }
 
@@ -67,6 +68,12 @@ WHITESPACE  [ \t\r]+
 "."             { return DOT; }
 ".."            { return DOTDOT; }
 "*"             { return ASTERISK; }
+"<="            { return LE; }
+">="            { return GE; }
+"=="            { return EQ; }
+"!="            { return NE; }
+"<"             { return LT; }
+">"             { return GT; }
 
 "//".* { /* single-line comment */ }
 "/*"([^*]|\*+[^*/])*\*+"/" { /* multi-line comment */ }

@@ -139,6 +139,16 @@ void Field::Dump(const int indent) const
 }
 
 // ============================================================================
+// Invariant Implementation
+// ============================================================================
+
+void Invariant::Dump(const int indent) const
+{
+    PrintIndent(indent);
+    std::cout << "invariant " << name_ << ": " << expression_ << ";\n";
+}
+
+// ============================================================================
 // EnumDeclaration Implementation
 // ============================================================================
 
@@ -181,6 +191,11 @@ void FabricDeclaration::Dump(const int indent) const
     for (const auto& field : fields_)
     {
         field->Dump(indent + 1);
+    }
+
+    for (const auto& invariant : invariants_)
+    {
+        invariant->Dump(indent + 1);
     }
 
     PrintIndent(indent);

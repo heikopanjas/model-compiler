@@ -20,6 +20,16 @@ class Asset {
 class AudioAsset inherits Asset {
     feature format: String;
     feature fileSize: Int;
+
+    invariant maxFileSize: fileSize <= 500000000;
+}
+
+class PictureAsset inherits Asset {
+    feature width: Int;
+    feature height: Int;
+
+    invariant minWidth: width >= 3000;
+    invariant minHeight: height >= 3000;
 }
 
 class Podcast {

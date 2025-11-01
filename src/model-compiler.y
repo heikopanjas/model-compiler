@@ -42,19 +42,22 @@ std::unique_ptr<bbfm::AST> g_ast;
     void *enumDecl;
     void *fabricDecl;
     void *field;
+    void *invariant;
     void *typeSpec;
     void *modifier;
     void *declarationList;
     void *stringList;
     void *fieldList;
+    void *invariantList;
     void *modifierList;
 }
 
 /* Token declarations */
-%token CLASS INHERITS ENUM FEATURE OPTIONAL UNIQUE
+%token CLASS INHERITS ENUM FEATURE INVARIANT OPTIONAL UNIQUE
 %token STRING_TYPE INT_TYPE REAL_TYPE BOOL_TYPE TIMESTAMP_TYPE TIMESPAN_TYPE DATE_TYPE GUID_TYPE
 %token LBRACE RBRACE LBRACKET RBRACKET LPAREN RPAREN
 %token SEMICOLON COLON COMMA DOT DOTDOT ASTERISK
+%token LE GE EQ NE LT GT
 %token <string> IDENTIFIER
 %token <integer> INTEGER_LITERAL
 
@@ -65,7 +68,9 @@ std::unique_ptr<bbfm::AST> g_ast;
 %type <fabricDecl> fabric_declaration
 %type <stringList> enum_value_list
 %type <fieldList> field_list
+%type <invariantList> invariant_list
 %type <field> field
+%type <invariant> invariant
 %type <typeSpec> type_spec
 %type <modifierList> modifier_spec modifier_list
 %type <modifier> modifier
@@ -139,20 +144,24 @@ enum_value_list:
     ;
 
 fabric_declaration:
-    CLASS IDENTIFIER LBRACE field_list RBRACE
+    CLASS IDENTIFIER LBRACE field_list invariant_list RBRACE
     {
         auto* fields = static_cast<std::vector<std::unique_ptr<bbfm::Field>>*>($4);
-        $$ = new bbfm::FabricDeclaration($2, "", std::move(*fields));
+        auto* invariants = static_cast<std::vector<std::unique_ptr<bbfm::Invariant>>*>($5);
+        $$ = new bbfm::FabricDeclaration($2, "", std::move(*fields), std::move(*invariants));
         free($2);
         delete fields;
+        delete invariants;
     }
-    | CLASS IDENTIFIER INHERITS IDENTIFIER LBRACE field_list RBRACE
+    | CLASS IDENTIFIER INHERITS IDENTIFIER LBRACE field_list invariant_list RBRACE
     {
         auto* fields = static_cast<std::vector<std::unique_ptr<bbfm::Field>>*>($6);
-        $$ = new bbfm::FabricDeclaration($2, $4, std::move(*fields));
+        auto* invariants = static_cast<std::vector<std::unique_ptr<bbfm::Invariant>>*>($7);
+        $$ = new bbfm::FabricDeclaration($2, $4, std::move(*fields), std::move(*invariants));
         free($2);
         free($4);
         delete fields;
+        delete invariants;
     }
     ;
 
@@ -164,6 +173,63 @@ field_list:
         auto* list = static_cast<std::vector<std::unique_ptr<bbfm::Field>>*>($1);
         list->push_back(std::unique_ptr<bbfm::Field>(static_cast<bbfm::Field*>($2)));
         $$ = list;
+    }
+    ;
+
+invariant_list:
+    /* empty */
+    { $$ = new std::vector<std::unique_ptr<bbfm::Invariant>>(); }
+    | invariant_list invariant
+    {
+        auto* list = static_cast<std::vector<std::unique_ptr<bbfm::Invariant>>*>($1);
+        list->push_back(std::unique_ptr<bbfm::Invariant>(static_cast<bbfm::Invariant*>($2)));
+        $$ = list;
+    }
+    ;
+
+invariant:
+    INVARIANT IDENTIFIER COLON IDENTIFIER LE INTEGER_LITERAL SEMICOLON
+    {
+        // Build expression string: "identifier <= value"
+        std::string expr = std::string($4) + " <= " + std::to_string($6);
+        $$ = new bbfm::Invariant($2, expr);
+        free($2);
+        free($4);
+    }
+    | INVARIANT IDENTIFIER COLON IDENTIFIER GE INTEGER_LITERAL SEMICOLON
+    {
+        std::string expr = std::string($4) + " >= " + std::to_string($6);
+        $$ = new bbfm::Invariant($2, expr);
+        free($2);
+        free($4);
+    }
+    | INVARIANT IDENTIFIER COLON IDENTIFIER LT INTEGER_LITERAL SEMICOLON
+    {
+        std::string expr = std::string($4) + " < " + std::to_string($6);
+        $$ = new bbfm::Invariant($2, expr);
+        free($2);
+        free($4);
+    }
+    | INVARIANT IDENTIFIER COLON IDENTIFIER GT INTEGER_LITERAL SEMICOLON
+    {
+        std::string expr = std::string($4) + " > " + std::to_string($6);
+        $$ = new bbfm::Invariant($2, expr);
+        free($2);
+        free($4);
+    }
+    | INVARIANT IDENTIFIER COLON IDENTIFIER EQ INTEGER_LITERAL SEMICOLON
+    {
+        std::string expr = std::string($4) + " == " + std::to_string($6);
+        $$ = new bbfm::Invariant($2, expr);
+        free($2);
+        free($4);
+    }
+    | INVARIANT IDENTIFIER COLON IDENTIFIER NE INTEGER_LITERAL SEMICOLON
+    {
+        std::string expr = std::string($4) + " != " + std::to_string($6);
+        $$ = new bbfm::Invariant($2, expr);
+        free($2);
+        free($4);
     }
     ;
 

@@ -1,6 +1,6 @@
 # AI Agent Operating Instructions
 
-**Last updated:** November 1, 2025 (23:30)
+**Last updated:** November 1, 2025 (23:45)
 
 ## Primary Instructions
 
@@ -289,7 +289,7 @@ model-compiler/
 - **File Extension**: `.bbfm` for source files
 - **Lexer**: Flex 2.6+
 - **Parser**: Bison 3.8+
-- **Keywords**: `class` (define types), `enum` (define enumerations), `inherits` (specify inheritance), `feature` (declare class attributes/fields)
+- **Keywords**: `class` (define types), `enum` (define enumerations), `inherits` (specify inheritance), `feature` (declare class attributes/fields), `invariant` (declare boolean constraints)
 - **Naming Conventions**:
   - All type names use PascalCase
   - User-defined types: PascalCase (e.g., `Podcast`, `Episode`)
@@ -308,6 +308,13 @@ model-compiler/
   - Optional modifier: `[optional]` is equivalent to `[0..1]`
   - Constraints: `[unique]` for unique fields
   - Modifiers can be combined: `[optional,unique]` for optional unique field
+- **Invariants**:
+  - Boolean constraints on class attributes declared with `invariant` keyword
+  - Syntax: `invariant name: expression;`
+  - Example: `invariant validWidth: width <= 3000;`
+  - Supported operators: `<=`, `>=`, `<`, `>`, `==`, `!=`
+  - Currently supports simple comparison expressions (attribute operator literal)
+  - Invariants are type-checked as boolean expressions
 
 ### Language Features
 
@@ -396,6 +403,8 @@ class AudioAsset inherits Asset {
     // Inherits from Asset + has universal metadata
     feature format: String;
     feature fileSize: Int;
+
+    invariant maxFileSize: fileSize <= 500000000;  // Max 500MB
 }
 
 class VideoAsset inherits Asset {
@@ -403,6 +412,9 @@ class VideoAsset inherits Asset {
     feature width: Int;
     feature height: Int;
     feature duration: Timespan;
+
+    invariant validWidth: width <= 3840;    // Max 4K width
+    invariant validHeight: height <= 2160;  // Max 4K height
 }
 
 class Podcast {
@@ -462,6 +474,20 @@ _build/model-compiler examples/podcast.bbfm
 ---
 
 ## Recent Updates & Decisions
+
+### November 1, 2025 (23:45)
+
+- **Invariant feature**: Added `invariant` keyword for declaring boolean constraints on class attributes
+- **Syntax**: `invariant name: expression;` where expression is a comparison of an attribute against a literal
+- **Supported operators**: `<=`, `>=`, `<`, `>`, `==`, `!=`
+- **Example**: `invariant validWidth: width <= 3000;`
+- **AST updates**: Created new `Invariant` class to represent constraint declarations
+- **FabricDeclaration updates**: Added invariants vector to store class constraints
+- **Parser updates**: Added grammar rules for invariant declarations with all comparison operators
+- **Lexer updates**: Added `INVARIANT` keyword and comparison operator tokens (LE, GE, LT, GT, EQ, NE)
+- **Files updated**: AGENTS.md, AST.h, AST.cpp, model-compiler.l, model-compiler.y, created test_invariant.bbfm
+- **Type checking**: Invariants are intended to be type-checked as boolean expressions (to be implemented in semantic analysis phase)
+- **Reasoning**: Invariants provide a declarative way to specify domain constraints on data types. This allows the compiler to generate validation code and documentation from the model. The syntax is inspired by UML constraints and Design by Contract principles. Starting with simple comparison expressions keeps the initial implementation focused while establishing the foundation for more complex boolean expressions in future iterations.
 
 ### November 1, 2025 (23:30)
 

@@ -16,6 +16,7 @@ class Declaration;
 class EnumDeclaration;
 class FabricDeclaration;
 class Field;
+class Invariant;
 class TypeSpec;
 class Modifier;
 
@@ -239,6 +240,40 @@ public:
 };
 
 // ============================================================================
+// Invariant Declaration
+// ============================================================================
+
+/// \brief Represents an invariant constraint in a fabric type
+class Invariant : public ASTNode
+{
+private:
+    std::string name_;
+    std::string expression_;
+
+public:
+    /// \brief Construct an invariant
+    /// \param name The invariant's name
+    /// \param expression The boolean expression for the invariant
+    Invariant(const std::string& name, const std::string& expression) : name_(name), expression_(expression) {}
+
+    /// \brief Get the invariant's name
+    /// \return The invariant name
+    const std::string& GetName() const
+    {
+        return name_;
+    }
+
+    /// \brief Get the invariant's expression
+    /// \return The boolean expression
+    const std::string& GetExpression() const
+    {
+        return expression_;
+    }
+
+    void Dump(int indent = 0) const override;
+};
+
+// ============================================================================
 // Field Declaration
 // ============================================================================
 
@@ -343,17 +378,21 @@ public:
 class FabricDeclaration : public ASTNode
 {
 private:
-    std::string                         name_;
-    std::string                         baseType_; // Empty string if no explicit base (inherits from implicit Fabric)
-    std::vector<std::unique_ptr<Field>> fields_;
+    std::string                             name_;
+    std::string                             baseType_; // Empty string if no explicit base (inherits from implicit Fabric)
+    std::vector<std::unique_ptr<Field>>     fields_;
+    std::vector<std::unique_ptr<Invariant>> invariants_;
 
 public:
     /// \brief Construct a fabric declaration
     /// \param name The fabric type name
     /// \param baseType The base type name (empty if inherits from implicit Fabric)
     /// \param fields Vector of field declarations
-    FabricDeclaration(const std::string& name, const std::string& baseType, std::vector<std::unique_ptr<Field>> fields) :
-        name_(name), baseType_(baseType), fields_(std::move(fields))
+    /// \param invariants Vector of invariant declarations
+    FabricDeclaration(
+        const std::string& name, const std::string& baseType, std::vector<std::unique_ptr<Field>> fields,
+        std::vector<std::unique_ptr<Invariant>> invariants = {}) :
+        name_(name), baseType_(baseType), fields_(std::move(fields)), invariants_(std::move(invariants))
     {
     }
 
@@ -383,6 +422,13 @@ public:
     const std::vector<std::unique_ptr<Field>>& GetFields() const
     {
         return fields_;
+    }
+
+    /// \brief Get the fabric's invariants
+    /// \return Vector of invariant declarations
+    const std::vector<std::unique_ptr<Invariant>>& GetInvariants() const
+    {
+        return invariants_;
     }
 
     void Dump(int indent = 0) const override;
