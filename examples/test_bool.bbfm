@@ -1,15 +1,15 @@
 // Test file for Bool type
 
 class UserPreferences {
-    String userId;
-    Bool emailNotifications;      // mandatory boolean
-    Bool pushNotifications;
-    Bool darkMode[optional];      // optional boolean
-    Bool isActive[1];             // explicit mandatory
+    feature userId: String;
+    feature emailNotifications: Bool;      // mandatory boolean
+    feature pushNotifications: Bool;
+    feature darkMode: Bool [optional];      // optional boolean
+    feature isActive: Bool [1];             // explicit mandatory
 }
 
 class FeatureFlags {
-    Bool enableBetaFeatures;
-    Bool allowGuestAccess;
-    Bool maintenanceMode;
+    feature enableBetaFeatures: Bool;
+    feature allowGuestAccess: Bool;
+    feature maintenanceMode: Bool;
 }

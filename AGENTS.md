@@ -1,6 +1,6 @@
 # AI Agent Operating Instructions
 
-**Last updated:** November 1, 2025 (23:00)
+**Last updated:** November 1, 2025 (23:30)
 
 ## Primary Instructions
 
@@ -289,16 +289,21 @@ model-compiler/
 - **File Extension**: `.bbfm` for source files
 - **Lexer**: Flex 2.6+
 - **Parser**: Bison 3.8+
-- **Keywords**: `class` (define types), `enum` (define enumerations), `inherits` (specify inheritance)
+- **Keywords**: `class` (define types), `enum` (define enumerations), `inherits` (specify inheritance), `feature` (declare class attributes/fields)
 - **Naming Conventions**:
   - All type names use PascalCase
   - User-defined types: PascalCase (e.g., `Podcast`, `Episode`)
   - Primitive types: PascalCase (e.g., `String`, `Int`, `Real`)
   - Language is case-insensitive for keywords and type names
+- **Field Declaration Syntax**:
+  - Fields are declared using the `feature` keyword followed by name, colon, type, and optional modifiers
+  - Syntax: `feature fieldName: TypeName [modifiers];`
+  - Example: `feature author: String [optional];`
+  - The `feature` keyword makes field declarations explicit and self-documenting
 - **Field Modifiers**:
-  - Modifiers are specified in square brackets `[]` after the field name
+  - Modifiers are specified in square brackets `[]` after the type specification
   - **Default modifier**: `[1]` (mandatory single value) - applied when no modifiers are specified
-  - Shorthand syntax: `String name;` is equivalent to `String name[1];`
+  - Shorthand syntax: `feature name: String;` is equivalent to `feature name: String [1];`
   - Cardinality: `[1]` (mandatory), `[0..1]` (optional), `[0..*]` (optional array), `[1..*]` (required array with at least one element)
   - Optional modifier: `[optional]` is equivalent to `[0..1]`
   - Constraints: `[unique]` for unique fields
@@ -384,43 +389,43 @@ enum MediaType {
 
 class Asset {
     // Universal metadata fields are automatic (not declared)
-    String url;
+    feature url: String;
 }
 
 class AudioAsset inherits Asset {
     // Inherits from Asset + has universal metadata
-    String format;
-    Int fileSize;
+    feature format: String;
+    feature fileSize: Int;
 }
 
 class VideoAsset inherits Asset {
     // Inherits from Asset + has universal metadata
-    Int width;
-    Int height;
-    Timespan duration;
+    feature width: Int;
+    feature height: Int;
+    feature duration: Timespan;
 }
 
 class Podcast {
     // Universal metadata fields are automatic (not declared)
-    String title;
-    String description;
-    String author[optional];         // optional field using optional modifier
-    String rssUrl[1,unique];         // mandatory + unique (explicit modifiers)
-    Episode episodes[0..*];          // one-to-many (may be empty)
+    feature title: String;
+    feature description: String;
+    feature author: String [optional];         // optional field using optional modifier
+    feature rssUrl: String [1,unique];         // mandatory + unique (explicit modifiers)
+    feature episodes: Episode [0..*];          // one-to-many (may be empty)
 }
 
 class Episode {
-    String title;
-    Date publishedAt;
-    Timespan duration;
-    MediaType mediaType;
-    AudioAsset audio;                // one-to-one relationship
-    Transcript transcript[optional]; // optional one-to-one using optional modifier
+    feature title: String;
+    feature publishedAt: Date;
+    feature duration: Timespan;
+    feature mediaType: MediaType;
+    feature audio: AudioAsset;                // one-to-one relationship
+    feature transcript: Transcript [optional]; // optional one-to-one using optional modifier
 }
 
 class Transcript {
-    String text;
-    String language;
+    feature text: String;
+    feature language: String;
 }
 ```
 
@@ -457,6 +462,17 @@ _build/model-compiler examples/podcast.bbfm
 ---
 
 ## Recent Updates & Decisions
+
+### November 1, 2025 (23:30)
+
+- **Feature keyword introduction**: Added `feature` keyword for explicit field declarations
+- **Syntax change**: Changed from `String author [optional];` to `feature author: String [optional];`
+- **New field declaration format**: `feature fieldName: TypeName [modifiers];`
+- **Parser updates**: Modified grammar to require `feature` keyword before field name, followed by colon, then type specification
+- **Lexer updates**: Added `FEATURE` token to recognized keywords
+- **Files updated**: AGENTS.md, all example files (podcast.bbfm, test_bool.bbfm, test_optional.bbfm, test_shorthand.bbfm, test_question_mark.bbfm), lexer (model-compiler.l), parser (model-compiler.y)
+- **Self-documenting syntax**: Field declarations now explicitly use `feature` keyword making the intent immediately clear
+- **Reasoning**: The `feature` keyword makes field declarations more explicit and self-documenting. The syntax `feature author: String [optional]` clearly separates the field name from its type specification, making the language more readable and easier to parse. This syntax is inspired by UML attribute notation and modern languages like Kotlin/Swift that use explicit declaration keywords. The colon separator between name and type is a familiar pattern that reduces ambiguity and improves code clarity.
 
 ### November 1, 2025 (23:00)
 

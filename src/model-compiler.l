@@ -36,6 +36,7 @@ WHITESPACE  [ \t\r]+
 "class"         { return CLASS; }
 "inherits"      { return INHERITS; }
 "enum"          { return ENUM; }
+"feature"       { return FEATURE; }
 "optional"      { return OPTIONAL; }
 "unique"        { return UNIQUE; }
 

@@ -14,32 +14,32 @@ enum MediaType {
 }
 
 class Asset {
-    String url;
+    feature url: String;
 }
 
 class AudioAsset inherits Asset {
-    String format;
-    Int fileSize;
+    feature format: String;
+    feature fileSize: Int;
 }
 
 class Podcast {
-    String title;
-    String description;
-    String author[optional];     // Optional field using optional modifier
-    String rssUrl[1,unique];     // Mandatory + unique
-    Episode episodes[0..*];      // One-to-many (may be empty)
+    feature title: String;
+    feature description: String;
+    feature author: String [optional];     // Optional field using optional modifier
+    feature rssUrl: String [1,unique];     // Mandatory + unique
+    feature episodes: Episode [0..*];      // One-to-many (may be empty)
 }
 
 class Episode {
-    String title;
-    Date publishedAt;
-    Timespan duration;
-    MediaType mediaType;
-    AudioAsset audio;            // One-to-one relationship
-    Transcript transcript[optional]; // Optional one-to-one using optional modifier
+    feature title: String;
+    feature publishedAt: Date;
+    feature duration: Timespan;
+    feature mediaType: MediaType;
+    feature audio: AudioAsset;            // One-to-one relationship
+    feature transcript: Transcript [optional]; // Optional one-to-one using optional modifier
 }
 
 class Transcript {
-    String text;
-    String language;
+    feature text: String;
+    feature language: String;
 }

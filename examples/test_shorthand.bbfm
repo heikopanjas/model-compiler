@@ -2,14 +2,14 @@
 
 class TestType {
     // New shorthand syntax - defaults to [1]
-    String name;
-    Int age;
+    feature name: String;
+    feature age: Int;
 
     // Optional field using optional modifier (equivalent to [0..1])
-    String middleName[optional];
+    feature middleName: String [optional];
 
     // Explicit modifiers still work
-    String email[1,unique];
-    String nickname[0..1];        // Same as middleName[optional] above
-    String tags[0..*];
+    feature email: String [1,unique];
+    feature nickname: String [0..1];        // Same as middleName[optional] above
+    feature tags: String [0..*];
 }

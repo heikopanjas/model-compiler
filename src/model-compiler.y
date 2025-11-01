@@ -51,7 +51,7 @@ std::unique_ptr<bbfm::AST> g_ast;
 }
 
 /* Token declarations */
-%token CLASS INHERITS ENUM OPTIONAL UNIQUE
+%token CLASS INHERITS ENUM FEATURE OPTIONAL UNIQUE
 %token STRING_TYPE INT_TYPE REAL_TYPE BOOL_TYPE TIMESTAMP_TYPE TIMESPAN_TYPE DATE_TYPE GUID_TYPE
 %token LBRACE RBRACE LBRACKET RBRACKET LPAREN RPAREN
 %token SEMICOLON COLON COMMA DOT DOTDOT ASTERISK
@@ -69,7 +69,6 @@ std::unique_ptr<bbfm::AST> g_ast;
 %type <typeSpec> type_spec
 %type <modifierList> modifier_spec modifier_list
 %type <modifier> modifier
-%type <integer> field_modifiers
 
 %%
 
@@ -169,39 +168,34 @@ field_list:
     ;
 
 field:
-    field_modifiers type_spec IDENTIFIER modifier_spec SEMICOLON
+    FEATURE IDENTIFIER COLON type_spec modifier_spec SEMICOLON
     {
-        auto* type = static_cast<bbfm::TypeSpec*>($2);
-        auto* modifiers = static_cast<std::vector<std::unique_ptr<bbfm::Modifier>>*>($4);
+        auto* type = static_cast<bbfm::TypeSpec*>($4);
+        auto* modifiers = static_cast<std::vector<std::unique_ptr<bbfm::Modifier>>*>($5);
         $$ = new bbfm::Field(
             std::unique_ptr<bbfm::TypeSpec>(type),
-            $3,
+            $2,
             std::move(*modifiers),
-            $1 != 0
+            false
         );
-        free($3);
+        free($2);
         delete modifiers;
     }
-    | field_modifiers type_spec IDENTIFIER SEMICOLON
+    | FEATURE IDENTIFIER COLON type_spec SEMICOLON
     {
         // Default modifier: [1] (mandatory single value)
-        auto* type = static_cast<bbfm::TypeSpec*>($2);
+        auto* type = static_cast<bbfm::TypeSpec*>($4);
         auto modifiers = std::vector<std::unique_ptr<bbfm::Modifier>>();
         modifiers.push_back(std::make_unique<bbfm::CardinalityModifier>(1, 1));
 
         $$ = new bbfm::Field(
             std::unique_ptr<bbfm::TypeSpec>(type),
-            $3,
+            $2,
             std::move(modifiers),
-            $1 != 0
+            false
         );
-        free($3);
+        free($2);
     }
-    ;
-
-field_modifiers:
-    /* empty */
-    { $$ = 0; }
     ;
 
 type_spec:
