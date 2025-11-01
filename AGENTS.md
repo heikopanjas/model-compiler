@@ -1,6 +1,6 @@
 # AI Agent Operating Instructions
 
-**Last updated:** November 1, 2025 (22:15)
+**Last updated:** November 1, 2025 (23:00)
 
 ## Primary Instructions
 
@@ -351,6 +351,16 @@ model-compiler/
   - Supported operators: `<=`, `>=`, `<`, `>`, `==`, `!=`
   - Currently supports simple comparison expressions (attribute operator literal)
   - Invariants are type-checked as boolean expressions
+- **Computed Features**:
+  - Auto-calculated fields defined with initializer expressions
+  - Syntax: `feature fieldName: TypeName = expression;`
+  - Example: `feature area: Int = width * height;`
+  - Can reference other fields in the same class (including inherited fields)
+  - **Member access expressions**: Can access fields of nested objects using dot notation
+  - Member access syntax: `object.field` (e.g., `topLeft.x`)
+  - Example: `feature width: Int = bottomRight.x - topLeft.x;`
+  - **Constraints**: Must have cardinality `[1]` (cannot be arrays or optional)
+  - **Validation**: Semantic analyzer validates field references, member access chains, and type compatibility
 
 ### Language Features
 
@@ -405,6 +415,7 @@ model-compiler/
    - Inheritance cycle detection
    - Field uniqueness validation (including inherited fields)
    - Invariant validation (field reference checking)
+   - Computed feature validation (field references, member access, cardinality)
 5. Code Generation:
    - Swift class generation - To be implemented
 
@@ -523,6 +534,24 @@ _build/model-compiler --help
 ---
 
 ## Recent Updates & Decisions
+
+### November 1, 2025 (23:00)
+
+- **Computed features semantic validation**: Implemented comprehensive validation for computed features with member access expressions
+- **Features added**:
+  - Field reference validation - verifies all referenced fields exist and are accessible
+  - Member access validation - validates object.field syntax, checks object is class type, verifies member exists
+  - Cardinality validation - enforces computed features must have cardinality [1] (not arrays)
+  - Type checking - ensures member access only works on user-defined class types, not primitives
+  - Recursive validation - handles nested member access chains (e.g., a.b.c)
+- **Implementation details**:
+  - Added 5 new methods to SemanticAnalyzer: ValidateComputedFeatures(), ValidateComputedFeatureExpression(), ValidateMemberAccess(), ValidateMemberAccessInExpression(), GetFieldType()
+  - Updated CollectFieldReferences() to handle MemberAccessExpression nodes
+  - ValidateClassDeclaration() now calls ValidateComputedFeatures()
+- **Test coverage**: Added 3 error test cases validating detection of undefined field references, member access on primitives, and non-existent members on valid classes
+- **Files modified**: SemanticAnalyzer.h, SemanticAnalyzer.cpp, plus 3 new error test files
+- **Commit**: b8e98a4 - feat(semantic): validate computed features
+- **Reasoning**: Semantic validation ensures computed features are type-safe and all field references are valid before code generation. Member access validation prevents runtime errors by catching invalid object.field expressions at compile time. Cardinality validation enforces the design constraint that computed features must be single-valued. This provides a solid foundation for generating correct code in Phase 2.
 
 ### November 1, 2025 (22:15)
 

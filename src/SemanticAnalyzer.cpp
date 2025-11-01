@@ -461,8 +461,8 @@ bool SemanticAnalyzer::ValidateComputedFeatures(const ClassDeclaration* classDec
 
 bool SemanticAnalyzer::ValidateComputedFeatureExpression(const Field* field, const ClassDeclaration* classDecl, const std::set<std::string>& availableFields)
 {
-    bool               success = true;
-    const Expression*  expr    = field->GetInitializer();
+    bool              success = true;
+    const Expression* expr    = field->GetInitializer();
 
     if (nullptr == expr)
     {
@@ -475,8 +475,9 @@ bool SemanticAnalyzer::ValidateComputedFeatureExpression(const Field* field, con
     {
         if (cardinality->IsArray())
         {
-            ReportError("Computed feature '" + field->GetName() + "' in class '" + classDecl->GetName() +
-                        "' cannot be an array - computed features must have cardinality [1]");
+            ReportError(
+                "Computed feature '" + field->GetName() + "' in class '" + classDecl->GetName() +
+                "' cannot be an array - computed features must have cardinality [1]");
             success = false;
         }
     }
@@ -490,8 +491,7 @@ bool SemanticAnalyzer::ValidateComputedFeatureExpression(const Field* field, con
     {
         if (0 == availableFields.count(refField))
         {
-            ReportError("Computed feature '" + field->GetName() + "' in class '" + classDecl->GetName() +
-                        "' references undefined field '" + refField + "'");
+            ReportError("Computed feature '" + field->GetName() + "' in class '" + classDecl->GetName() + "' references undefined field '" + refField + "'");
             success = false;
         }
     }
@@ -500,6 +500,62 @@ bool SemanticAnalyzer::ValidateComputedFeatureExpression(const Field* field, con
     if (!ValidateMemberAccessInExpression(expr, classDecl, "computed feature '" + field->GetName() + "'"))
     {
         success = false;
+    }
+
+    // Type checking - verify expression type matches declared field type
+    Expression::Type exprType = InferExpressionType(expr, classDecl);
+    if (Expression::Type::UNKNOWN != exprType)
+    {
+        if (!IsTypeCompatible(exprType, field->GetType()))
+        {
+            const TypeSpec* fieldTypeSpec = field->GetType();
+            std::string     fieldTypeName;
+            if (fieldTypeSpec->IsPrimitive())
+            {
+                const PrimitiveTypeSpec* primType = static_cast<const PrimitiveTypeSpec*>(fieldTypeSpec);
+                fieldTypeName                     = PrimitiveTypeSpec::TypeToString(primType->GetType());
+            }
+            else
+            {
+                const UserDefinedTypeSpec* userType = static_cast<const UserDefinedTypeSpec*>(fieldTypeSpec);
+                fieldTypeName                       = userType->GetTypeName();
+            }
+
+            // Map Expression::Type to string for error message
+            std::string exprTypeName;
+            switch (exprType)
+            {
+                case Expression::Type::INT:
+                    exprTypeName = "Int";
+                    break;
+                case Expression::Type::REAL:
+                    exprTypeName = "Real";
+                    break;
+                case Expression::Type::STRING:
+                    exprTypeName = "String";
+                    break;
+                case Expression::Type::BOOL:
+                    exprTypeName = "Bool";
+                    break;
+                case Expression::Type::TIMESTAMP:
+                    exprTypeName = "Timestamp";
+                    break;
+                case Expression::Type::TIMESPAN:
+                    exprTypeName = "Timespan";
+                    break;
+                case Expression::Type::GUID:
+                    exprTypeName = "Guid";
+                    break;
+                default:
+                    exprTypeName = "Unknown";
+                    break;
+            }
+
+            ReportError(
+                "Computed feature '" + field->GetName() + "' in class '" + classDecl->GetName() + "' has type mismatch: declared as '" + fieldTypeName +
+                "' but expression evaluates to '" + exprTypeName + "'");
+            success = false;
+        }
     }
 
     return success;
@@ -579,13 +635,13 @@ bool SemanticAnalyzer::ValidateMemberAccess(const MemberAccessExpression* member
 
     // Get the object expression (left side of the dot)
     const Expression* object = memberAccess->GetObject();
-    
+
     // Check if object is a field reference
     const FieldReference* fieldRef = dynamic_cast<const FieldReference*>(object);
     if (nullptr != fieldRef)
     {
         const std::string& objectFieldName = fieldRef->GetFieldName();
-        
+
         // Find the field type
         const TypeSymbol* fieldType = GetFieldType(classDecl, objectFieldName);
         if (nullptr == fieldType)
@@ -597,8 +653,7 @@ bool SemanticAnalyzer::ValidateMemberAccess(const MemberAccessExpression* member
         // Verify it's a user-defined type (not a primitive)
         if (TypeSymbol::Kind::CLASS != fieldType->kind)
         {
-            ReportError("In " + errorContext + ": cannot access member '" + memberAccess->GetMemberName() +
-                        "' on non-class field '" + objectFieldName + "'");
+            ReportError("In " + errorContext + ": cannot access member '" + memberAccess->GetMemberName() + "' on non-class field '" + objectFieldName + "'");
             return false;
         }
 
@@ -607,8 +662,7 @@ bool SemanticAnalyzer::ValidateMemberAccess(const MemberAccessExpression* member
         const TypeSymbol*       memberType = GetFieldType(fieldClass, memberAccess->GetMemberName());
         if (nullptr == memberType)
         {
-            ReportError("In " + errorContext + ": class '" + fieldType->name + "' has no member '" +
-                        memberAccess->GetMemberName() + "'");
+            ReportError("In " + errorContext + ": class '" + fieldType->name + "' has no member '" + memberAccess->GetMemberName() + "'");
             return false;
         }
     }
@@ -643,11 +697,11 @@ const TypeSymbol* SemanticAnalyzer::GetFieldType(const ClassDeclaration* classDe
         if (field->GetName() == fieldName)
         {
             const TypeSpec* typeSpec = field->GetType();
-            
+
             if (typeSpec->IsPrimitive())
             {
                 const PrimitiveTypeSpec* primType = static_cast<const PrimitiveTypeSpec*>(typeSpec);
-                const std::string typeName = PrimitiveTypeSpec::TypeToString(primType->GetType());
+                const std::string        typeName = PrimitiveTypeSpec::TypeToString(primType->GetType());
                 return LookupType(typeName);
             }
             else if (typeSpec->IsUserDefined())
@@ -659,6 +713,211 @@ const TypeSymbol* SemanticAnalyzer::GetFieldType(const ClassDeclaration* classDe
     }
 
     return nullptr;
+}
+
+Expression::Type SemanticAnalyzer::InferExpressionType(const Expression* expr, const ClassDeclaration* classDecl) const
+{
+    if (nullptr == expr)
+    {
+        return Expression::Type::UNKNOWN;
+    }
+
+    // Check for literal expressions
+    const LiteralExpression* literal = dynamic_cast<const LiteralExpression*>(expr);
+    if (nullptr != literal)
+    {
+        return literal->GetResultType();
+    }
+
+    // Check for field references
+    const FieldReference* fieldRef = dynamic_cast<const FieldReference*>(expr);
+    if (nullptr != fieldRef)
+    {
+        const TypeSymbol* fieldType = GetFieldType(classDecl, fieldRef->GetFieldName());
+        if (nullptr != fieldType)
+        {
+            if (TypeSymbol::Kind::PRIMITIVE == fieldType->kind)
+            {
+                return PrimitiveNameToExpressionType(fieldType->name);
+            }
+            // User-defined types don't have Expression::Type representation
+            return Expression::Type::UNKNOWN;
+        }
+        return Expression::Type::UNKNOWN;
+    }
+
+    // Check for member access expressions
+    const MemberAccessExpression* memberAccess = dynamic_cast<const MemberAccessExpression*>(expr);
+    if (nullptr != memberAccess)
+    {
+        // Get the type of the object
+        const FieldReference* objectRef = dynamic_cast<const FieldReference*>(memberAccess->GetObject());
+        if (nullptr != objectRef)
+        {
+            const TypeSymbol* objectType = GetFieldType(classDecl, objectRef->GetFieldName());
+            if (nullptr != objectType && TypeSymbol::Kind::CLASS == objectType->kind)
+            {
+                // Look up the member type in the object's class
+                const TypeSymbol* memberType = GetFieldType(objectType->classDecl, memberAccess->GetMemberName());
+                if (nullptr != memberType && TypeSymbol::Kind::PRIMITIVE == memberType->kind)
+                {
+                    return PrimitiveNameToExpressionType(memberType->name);
+                }
+            }
+        }
+        // Could be nested member access - would need recursive handling
+        return Expression::Type::UNKNOWN;
+    }
+
+    // Check for binary expressions
+    const BinaryExpression* binExpr = dynamic_cast<const BinaryExpression*>(expr);
+    if (nullptr != binExpr)
+    {
+        // For comparison and logical operators, result is always BOOL
+        BinaryExpression::Op op = binExpr->GetOperator();
+        if (BinaryExpression::Op::LT == op || BinaryExpression::Op::GT == op || BinaryExpression::Op::LE == op || BinaryExpression::Op::GE == op ||
+            BinaryExpression::Op::EQ == op || BinaryExpression::Op::NE == op || BinaryExpression::Op::AND == op || BinaryExpression::Op::OR == op)
+        {
+            return Expression::Type::BOOL;
+        }
+
+        // For arithmetic operators, infer from operands
+        Expression::Type leftType  = InferExpressionType(binExpr->GetLeft(), classDecl);
+        Expression::Type rightType = InferExpressionType(binExpr->GetRight(), classDecl);
+
+        // If either is UNKNOWN, we can't infer
+        if (Expression::Type::UNKNOWN == leftType || Expression::Type::UNKNOWN == rightType)
+        {
+            return Expression::Type::UNKNOWN;
+        }
+
+        // Type widening: if either is REAL, result is REAL
+        if (Expression::Type::REAL == leftType || Expression::Type::REAL == rightType || Expression::Type::TIMESTAMP == leftType ||
+            Expression::Type::TIMESTAMP == rightType || Expression::Type::TIMESPAN == leftType || Expression::Type::TIMESPAN == rightType)
+        {
+            return Expression::Type::REAL;
+        }
+
+        // If both are INT, result is INT
+        if (Expression::Type::INT == leftType && Expression::Type::INT == rightType)
+        {
+            return Expression::Type::INT;
+        }
+
+        // If both are STRING, result is STRING (for concatenation)
+        if (Expression::Type::STRING == leftType && Expression::Type::STRING == rightType && BinaryExpression::Op::ADD == op)
+        {
+            return Expression::Type::STRING;
+        }
+
+        return Expression::Type::UNKNOWN;
+    }
+
+    // Check for unary expressions
+    const UnaryExpression* unaryExpr = dynamic_cast<const UnaryExpression*>(expr);
+    if (nullptr != unaryExpr)
+    {
+        // NOT operator returns BOOL
+        if (UnaryExpression::Op::NOT == unaryExpr->GetOperator())
+        {
+            return Expression::Type::BOOL;
+        }
+        // NEG operator returns same type as operand
+        return InferExpressionType(unaryExpr->GetOperand(), classDecl);
+    }
+
+    // Check for parenthesized expressions
+    const ParenthesizedExpression* parenExpr = dynamic_cast<const ParenthesizedExpression*>(expr);
+    if (nullptr != parenExpr)
+    {
+        return InferExpressionType(parenExpr->GetExpression(), classDecl);
+    }
+
+    // Check for function calls
+    const FunctionCall* funcCall = dynamic_cast<const FunctionCall*>(expr);
+    if (nullptr != funcCall)
+    {
+        return funcCall->GetResultType();
+    }
+
+    return Expression::Type::UNKNOWN;
+}
+
+bool SemanticAnalyzer::IsTypeCompatible(Expression::Type exprType, const TypeSpec* fieldTypeSpec) const
+{
+    if (nullptr == fieldTypeSpec)
+    {
+        return false;
+    }
+
+    // User-defined types can't be validated this way
+    if (fieldTypeSpec->IsUserDefined())
+    {
+        return true; // For now, assume user-defined types are OK
+    }
+
+    const PrimitiveTypeSpec* primType  = static_cast<const PrimitiveTypeSpec*>(fieldTypeSpec);
+    Expression::Type         fieldType = PrimitiveNameToExpressionType(PrimitiveTypeSpec::TypeToString(primType->GetType()));
+
+    // Exact match
+    if (exprType == fieldType)
+    {
+        return true;
+    }
+
+    // Allow Int -> Real (widening conversion, safe)
+    if (Expression::Type::INT == exprType && Expression::Type::REAL == fieldType)
+    {
+        return true;
+    }
+
+    // Timestamp and Timespan are both represented as Real internally
+    if (Expression::Type::REAL == exprType && (Expression::Type::TIMESTAMP == fieldType || Expression::Type::TIMESPAN == fieldType))
+    {
+        return true;
+    }
+
+    if ((Expression::Type::TIMESTAMP == exprType || Expression::Type::TIMESPAN == exprType) && Expression::Type::REAL == fieldType)
+    {
+        return true;
+    }
+
+    // No other implicit conversions allowed
+    return false;
+}
+
+Expression::Type SemanticAnalyzer::PrimitiveNameToExpressionType(const std::string& typeName) const
+{
+    if ("Int" == typeName)
+    {
+        return Expression::Type::INT;
+    }
+    if ("Real" == typeName)
+    {
+        return Expression::Type::REAL;
+    }
+    if ("String" == typeName)
+    {
+        return Expression::Type::STRING;
+    }
+    if ("Bool" == typeName)
+    {
+        return Expression::Type::BOOL;
+    }
+    if ("Timestamp" == typeName)
+    {
+        return Expression::Type::TIMESTAMP;
+    }
+    if ("Timespan" == typeName)
+    {
+        return Expression::Type::TIMESPAN;
+    }
+    if ("Guid" == typeName)
+    {
+        return Expression::Type::GUID;
+    }
+
+    return Expression::Type::UNKNOWN;
 }
 
 bool SemanticAnalyzer::TypeExists(const std::string& typeName) const

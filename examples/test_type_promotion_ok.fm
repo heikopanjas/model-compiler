@@ -1,0 +1,9 @@
+// Test: Int to Real promotion should work (widening conversion)
+
+class Rectangle {
+    feature width: Int;
+    feature height: Int;
+
+    // OK: Int expression can be assigned to Real field (widening)
+    feature area: Real = width * height;
+}

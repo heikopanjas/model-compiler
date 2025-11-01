@@ -1,0 +1,14 @@
+// Test error: type mismatch with member access
+
+class Point {
+    feature x: Real;
+    feature y: Real;
+}
+
+class Rectangle {
+    feature topLeft: Point;
+    feature bottomRight: Point;
+
+    // ERROR: Point.x is Real but width is declared as Int
+    feature width: Int = bottomRight.x - topLeft.x;
+}

@@ -1,0 +1,9 @@
+// Test error: type mismatch - Real expression assigned to Int field
+
+class Rectangle {
+    feature width: Real;
+    feature height: Real;
+
+    // ERROR: expression evaluates to Real but field is declared as Int
+    feature area: Int = width * height;
+}

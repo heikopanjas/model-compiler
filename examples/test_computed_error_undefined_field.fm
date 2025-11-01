@@ -3,7 +3,7 @@
 class Rectangle {
     feature width: Int;
     feature height: Int;
-    
+
     // ERROR: references undefined field 'depth'
     feature area: Int = width * depth;
 }

@@ -170,6 +170,23 @@ private:
     /// \return Pointer to TypeSymbol or nullptr if not found
     const TypeSymbol* GetFieldType(const ClassDeclaration* classDecl, const std::string& fieldName) const;
 
+    /// \brief Infer the result type of an expression
+    /// \param expr The expression to analyze
+    /// \param classDecl The containing class (for field lookups)
+    /// \return Expression::Type of the result
+    Expression::Type InferExpressionType(const Expression* expr, const ClassDeclaration* classDecl) const;
+
+    /// \brief Check if expression type is compatible with field type
+    /// \param exprType The expression result type
+    /// \param fieldTypeSpec The declared field type
+    /// \return True if compatible, false otherwise
+    bool IsTypeCompatible(Expression::Type exprType, const TypeSpec* fieldTypeSpec) const;
+
+    /// \brief Convert primitive type name to Expression::Type
+    /// \param typeName The primitive type name (String, Int, Real, etc.)
+    /// \return Expression::Type enum value
+    Expression::Type PrimitiveNameToExpressionType(const std::string& typeName) const;
+
     /// \brief Check if a type exists in symbol table
     /// \param typeName The type name to check
     /// \return True if type exists, false otherwise

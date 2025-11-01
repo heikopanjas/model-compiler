@@ -7,7 +7,7 @@ class Point {
 
 class Rectangle {
     feature topLeft: Point;
-    
+
     // ERROR: Point has no member 'z'
     feature depth: Int = topLeft.z;
 }
