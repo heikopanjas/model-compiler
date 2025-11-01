@@ -33,5 +33,14 @@ int main(int argc, char* argv[])
     std::cout << "\n";
     ast->Dump();
 
+    // Phase 1: Semantic analysis
+    std::cout << "\n";
+    std::unique_ptr<bbfm::SemanticAnalyzer> analyzer = driver.Phase1(ast.get());
+    if (nullptr == analyzer)
+    {
+        return 1;
+    }
+
+    std::cout << "\nCompilation completed successfully!\n";
     return 0;
 }

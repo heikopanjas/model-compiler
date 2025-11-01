@@ -1,0 +1,9 @@
+// Test: circular inheritance
+
+class A inherits B {
+    feature name: String;
+}
+
+class B inherits A {  // Error: circular inheritance
+    feature title: String;
+}

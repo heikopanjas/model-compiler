@@ -1,0 +1,10 @@
+// Test: duplicate field names
+
+class Base {
+    feature name: String;
+}
+
+class Derived inherits Base {
+    feature name: String;  // Error: duplicate field (inherited from Base)
+    feature title: String;
+}

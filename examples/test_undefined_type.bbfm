@@ -1,0 +1,6 @@
+// Test: undefined type reference
+
+class Asset {
+    feature url: String;
+    feature media: UndefinedType;  // Error: UndefinedType not declared
+}

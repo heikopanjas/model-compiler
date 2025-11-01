@@ -29,6 +29,7 @@ add_executable(model-compiler
     src/main.cpp
     src/Driver.cpp
     src/AST.cpp
+    src/SemanticAnalyzer.cpp
     ${BISON_Parser_OUTPUTS}
     ${FLEX_Lexer_OUTPUTS}
 )

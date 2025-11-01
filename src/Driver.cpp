@@ -1,5 +1,6 @@
 #include "Driver.h"
 #include "AST.h"
+#include "SemanticAnalyzer.h"
 #include <cstdio>
 #include <fstream>
 #include <iostream>
@@ -102,6 +103,30 @@ std::unique_ptr<AST> Driver::Phase0()
 
     std::cout << "Phase 0 (Parsing) completed successfully!\n";
     return std::move(g_ast);
+}
+
+std::unique_ptr<SemanticAnalyzer> Driver::Phase1(const AST* ast)
+{
+    if (nullptr == ast)
+    {
+        std::cerr << "Error: Cannot perform semantic analysis on null AST\n";
+        hasErrors_ = true;
+        return nullptr;
+    }
+
+    std::cout << "Phase 1 (Semantic Analysis) started...\n";
+
+    auto analyzer = std::make_unique<SemanticAnalyzer>(ast);
+
+    if (!analyzer->Analyze())
+    {
+        std::cerr << "Phase 1 (Semantic Analysis) failed with errors.\n";
+        hasErrors_ = true;
+        return nullptr;
+    }
+
+    std::cout << "Phase 1 (Semantic Analysis) completed successfully!\n";
+    return analyzer;
 }
 
 bool Driver::HasErrors() const

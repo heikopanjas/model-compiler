@@ -1,0 +1,7 @@
+// Test: invariant referencing undefined field
+
+class Asset {
+    feature fileSize: Int;
+
+    invariant maxSize: unknownField <= 100;  // Error: unknownField not defined
+}
