@@ -133,6 +133,11 @@ private:
     /// \return True if all invariants are valid, false otherwise
     bool ValidateInvariants(const ClassDeclaration* classDecl);
 
+    /// \brief Collect all field references from an expression
+    /// \param expr The expression to analyze
+    /// \param fields Output set to store field names
+    void CollectFieldReferences(const Expression* expr, std::set<std::string>& fields) const;
+
     /// \brief Check if a type exists in symbol table
     /// \param typeName The type name to check
     /// \return True if type exists, false otherwise

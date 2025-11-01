@@ -1,6 +1,6 @@
 # AI Agent Operating Instructions
 
-**Last updated:** November 1, 2025 (21:00)
+**Last updated:** November 1, 2025 (22:00)
 
 ## Primary Instructions
 
@@ -514,6 +514,74 @@ _build/model-compiler examples/podcast.fm
 ---
 
 ## Recent Updates & Decisions
+
+### November 1, 2025 (22:00)
+
+- **Expression system complete**: Fully integrated expression system with lexer, parser, and semantic analysis
+- **Lexer additions**:
+  - Added arithmetic operator tokens: `PLUS` (+), `MINUS` (-), `SLASH` (/), `PERCENT` (%)
+  - Added logical operator tokens: `AND` (&&), `OR` (||), `NOT` (!)
+  - Note: `ASTERISK` (*) and parentheses already existed
+- **Parser enhancements**:
+  - Added expression union type for AST node pointers
+  - Implemented complete expression grammar with operator precedence
+  - Precedence levels (low to high): OR, AND, comparison (==, !=), relational (<, >, <=, >=), additive (+, -), multiplicative (*, /, %), unary (-, !)
+  - Binary operators: arithmetic (+, -, *, /, %), comparison (<, >, <=, >=, ==, !=), logical (&&, ||)
+  - Unary operators: negation (-), logical NOT (!)
+  - Parenthesized expressions: `(expr)`
+  - Primary expressions: literals (int, real, string, bool) and field references
+- **Invariant class updated**:
+  - Changed from storing `std::string expression_` to `std::unique_ptr<Expression> expression_`
+  - Constructor now takes `std::unique_ptr<Expression>` instead of string
+  - `GetExpression()` returns `const Expression*` instead of `const std::string&`
+  - `Dump()` method uses `expression_->ToString()` for display
+- **Invariant parser simplified**:
+  - Replaced 6 separate invariant rules (one per operator) with single rule: `INVARIANT IDENTIFIER COLON expression SEMICOLON`
+  - Parser now builds complete Expression AST nodes from grammar
+  - Much cleaner and more extensible architecture
+- **Semantic analyzer updated**:
+  - Replaced string parsing in `ValidateInvariants()` with AST traversal
+  - Added `CollectFieldReferences()` method to recursively extract field names from expressions
+  - Handles all expression types: BinaryExpression, UnaryExpression, FieldReference, LiteralExpression, FunctionCall, ParenthesizedExpression
+  - `DumpSymbolTable()` updated to call `expression->ToString()` instead of displaying string
+- **Files modified**:
+  - `src/model-compiler.l` - Added operator tokens (+20 lines)
+  - `src/model-compiler.y` - Added expression grammar, operator precedence, updated invariant rule (+110 lines)
+  - `include/AST.h` - Updated Invariant class signature
+  - `src/AST.cpp` - Updated Invariant implementation
+  - `include/SemanticAnalyzer.h` - Added CollectFieldReferences declaration
+  - `src/SemanticAnalyzer.cpp` - Implemented expression-based invariant validation (+50 lines)
+  - `examples/test_expressions.fm` - New comprehensive expression test file
+- **Testing**: ✅ All expression types work correctly
+  - Arithmetic: `width * height <= maxArea`
+  - Complex: `(width + height) * 2 <= 1000`
+  - Logical: `width >= 10 && height >= 10`
+  - Unary: `-273.15`, `!(minLength == 0)`
+  - Real numbers: `fahrenheit == celsius * 1.8 + 32.0`
+- **Build status**: ✅ Project builds successfully, all tests pass
+- **Impact**: Invariants are now fully expression-based, enabling complex constraints beyond simple comparisons
+- **Next steps**: This expression system can be extended to support function bodies, computed properties, and default values
+- **Reasoning**: Integrating the expression system with the parser and semantic analyzer completes the foundation for a powerful constraint and computation system. Moving from string-based to AST-based expressions enables proper type checking, optimization, and code generation. The grammar-based approach is much more maintainable than the previous string pattern matching and allows for natural language-like constraint expressions.
+
+### November 1, 2025 (21:30)
+
+- **Expression system foundation**: Implemented complete expression class hierarchy in AST
+- **Classes added** (7 new expression types):
+  - `Expression` - Abstract base class with Type enum (INT, REAL, BOOL, STRING, TIMESTAMP, TIMESPAN, GUID, UNKNOWN)
+  - `BinaryExpression` - Arithmetic (+, -, *, /, %), comparison (<, >, <=, >=, ==, !=), and logical (&&, ||) operators
+  - `UnaryExpression` - Negation (-) and logical NOT (!) operators
+  - `FieldReference` - Reference to class field by name
+  - `LiteralExpression` - Integer, real, string, and boolean literals
+  - `FunctionCall` - Function invocation with arguments
+  - `ParenthesizedExpression` - Grouped expressions
+- **Methods implemented**: GetResultType(), ToString(), Dump(), type-specific getters
+- **Type inference**: BinaryExpression implements basic type widening (INT + REAL → REAL), comparison operators return BOOL
+- **Files modified**:
+  - `include/AST.h` - Added forward declarations and complete class hierarchy
+  - `src/AST.cpp` - Added all expression class implementations (approximately 300 lines)
+- **Build status**: ✅ Project builds successfully with new expression system
+- **Next steps**: Add lexer tokens for arithmetic operators, implement parser grammar with precedence, integrate with invariants
+- **Reasoning**: This lays the foundation for a general expression system that can be used in invariants, computed properties, and function bodies. Rather than restricting expressions to just invariants, this architecture enables future features like computed fields (`function Void duration() -> Timespan { return endTime - startTime; }`), default values, and derived attributes. The design follows standard compiler architecture with separate expression node types for each construct, making semantic analysis and code generation straightforward.
 
 ### November 1, 2025 (21:00)
 

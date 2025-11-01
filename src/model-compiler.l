@@ -81,13 +81,20 @@ WHITESPACE  [ \t\r]+
 ","             { return COMMA; }
 "."             { return DOT; }
 ".."            { return DOTDOT; }
+"+"             { return PLUS; }
+"-"             { return MINUS; }
 "*"             { return ASTERISK; }
+"/"             { return SLASH; }
+"%"             { return PERCENT; }
 "<="            { return LE; }
 ">="            { return GE; }
 "=="            { return EQ; }
 "!="            { return NE; }
 "<"             { return LT; }
 ">"             { return GT; }
+"&&"            { return AND; }
+"||"            { return OR; }
+"!"             { return NOT; }
 
 "//".* { /* single-line comment */ }
 "/*"([^*]|\*+[^*/])*\*+"/" { /* multi-line comment */ }

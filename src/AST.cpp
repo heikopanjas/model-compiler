@@ -231,20 +231,27 @@ void Field::Dump(const int indent) const
 // Invariant Implementation
 // ============================================================================
 
+Invariant::Invariant(const std::string& name, std::unique_ptr<Expression> expression) : name_(name), expression_(std::move(expression)) {}
+
 const std::string& Invariant::GetName() const
 {
     return name_;
 }
 
-const std::string& Invariant::GetExpression() const
+const Expression* Invariant::GetExpression() const
 {
-    return expression_;
+    return expression_.get();
 }
 
 void Invariant::Dump(const int indent) const
 {
     PrintIndent(indent);
-    std::cout << "invariant " << name_ << ": " << expression_ << ";\n";
+    std::cout << "invariant " << name_ << ": ";
+    if (nullptr != expression_)
+    {
+        std::cout << expression_->ToString();
+    }
+    std::cout << ";\n";
 }
 
 // ============================================================================
@@ -358,6 +365,335 @@ const ClassDeclaration* Declaration::AsClass() const
 void Declaration::Dump(const int indent) const
 {
     declaration_->Dump(indent);
+}
+
+// ============================================================================
+// Expression System Implementation
+// ============================================================================
+
+// BinaryExpression
+BinaryExpression::BinaryExpression(std::unique_ptr<Expression> left, const Op op, std::unique_ptr<Expression> right) :
+    left_(std::move(left)), right_(std::move(right)), op_(op)
+{
+}
+
+Expression::Type BinaryExpression::GetResultType() const
+{
+    // For arithmetic operators, result type depends on operands
+    // For comparison operators, result is always BOOL
+    // For logical operators, result is always BOOL
+
+    switch (op_)
+    {
+        case Op::LT:
+        case Op::GT:
+        case Op::LE:
+        case Op::GE:
+        case Op::EQ:
+        case Op::NE:
+        case Op::AND:
+        case Op::OR:
+            return Type::BOOL;
+
+        case Op::ADD:
+        case Op::SUB:
+        case Op::MUL:
+        case Op::DIV:
+        case Op::MOD:
+        {
+            // Result type is the "wider" of the two operands
+            Type leftType  = left_->GetResultType();
+            Type rightType = right_->GetResultType();
+
+            // If either is REAL, result is REAL
+            if (Type::REAL == leftType || Type::REAL == rightType || Type::TIMESTAMP == leftType || Type::TIMESTAMP == rightType ||
+                Type::TIMESPAN == leftType || Type::TIMESPAN == rightType)
+            {
+                return Type::REAL;
+            }
+
+            // Otherwise, if both are INT, result is INT
+            if (Type::INT == leftType && Type::INT == rightType)
+            {
+                return Type::INT;
+            }
+
+            return Type::UNKNOWN;
+        }
+
+        default:
+            return Type::UNKNOWN;
+    }
+}
+
+std::string BinaryExpression::ToString() const
+{
+    return "(" + left_->ToString() + " " + std::string(OpToString(op_)) + " " + right_->ToString() + ")";
+}
+
+void BinaryExpression::Dump(const int indent) const
+{
+    PrintIndent(indent);
+    std::cout << "BinaryExpression [" << OpToString(op_) << "]\n";
+    left_->Dump(indent + 1);
+    right_->Dump(indent + 1);
+}
+
+const Expression* BinaryExpression::GetLeft() const
+{
+    return left_.get();
+}
+
+const Expression* BinaryExpression::GetRight() const
+{
+    return right_.get();
+}
+
+BinaryExpression::Op BinaryExpression::GetOperator() const
+{
+    return op_;
+}
+
+const char* BinaryExpression::OpToString(const Op op)
+{
+    switch (op)
+    {
+        case Op::ADD:
+            return "+";
+        case Op::SUB:
+            return "-";
+        case Op::MUL:
+            return "*";
+        case Op::DIV:
+            return "/";
+        case Op::MOD:
+            return "%";
+        case Op::LT:
+            return "<";
+        case Op::GT:
+            return ">";
+        case Op::LE:
+            return "<=";
+        case Op::GE:
+            return ">=";
+        case Op::EQ:
+            return "==";
+        case Op::NE:
+            return "!=";
+        case Op::AND:
+            return "&&";
+        case Op::OR:
+            return "||";
+        default:
+            return "?";
+    }
+}
+
+// UnaryExpression
+UnaryExpression::UnaryExpression(const Op op, std::unique_ptr<Expression> operand) : op_(op), operand_(std::move(operand)) {}
+
+Expression::Type UnaryExpression::GetResultType() const
+{
+    switch (op_)
+    {
+        case Op::NEG:
+            // Negation preserves the numeric type
+            return operand_->GetResultType();
+        case Op::NOT:
+            // Logical NOT always returns BOOL
+            return Type::BOOL;
+        default:
+            return Type::UNKNOWN;
+    }
+}
+
+std::string UnaryExpression::ToString() const
+{
+    return std::string(OpToString(op_)) + operand_->ToString();
+}
+
+void UnaryExpression::Dump(const int indent) const
+{
+    PrintIndent(indent);
+    std::cout << "UnaryExpression [" << OpToString(op_) << "]\n";
+    operand_->Dump(indent + 1);
+}
+
+const Expression* UnaryExpression::GetOperand() const
+{
+    return operand_.get();
+}
+
+UnaryExpression::Op UnaryExpression::GetOperator() const
+{
+    return op_;
+}
+
+const char* UnaryExpression::OpToString(const Op op)
+{
+    switch (op)
+    {
+        case Op::NEG:
+            return "-";
+        case Op::NOT:
+            return "!";
+        default:
+            return "?";
+    }
+}
+
+// FieldReference
+FieldReference::FieldReference(const std::string& fieldName) : fieldName_(fieldName) {}
+
+Expression::Type FieldReference::GetResultType() const
+{
+    // Type must be determined by semantic analyzer based on field type
+    return Type::UNKNOWN;
+}
+
+std::string FieldReference::ToString() const
+{
+    return fieldName_;
+}
+
+void FieldReference::Dump(const int indent) const
+{
+    PrintIndent(indent);
+    std::cout << "FieldReference: " << fieldName_ << "\n";
+}
+
+const std::string& FieldReference::GetFieldName() const
+{
+    return fieldName_;
+}
+
+// LiteralExpression
+LiteralExpression::LiteralExpression(const int64_t value) : type_(Type::INT), intValue_(value), realValue_(0.0), boolValue_(false) {}
+
+LiteralExpression::LiteralExpression(const double value) : type_(Type::REAL), intValue_(0), realValue_(value), boolValue_(false) {}
+
+LiteralExpression::LiteralExpression(const std::string& value) : type_(Type::STRING), intValue_(0), realValue_(0.0), stringValue_(value), boolValue_(false) {}
+
+LiteralExpression::LiteralExpression(const bool value) : type_(Type::BOOL), intValue_(0), realValue_(0.0), boolValue_(value) {}
+
+Expression::Type LiteralExpression::GetResultType() const
+{
+    return type_;
+}
+
+std::string LiteralExpression::ToString() const
+{
+    switch (type_)
+    {
+        case Type::INT:
+            return std::to_string(intValue_);
+        case Type::REAL:
+            return std::to_string(realValue_);
+        case Type::STRING:
+            return "\"" + stringValue_ + "\"";
+        case Type::BOOL:
+            return boolValue_ ? "true" : "false";
+        default:
+            return "?";
+    }
+}
+
+void LiteralExpression::Dump(const int indent) const
+{
+    PrintIndent(indent);
+    std::cout << "Literal: " << ToString() << "\n";
+}
+
+int64_t LiteralExpression::GetIntValue() const
+{
+    return intValue_;
+}
+
+double LiteralExpression::GetRealValue() const
+{
+    return realValue_;
+}
+
+const std::string& LiteralExpression::GetStringValue() const
+{
+    return stringValue_;
+}
+
+bool LiteralExpression::GetBoolValue() const
+{
+    return boolValue_;
+}
+
+// FunctionCall
+FunctionCall::FunctionCall(const std::string& functionName, std::vector<std::unique_ptr<Expression>> arguments) :
+    functionName_(functionName), arguments_(std::move(arguments))
+{
+}
+
+Expression::Type FunctionCall::GetResultType() const
+{
+    // Type must be determined by semantic analyzer based on function signature
+    return Type::UNKNOWN;
+}
+
+std::string FunctionCall::ToString() const
+{
+    std::string result = functionName_ + "(";
+    for (size_t i = 0; i < arguments_.size(); ++i)
+    {
+        if (i > 0)
+        {
+            result += ", ";
+        }
+        result += arguments_[i]->ToString();
+    }
+    result += ")";
+    return result;
+}
+
+void FunctionCall::Dump(const int indent) const
+{
+    PrintIndent(indent);
+    std::cout << "FunctionCall: " << functionName_ << "\n";
+    for (const auto& arg : arguments_)
+    {
+        arg->Dump(indent + 1);
+    }
+}
+
+const std::string& FunctionCall::GetFunctionName() const
+{
+    return functionName_;
+}
+
+const std::vector<std::unique_ptr<Expression>>& FunctionCall::GetArguments() const
+{
+    return arguments_;
+}
+
+// ParenthesizedExpression
+ParenthesizedExpression::ParenthesizedExpression(std::unique_ptr<Expression> expr) : expr_(std::move(expr)) {}
+
+Expression::Type ParenthesizedExpression::GetResultType() const
+{
+    return expr_->GetResultType();
+}
+
+std::string ParenthesizedExpression::ToString() const
+{
+    return "(" + expr_->ToString() + ")";
+}
+
+void ParenthesizedExpression::Dump(const int indent) const
+{
+    PrintIndent(indent);
+    std::cout << "ParenthesizedExpression\n";
+    expr_->Dump(indent + 1);
+}
+
+const Expression* ParenthesizedExpression::GetExpression() const
+{
+    return expr_.get();
 }
 
 // ============================================================================

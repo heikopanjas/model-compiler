@@ -56,6 +56,7 @@ std::vector<std::string> g_source_lines;
     void *invariant;
     void *typeSpec;
     void *modifier;
+    void *expression;
     void *declarationList;
     void *stringList;
     void *fieldList;
@@ -68,7 +69,9 @@ std::vector<std::string> g_source_lines;
 %token STRING_TYPE INT_TYPE REAL_TYPE BOOL_TYPE TIMESTAMP_TYPE TIMESPAN_TYPE DATE_TYPE GUID_TYPE
 %token LBRACE RBRACE LBRACKET RBRACKET LPAREN RPAREN
 %token SEMICOLON COLON COMMA DOT DOTDOT ASTERISK
+%token PLUS MINUS SLASH PERCENT
 %token LE GE EQ NE LT GT
+%token AND OR NOT
 %token <string> IDENTIFIER
 %token <integer> INTEGER_LITERAL
 %token <string> REAL_LITERAL
@@ -91,6 +94,17 @@ std::vector<std::string> g_source_lines;
 %type <string> field_name
 %type <string> attribute_name
 %type <string> literal_value
+%type <expression> expression primary_expression
+
+/* Operator precedence (lowest to highest) */
+%left OR
+%left AND
+%left EQ NE
+%left LT GT LE GE
+%left PLUS MINUS
+%left ASTERISK SLASH PERCENT
+%right NOT
+%right UNARY_MINUS
 
 %%
 
@@ -224,53 +238,11 @@ attribute_name:
     ;
 
 invariant:
-    INVARIANT IDENTIFIER COLON attribute_name LE literal_value SEMICOLON
+    INVARIANT IDENTIFIER COLON expression SEMICOLON
     {
-        std::string expr = std::string($4) + " <= " + std::string($6);
-        $$ = new bbfm::Invariant($2, expr);
+        $$ = new bbfm::Invariant($2,
+            std::unique_ptr<bbfm::Expression>(static_cast<bbfm::Expression*>($4)));
         free($2);
-        free($4);
-        free($6);
-    }
-    | INVARIANT IDENTIFIER COLON attribute_name GE literal_value SEMICOLON
-    {
-        std::string expr = std::string($4) + " >= " + std::string($6);
-        $$ = new bbfm::Invariant($2, expr);
-        free($2);
-        free($4);
-        free($6);
-    }
-    | INVARIANT IDENTIFIER COLON attribute_name LT literal_value SEMICOLON
-    {
-        std::string expr = std::string($4) + " < " + std::string($6);
-        $$ = new bbfm::Invariant($2, expr);
-        free($2);
-        free($4);
-        free($6);
-    }
-    | INVARIANT IDENTIFIER COLON attribute_name GT literal_value SEMICOLON
-    {
-        std::string expr = std::string($4) + " > " + std::string($6);
-        $$ = new bbfm::Invariant($2, expr);
-        free($2);
-        free($4);
-        free($6);
-    }
-    | INVARIANT IDENTIFIER COLON attribute_name EQ literal_value SEMICOLON
-    {
-        std::string expr = std::string($4) + " == " + std::string($6);
-        $$ = new bbfm::Invariant($2, expr);
-        free($2);
-        free($4);
-        free($6);
-    }
-    | INVARIANT IDENTIFIER COLON attribute_name NE literal_value SEMICOLON
-    {
-        std::string expr = std::string($4) + " != " + std::string($6);
-        $$ = new bbfm::Invariant($2, expr);
-        free($2);
-        free($4);
-        free($6);
     }
     ;
 
@@ -360,6 +332,131 @@ modifier:
     { $$ = new bbfm::CardinalityModifier(0, 1); }  // optional is equivalent to [0..1]
     | UNIQUE
     { $$ = new bbfm::UniqueModifier(); }
+    ;
+
+/* Expression grammar with operator precedence */
+expression:
+    expression PLUS expression
+    { $$ = new bbfm::BinaryExpression(
+        std::unique_ptr<bbfm::Expression>(static_cast<bbfm::Expression*>($1)),
+        bbfm::BinaryExpression::Op::ADD,
+        std::unique_ptr<bbfm::Expression>(static_cast<bbfm::Expression*>($3))
+    ); }
+    | expression MINUS expression
+    { $$ = new bbfm::BinaryExpression(
+        std::unique_ptr<bbfm::Expression>(static_cast<bbfm::Expression*>($1)),
+        bbfm::BinaryExpression::Op::SUB,
+        std::unique_ptr<bbfm::Expression>(static_cast<bbfm::Expression*>($3))
+    ); }
+    | expression ASTERISK expression
+    { $$ = new bbfm::BinaryExpression(
+        std::unique_ptr<bbfm::Expression>(static_cast<bbfm::Expression*>($1)),
+        bbfm::BinaryExpression::Op::MUL,
+        std::unique_ptr<bbfm::Expression>(static_cast<bbfm::Expression*>($3))
+    ); }
+    | expression SLASH expression
+    { $$ = new bbfm::BinaryExpression(
+        std::unique_ptr<bbfm::Expression>(static_cast<bbfm::Expression*>($1)),
+        bbfm::BinaryExpression::Op::DIV,
+        std::unique_ptr<bbfm::Expression>(static_cast<bbfm::Expression*>($3))
+    ); }
+    | expression PERCENT expression
+    { $$ = new bbfm::BinaryExpression(
+        std::unique_ptr<bbfm::Expression>(static_cast<bbfm::Expression*>($1)),
+        bbfm::BinaryExpression::Op::MOD,
+        std::unique_ptr<bbfm::Expression>(static_cast<bbfm::Expression*>($3))
+    ); }
+    | expression LT expression
+    { $$ = new bbfm::BinaryExpression(
+        std::unique_ptr<bbfm::Expression>(static_cast<bbfm::Expression*>($1)),
+        bbfm::BinaryExpression::Op::LT,
+        std::unique_ptr<bbfm::Expression>(static_cast<bbfm::Expression*>($3))
+    ); }
+    | expression GT expression
+    { $$ = new bbfm::BinaryExpression(
+        std::unique_ptr<bbfm::Expression>(static_cast<bbfm::Expression*>($1)),
+        bbfm::BinaryExpression::Op::GT,
+        std::unique_ptr<bbfm::Expression>(static_cast<bbfm::Expression*>($3))
+    ); }
+    | expression LE expression
+    { $$ = new bbfm::BinaryExpression(
+        std::unique_ptr<bbfm::Expression>(static_cast<bbfm::Expression*>($1)),
+        bbfm::BinaryExpression::Op::LE,
+        std::unique_ptr<bbfm::Expression>(static_cast<bbfm::Expression*>($3))
+    ); }
+    | expression GE expression
+    { $$ = new bbfm::BinaryExpression(
+        std::unique_ptr<bbfm::Expression>(static_cast<bbfm::Expression*>($1)),
+        bbfm::BinaryExpression::Op::GE,
+        std::unique_ptr<bbfm::Expression>(static_cast<bbfm::Expression*>($3))
+    ); }
+    | expression EQ expression
+    { $$ = new bbfm::BinaryExpression(
+        std::unique_ptr<bbfm::Expression>(static_cast<bbfm::Expression*>($1)),
+        bbfm::BinaryExpression::Op::EQ,
+        std::unique_ptr<bbfm::Expression>(static_cast<bbfm::Expression*>($3))
+    ); }
+    | expression NE expression
+    { $$ = new bbfm::BinaryExpression(
+        std::unique_ptr<bbfm::Expression>(static_cast<bbfm::Expression*>($1)),
+        bbfm::BinaryExpression::Op::NE,
+        std::unique_ptr<bbfm::Expression>(static_cast<bbfm::Expression*>($3))
+    ); }
+    | expression AND expression
+    { $$ = new bbfm::BinaryExpression(
+        std::unique_ptr<bbfm::Expression>(static_cast<bbfm::Expression*>($1)),
+        bbfm::BinaryExpression::Op::AND,
+        std::unique_ptr<bbfm::Expression>(static_cast<bbfm::Expression*>($3))
+    ); }
+    | expression OR expression
+    { $$ = new bbfm::BinaryExpression(
+        std::unique_ptr<bbfm::Expression>(static_cast<bbfm::Expression*>($1)),
+        bbfm::BinaryExpression::Op::OR,
+        std::unique_ptr<bbfm::Expression>(static_cast<bbfm::Expression*>($3))
+    ); }
+    | MINUS expression %prec UNARY_MINUS
+    { $$ = new bbfm::UnaryExpression(
+        bbfm::UnaryExpression::Op::NEG,
+        std::unique_ptr<bbfm::Expression>(static_cast<bbfm::Expression*>($2))
+    ); }
+    | NOT expression
+    { $$ = new bbfm::UnaryExpression(
+        bbfm::UnaryExpression::Op::NOT,
+        std::unique_ptr<bbfm::Expression>(static_cast<bbfm::Expression*>($2))
+    ); }
+    | LPAREN expression RPAREN
+    { $$ = new bbfm::ParenthesizedExpression(
+        std::unique_ptr<bbfm::Expression>(static_cast<bbfm::Expression*>($2))
+    ); }
+    | primary_expression
+    { $$ = $1; }
+    ;
+
+primary_expression:
+    INTEGER_LITERAL
+    { $$ = new bbfm::LiteralExpression(static_cast<int64_t>($1)); }
+    | REAL_LITERAL
+    {
+        double val = atof($1);
+        $$ = new bbfm::LiteralExpression(val);
+        free($1);
+    }
+    | STRING_LITERAL
+    {
+        $$ = new bbfm::LiteralExpression(std::string($1));
+        free($1);
+    }
+    | BOOL_LITERAL
+    {
+        bool val = (0 == strcasecmp($1, "true"));
+        $$ = new bbfm::LiteralExpression(val);
+        free($1);
+    }
+    | attribute_name
+    {
+        $$ = new bbfm::FieldReference($1);
+        free($1);
+    }
     ;
 
 %%

@@ -334,59 +334,84 @@ bool SemanticAnalyzer::ValidateInvariants(const ClassDeclaration* classDecl)
     // Validate each invariant
     for (const auto& invariant : classDecl->GetInvariants())
     {
-        const std::string& expr = invariant->GetExpression();
-
-        // Parse the expression to extract the field name
-        // Expression format: "fieldName operator literal"
-        // Find the operator position
-        size_t opPos = expr.find("<=");
-        if (std::string::npos == opPos)
+        const Expression* expr = invariant->GetExpression();
+        if (nullptr == expr)
         {
-            opPos = expr.find(">=");
-        }
-        if (std::string::npos == opPos)
-        {
-            opPos = expr.find("==");
-        }
-        if (std::string::npos == opPos)
-        {
-            opPos = expr.find("!=");
-        }
-        if (std::string::npos == opPos)
-        {
-            opPos = expr.find('<');
-        }
-        if (std::string::npos == opPos)
-        {
-            opPos = expr.find('>');
-        }
-
-        if (std::string::npos == opPos)
-        {
-            ReportError("Invalid invariant expression '" + expr + "' in class '" + classDecl->GetName() + "'");
+            ReportError("Invariant '" + invariant->GetName() + "' in class '" + classDecl->GetName() + "' has no expression");
             success = false;
             continue;
         }
 
-        // Extract field name (trim whitespace)
-        std::string fieldName = expr.substr(0, opPos);
-        // Trim leading/trailing whitespace
-        size_t      start     = fieldName.find_first_not_of(" \t");
-        size_t      end       = fieldName.find_last_not_of(" \t");
-        if (std::string::npos != start && std::string::npos != end)
-        {
-            fieldName = fieldName.substr(start, end - start + 1);
-        }
+        // Collect all field references in the expression
+        std::set<std::string> referencedFields;
+        CollectFieldReferences(expr, referencedFields);
 
-        // Check if field exists
-        if (0 == fieldNames.count(fieldName))
+        // Validate that all referenced fields exist
+        for (const std::string& fieldName : referencedFields)
         {
-            ReportError("Invariant '" + invariant->GetName() + "' in class '" + classDecl->GetName() + "' references undefined field '" + fieldName + "'");
-            success = false;
+            if (0 == fieldNames.count(fieldName))
+            {
+                ReportError("Invariant '" + invariant->GetName() + "' in class '" + classDecl->GetName() + "' references undefined field '" + fieldName + "'");
+                success = false;
+            }
         }
     }
 
     return success;
+}
+
+void SemanticAnalyzer::CollectFieldReferences(const Expression* expr, std::set<std::string>& fields) const
+{
+    if (nullptr == expr)
+    {
+        return;
+    }
+
+    // Check if this is a field reference
+    const FieldReference* fieldRef = dynamic_cast<const FieldReference*>(expr);
+    if (nullptr != fieldRef)
+    {
+        fields.insert(fieldRef->GetFieldName());
+        return;
+    }
+
+    // Check if this is a binary expression
+    const BinaryExpression* binExpr = dynamic_cast<const BinaryExpression*>(expr);
+    if (nullptr != binExpr)
+    {
+        CollectFieldReferences(binExpr->GetLeft(), fields);
+        CollectFieldReferences(binExpr->GetRight(), fields);
+        return;
+    }
+
+    // Check if this is a unary expression
+    const UnaryExpression* unaryExpr = dynamic_cast<const UnaryExpression*>(expr);
+    if (nullptr != unaryExpr)
+    {
+        CollectFieldReferences(unaryExpr->GetOperand(), fields);
+        return;
+    }
+
+    // Check if this is a parenthesized expression
+    const ParenthesizedExpression* parenExpr = dynamic_cast<const ParenthesizedExpression*>(expr);
+    if (nullptr != parenExpr)
+    {
+        CollectFieldReferences(parenExpr->GetExpression(), fields);
+        return;
+    }
+
+    // Check if this is a function call
+    const FunctionCall* funcCall = dynamic_cast<const FunctionCall*>(expr);
+    if (nullptr != funcCall)
+    {
+        for (const auto& arg : funcCall->GetArguments())
+        {
+            CollectFieldReferences(arg.get(), fields);
+        }
+        return;
+    }
+
+    // Literals don't contain field references
 }
 
 bool SemanticAnalyzer::TypeExists(const std::string& typeName) const
@@ -594,7 +619,12 @@ void SemanticAnalyzer::DumpSymbolTable() const
                         // Determine if this is a local or inherited invariant
                         bool isLocal = (0 != localInvariantSet.count(invariant));
                         std::cout << "      " << (isLocal ? "<self>" : "<base>") << " ";
-                        std::cout << invariant->GetName() << ": " << invariant->GetExpression() << "\n";
+                        std::cout << invariant->GetName() << ": ";
+                        if (nullptr != invariant->GetExpression())
+                        {
+                            std::cout << invariant->GetExpression()->ToString();
+                        }
+                        std::cout << "\n";
                     }
                 }
 

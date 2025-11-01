@@ -19,6 +19,13 @@ class Field;
 class Invariant;
 class TypeSpec;
 class Modifier;
+class Expression;
+class BinaryExpression;
+class UnaryExpression;
+class FieldReference;
+class LiteralExpression;
+class FunctionCall;
+class ParenthesizedExpression;
 
 // ============================================================================
 // Base AST Node
@@ -201,6 +208,250 @@ public:
 };
 
 // ============================================================================
+// Expression System
+// ============================================================================
+
+/// \brief Base class for all expressions in BBFM language
+class Expression : public ASTNode
+{
+public:
+    /// \brief Expression result types
+    enum class Type
+    {
+        INT,
+        REAL,
+        BOOL,
+        STRING,
+        TIMESTAMP,
+        TIMESPAN,
+        DATE,
+        GUID,
+        VOID,
+        UNKNOWN
+    };
+
+    virtual ~Expression() = default;
+
+    /// \brief Get the result type of this expression
+    /// \return The expression result type
+    virtual Type GetResultType() const = 0;
+
+    /// \brief Convert expression to string representation
+    /// \return String representation of the expression
+    virtual std::string ToString() const = 0;
+};
+
+/// \brief Binary expression (arithmetic, comparison, logical operations)
+class BinaryExpression : public Expression
+{
+public:
+    /// \brief Binary operators
+    enum class Op
+    {
+        // Arithmetic
+        ADD, // +
+        SUB, // -
+        MUL, // *
+        DIV, // /
+        MOD, // %
+             // Comparison
+        LT,  // <
+        GT,  // >
+        LE,  // <=
+        GE,  // >=
+        EQ,  // ==
+        NE,  // !=
+            // Logical (future)
+        AND, // &&
+        OR   // ||
+    };
+
+    /// \brief Construct a binary expression
+    /// \param left Left operand
+    /// \param op Binary operator
+    /// \param right Right operand
+    BinaryExpression(std::unique_ptr<Expression> left, const Op op, std::unique_ptr<Expression> right);
+
+    Type        GetResultType() const override;
+    std::string ToString() const override;
+    void        Dump(int indent = 0) const override;
+
+    /// \brief Get the left operand
+    /// \return Pointer to left expression
+    const Expression* GetLeft() const;
+
+    /// \brief Get the right operand
+    /// \return Pointer to right expression
+    const Expression* GetRight() const;
+
+    /// \brief Get the operator
+    /// \return The binary operator
+    Op GetOperator() const;
+
+    /// \brief Convert operator to string
+    /// \param op The operator to convert
+    /// \return String representation of operator
+    static const char* OpToString(const Op op);
+
+private:
+    std::unique_ptr<Expression> left_;
+    std::unique_ptr<Expression> right_;
+    Op                          op_;
+};
+
+/// \brief Unary expression (negation, logical not)
+class UnaryExpression : public Expression
+{
+public:
+    /// \brief Unary operators
+    enum class Op
+    {
+        NEG, // - (numeric negation)
+        NOT  // ! (logical not)
+    };
+
+    /// \brief Construct a unary expression
+    /// \param op Unary operator
+    /// \param operand The operand
+    UnaryExpression(const Op op, std::unique_ptr<Expression> operand);
+
+    Type        GetResultType() const override;
+    std::string ToString() const override;
+    void        Dump(int indent = 0) const override;
+
+    /// \brief Get the operand
+    /// \return Pointer to operand expression
+    const Expression* GetOperand() const;
+
+    /// \brief Get the operator
+    /// \return The unary operator
+    Op GetOperator() const;
+
+    /// \brief Convert operator to string
+    /// \param op The operator to convert
+    /// \return String representation of operator
+    static const char* OpToString(const Op op);
+
+private:
+    Op                          op_;
+    std::unique_ptr<Expression> operand_;
+};
+
+/// \brief Field reference expression
+class FieldReference : public Expression
+{
+public:
+    /// \brief Construct a field reference
+    /// \param fieldName The name of the field
+    explicit FieldReference(const std::string& fieldName);
+
+    Type        GetResultType() const override;
+    std::string ToString() const override;
+    void        Dump(int indent = 0) const override;
+
+    /// \brief Get the field name
+    /// \return The field name
+    const std::string& GetFieldName() const;
+
+private:
+    std::string fieldName_;
+};
+
+/// \brief Literal value expression
+class LiteralExpression : public Expression
+{
+public:
+    /// \brief Construct an integer literal
+    /// \param value The integer value
+    explicit LiteralExpression(const int64_t value);
+
+    /// \brief Construct a real (floating-point) literal
+    /// \param value The real value
+    explicit LiteralExpression(const double value);
+
+    /// \brief Construct a string literal
+    /// \param value The string value
+    explicit LiteralExpression(const std::string& value);
+
+    /// \brief Construct a boolean literal
+    /// \param value The boolean value
+    explicit LiteralExpression(const bool value);
+
+    Type        GetResultType() const override;
+    std::string ToString() const override;
+    void        Dump(int indent = 0) const override;
+
+    /// \brief Get the integer value (if type is INT)
+    /// \return The integer value
+    int64_t GetIntValue() const;
+
+    /// \brief Get the real value (if type is REAL, TIMESTAMP, or TIMESPAN)
+    /// \return The real value
+    double GetRealValue() const;
+
+    /// \brief Get the string value (if type is STRING or GUID)
+    /// \return The string value
+    const std::string& GetStringValue() const;
+
+    /// \brief Get the boolean value (if type is BOOL)
+    /// \return The boolean value
+    bool GetBoolValue() const;
+
+private:
+    Type        type_;
+    int64_t     intValue_;
+    double      realValue_;
+    std::string stringValue_;
+    bool        boolValue_;
+};
+
+/// \brief Function call expression
+class FunctionCall : public Expression
+{
+public:
+    /// \brief Construct a function call
+    /// \param functionName The name of the function
+    /// \param arguments The function arguments
+    FunctionCall(const std::string& functionName, std::vector<std::unique_ptr<Expression>> arguments);
+
+    Type        GetResultType() const override;
+    std::string ToString() const override;
+    void        Dump(int indent = 0) const override;
+
+    /// \brief Get the function name
+    /// \return The function name
+    const std::string& GetFunctionName() const;
+
+    /// \brief Get the arguments
+    /// \return Vector of argument expressions
+    const std::vector<std::unique_ptr<Expression>>& GetArguments() const;
+
+private:
+    std::string                              functionName_;
+    std::vector<std::unique_ptr<Expression>> arguments_;
+};
+
+/// \brief Parenthesized expression (for grouping)
+class ParenthesizedExpression : public Expression
+{
+public:
+    /// \brief Construct a parenthesized expression
+    /// \param expr The inner expression
+    explicit ParenthesizedExpression(std::unique_ptr<Expression> expr);
+
+    Type        GetResultType() const override;
+    std::string ToString() const override;
+    void        Dump(int indent = 0) const override;
+
+    /// \brief Get the inner expression
+    /// \return Pointer to the inner expression
+    const Expression* GetExpression() const;
+
+private:
+    std::unique_ptr<Expression> expr_;
+};
+
+// ============================================================================
 // Invariant Declaration
 // ============================================================================
 
@@ -211,7 +462,7 @@ public:
     /// \brief Construct an invariant
     /// \param name The invariant's name
     /// \param expression The boolean expression for the invariant
-    Invariant(const std::string& name, const std::string& expression) : name_(name), expression_(expression) {}
+    Invariant(const std::string& name, std::unique_ptr<Expression> expression);
 
     /// \brief Get the invariant's name
     /// \return The invariant name
@@ -219,13 +470,13 @@ public:
 
     /// \brief Get the invariant's expression
     /// \return The boolean expression
-    const std::string& GetExpression() const;
+    const Expression* GetExpression() const;
 
     void Dump(int indent = 0) const override;
 
 private:
-    std::string name_;
-    std::string expression_;
+    std::string                 name_;
+    std::unique_ptr<Expression> expression_;
 };
 
 // ============================================================================

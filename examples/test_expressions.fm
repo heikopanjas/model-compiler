@@ -1,0 +1,42 @@
+// Test file for expression system
+
+class Rectangle {
+    feature width: Int;
+    feature height: Int;
+    feature maxArea: Int;
+
+    // Simple comparison
+    invariant positiveWidth: width > 0;
+
+    // Arithmetic expression
+    invariant validArea: width * height <= maxArea;
+
+    // Complex expression with parentheses
+    invariant aspectRatio: (width + height) * 2 <= 1000;
+
+    // Logical operators
+    invariant validDimensions: width >= 10 && height >= 10;
+}
+
+class Temperature {
+    feature celsius: Real;
+    feature fahrenheit: Real;
+
+    // Arithmetic with real numbers
+    invariant conversion: fahrenheit == celsius * 1.8 + 32.0;
+
+    // Negative numbers
+    invariant aboveAbsoluteZero: celsius >= -273.15;
+}
+
+class Document {
+    feature title: String;
+    feature minLength: Int;
+    feature maxLength: Int;
+
+    // Logical OR
+    invariant validRange: minLength < 10 || maxLength > 100;
+
+    // Logical NOT
+    invariant notEmpty: !(minLength == 0);
+}
