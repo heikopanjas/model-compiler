@@ -79,6 +79,7 @@ WHITESPACE  [ \t\r]+
 ";"             { return SEMICOLON; }
 ":"             { return COLON; }
 ","             { return COMMA; }
+"="             { return EQUALS; }
 "."             { return DOT; }
 ".."            { return DOTDOT; }
 "+"             { return PLUS; }

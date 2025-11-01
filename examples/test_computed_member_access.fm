@@ -1,0 +1,16 @@
+// Test for member access in computed features
+
+class Point {
+    feature x: Int;
+    feature y: Int;
+}
+
+class Rectangle {
+    feature topLeft: Point;
+    feature bottomRight: Point;
+
+    // Computed features using member access
+    feature width: Int = bottomRight.x - topLeft.x;
+    feature height: Int = bottomRight.y - topLeft.y;
+    feature area: Int = width * height;
+}

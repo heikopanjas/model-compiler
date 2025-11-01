@@ -1,21 +1,53 @@
 // Test file for expression system
 
-class Rectangle {
+// Point class for coordinate representation
+class Point {
+    feature x: Int;
+    feature y: Int;
+
+    // Point invariants
+    invariant validX: x >= 0;
+    invariant validY: y >= 0;
+
+    // Combined constraint
+    invariant withinBounds: x <= 10000 && y <= 10000;
+}
+
+// Base class with inherited invariants
+class Shape {
     feature width: Int;
     feature height: Int;
+
+    // Base class invariants - these will be inherited
+    invariant positiveWidth: width > 0;
+    invariant positiveHeight: height > 0;
+
+    // Complex inherited invariant
+    invariant validRatio: width * height >= 100;
+}
+
+// Rectangle using Points to define dimensions with computed features
+class Rectangle inherits Shape {
+    feature topLeft: Point;
+    feature bottomRight: Point;
     feature maxArea: Int;
 
-    // Simple comparison
-    invariant positiveWidth: width > 0;
+    // Computed features using member access expressions
+    feature computedWidth: Int = bottomRight.x - topLeft.x;
+    feature computedHeight: Int = bottomRight.y - topLeft.y;
+    feature computedArea: Int = computedWidth * computedHeight;
 
-    // Arithmetic expression
+    // Rectangle-specific invariant using inherited fields
     invariant validArea: width * height <= maxArea;
 
-    // Complex expression with parentheses
+    // Complex expression with parentheses using inherited fields
     invariant aspectRatio: (width + height) * 2 <= 1000;
 
-    // Logical operators
+    // Logical operators with inherited fields
     invariant validDimensions: width >= 10 && height >= 10;
+
+    // Invariant using computed features
+    invariant computedAreaCheck: computedArea <= 1000000;
 }
 
 class Temperature {

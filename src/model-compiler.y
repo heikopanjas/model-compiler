@@ -68,7 +68,7 @@ std::vector<std::string> g_source_lines;
 %token CLASS INHERITS ENUM FEATURE INVARIANT OPTIONAL UNIQUE
 %token STRING_TYPE INT_TYPE REAL_TYPE BOOL_TYPE TIMESTAMP_TYPE TIMESPAN_TYPE DATE_TYPE GUID_TYPE
 %token LBRACE RBRACE LBRACKET RBRACKET LPAREN RPAREN
-%token SEMICOLON COLON COMMA DOT DOTDOT ASTERISK
+%token SEMICOLON COLON COMMA EQUALS DOT DOTDOT ASTERISK
 %token PLUS MINUS SLASH PERCENT
 %token LE GE EQ NE LT GT
 %token AND OR NOT
@@ -105,6 +105,7 @@ std::vector<std::string> g_source_lines;
 %left ASTERISK SLASH PERCENT
 %right NOT
 %right UNARY_MINUS
+%left DOT
 
 %%
 
@@ -287,6 +288,39 @@ field:
         );
         free($2);
     }
+    | FEATURE field_name COLON type_spec modifier_spec EQUALS expression SEMICOLON
+    {
+        // Computed feature with modifiers
+        auto* type = static_cast<bbfm::TypeSpec*>($4);
+        auto* modifiers = static_cast<std::vector<std::unique_ptr<bbfm::Modifier>>*>($5);
+        auto* expr = static_cast<bbfm::Expression*>($7);
+        $$ = new bbfm::Field(
+            std::unique_ptr<bbfm::TypeSpec>(type),
+            $2,
+            std::move(*modifiers),
+            false,
+            std::unique_ptr<bbfm::Expression>(expr)
+        );
+        free($2);
+        delete modifiers;
+    }
+    | FEATURE field_name COLON type_spec EQUALS expression SEMICOLON
+    {
+        // Computed feature with default modifier [1]
+        auto* type = static_cast<bbfm::TypeSpec*>($4);
+        auto* expr = static_cast<bbfm::Expression*>($6);
+        auto modifiers = std::vector<std::unique_ptr<bbfm::Modifier>>();
+        modifiers.push_back(std::make_unique<bbfm::CardinalityModifier>(1, 1));
+
+        $$ = new bbfm::Field(
+            std::unique_ptr<bbfm::TypeSpec>(type),
+            $2,
+            std::move(modifiers),
+            false,
+            std::unique_ptr<bbfm::Expression>(expr)
+        );
+        free($2);
+    }
     ;
 
 type_spec:
@@ -428,6 +462,13 @@ expression:
     { $$ = new bbfm::ParenthesizedExpression(
         std::unique_ptr<bbfm::Expression>(static_cast<bbfm::Expression*>($2))
     ); }
+    | expression DOT IDENTIFIER
+    { $$ = new bbfm::MemberAccessExpression(
+        std::unique_ptr<bbfm::Expression>(static_cast<bbfm::Expression*>($1)),
+        $3
+    );
+      free($3);
+    }
     | primary_expression
     { $$ = $1; }
     ;

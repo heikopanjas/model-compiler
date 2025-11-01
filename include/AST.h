@@ -23,6 +23,7 @@ class Expression;
 class BinaryExpression;
 class UnaryExpression;
 class FieldReference;
+class MemberAccessExpression;
 class LiteralExpression;
 class FunctionCall;
 class ParenthesizedExpression;
@@ -357,6 +358,32 @@ private:
     std::string fieldName_;
 };
 
+/// \brief Member access expression (object.field)
+class MemberAccessExpression : public Expression
+{
+public:
+    /// \brief Construct a member access expression
+    /// \param object The object expression
+    /// \param memberName The name of the member being accessed
+    MemberAccessExpression(std::unique_ptr<Expression> object, const std::string& memberName);
+
+    Type        GetResultType() const override;
+    std::string ToString() const override;
+    void        Dump(int indent = 0) const override;
+
+    /// \brief Get the object expression
+    /// \return The object expression
+    const Expression* GetObject() const;
+
+    /// \brief Get the member name
+    /// \return The member name
+    const std::string& GetMemberName() const;
+
+private:
+    std::unique_ptr<Expression> object_;
+    std::string                 memberName_;
+};
+
 /// \brief Literal value expression
 class LiteralExpression : public Expression
 {
@@ -492,8 +519,11 @@ public:
     /// \param name The field's name
     /// \param modifiers Vector of field modifiers
     /// \param isStatic Whether the field is static
-    Field(std::unique_ptr<TypeSpec> type, const std::string& name, std::vector<std::unique_ptr<Modifier>> modifiers, const bool isStatic = false) :
-        type_(std::move(type)), name_(name), modifiers_(std::move(modifiers)), isStatic_(isStatic)
+    /// \param initializer Optional initializer expression for computed features
+    Field(
+        std::unique_ptr<TypeSpec> type, const std::string& name, std::vector<std::unique_ptr<Modifier>> modifiers, const bool isStatic = false,
+        std::unique_ptr<Expression> initializer = nullptr) :
+        type_(std::move(type)), name_(name), modifiers_(std::move(modifiers)), isStatic_(isStatic), initializer_(std::move(initializer))
     {
     }
 
@@ -513,6 +543,14 @@ public:
     /// \return True if field is static
     bool IsStatic() const;
 
+    /// \brief Check if field is computed (has an initializer expression)
+    /// \return True if field has an initializer
+    bool IsComputed() const;
+
+    /// \brief Get the initializer expression
+    /// \return Pointer to the initializer expression or nullptr
+    const Expression* GetInitializer() const;
+
     /// \brief Get the cardinality modifier if present
     /// \return Pointer to cardinality modifier or nullptr
     const CardinalityModifier* GetCardinalityModifier() const;
@@ -528,6 +566,7 @@ private:
     std::string                            name_;
     std::vector<std::unique_ptr<Modifier>> modifiers_;
     bool                                   isStatic_;
+    std::unique_ptr<Expression>            initializer_;
 };
 
 // ============================================================================

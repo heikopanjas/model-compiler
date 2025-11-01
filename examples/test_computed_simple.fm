@@ -1,0 +1,12 @@
+// Simple test for computed features (no member access yet)
+
+class Rectangle {
+    feature width: Int;
+    feature height: Int;
+
+    // Simple computed feature using arithmetic
+    feature area: Int = width * height;
+
+    // Another computed feature
+    feature perimeter: Int = (width + height) * 2;
+}

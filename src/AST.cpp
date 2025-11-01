@@ -183,6 +183,16 @@ bool Field::IsStatic() const
     return isStatic_;
 }
 
+bool Field::IsComputed() const
+{
+    return nullptr != initializer_;
+}
+
+const Expression* Field::GetInitializer() const
+{
+    return initializer_.get();
+}
+
 const CardinalityModifier* Field::GetCardinalityModifier() const
 {
     for (const auto& mod : modifiers_)
@@ -222,6 +232,12 @@ void Field::Dump(const int indent) const
     {
         std::cout << " ";
         mod->Dump(0);
+    }
+
+    // Print initializer if present
+    if (nullptr != initializer_)
+    {
+        std::cout << " = " << initializer_->ToString();
     }
 
     std::cout << ";\n";
@@ -565,6 +581,40 @@ void FieldReference::Dump(const int indent) const
 const std::string& FieldReference::GetFieldName() const
 {
     return fieldName_;
+}
+
+// MemberAccessExpression
+MemberAccessExpression::MemberAccessExpression(std::unique_ptr<Expression> object, const std::string& memberName) :
+    object_(std::move(object)), memberName_(memberName)
+{
+}
+
+Expression::Type MemberAccessExpression::GetResultType() const
+{
+    // Type must be determined by semantic analyzer based on member type
+    return Type::UNKNOWN;
+}
+
+std::string MemberAccessExpression::ToString() const
+{
+    return object_->ToString() + "." + memberName_;
+}
+
+void MemberAccessExpression::Dump(const int indent) const
+{
+    PrintIndent(indent);
+    std::cout << "MemberAccess: ." << memberName_ << "\n";
+    object_->Dump(indent + 2);
+}
+
+const Expression* MemberAccessExpression::GetObject() const
+{
+    return object_.get();
+}
+
+const std::string& MemberAccessExpression::GetMemberName() const
+{
+    return memberName_;
 }
 
 // LiteralExpression
