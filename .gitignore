@@ -8,6 +8,8 @@ cmake-build-*/
 *.a
 *.so
 *.dylib
+
+# Old binary names (deprecated)
 p3c
 
 # CMake

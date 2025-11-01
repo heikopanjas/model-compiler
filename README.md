@@ -1,10 +1,10 @@
-# P3 Compiler
+# Model Compiler
 
-A Domain-Specific Language (DSL) compiler for defining podcast object models and their relationships. The P3 language provides a simple, UML-inspired syntax for modeling podcast domain objects, which the compiler translates into source code and database schemas.
+A Domain-Specific Language (DSL) compiler for defining podcast object models and their relationships. Part of the Big Bad Feed Machine (BBFM) project, this compiler provides common infrastructure for podcast-related applications. The modeling language provides a simple, UML-inspired syntax for modeling podcast domain objects, which the compiler translates into source code and database schemas.
 
 ## Overview
 
-The P3 (Podcast Project Programming) language enables you to define data types, relationships, and constraints for podcast domains using an expressive, type-safe syntax. The compiler generates:
+The BBFM modeling language enables you to define data types, relationships, and constraints for podcast domains using an expressive, type-safe syntax. The compiler generates:
 
 - **C++ classes** with proper inheritance hierarchies
 - **SQLite database schemas** with foreign key relationships
@@ -41,11 +41,11 @@ Field cardinality and constraints are specified using square bracket notation:
 
 ### Design Philosophy
 
-P3 is inspired by UML class diagrams but deliberately simplified. It focuses on data modeling without the complexity of visibility modifiers, abstract types, interfaces, or stereotypes. The goal is an expressive yet approachable language for domain modeling.
+The BBFM modeling language is inspired by UML class diagrams but deliberately simplified. It focuses on data modeling without the complexity of visibility modifiers, abstract types, interfaces, or stereotypes. The goal is an expressive yet approachable language for domain modeling.
 
 ## Example
 
-```p3
+```bbfm
 // Define an enumeration
 enum MediaType {
     AUDIO,
@@ -94,7 +94,7 @@ fabric Transcript {
 ## Prerequisites
 
 - CMake 3.20 or higher
-- C11-compatible compiler (GCC or Clang)
+- C++23-compatible compiler (GCC or Clang)
 - Flex 2.6+ (lexical analyzer generator)
 - Bison 3.8+ (parser generator)
 - Ninja (build system)
@@ -133,46 +133,52 @@ ninja clean
 ## Usage
 
 ```bash
-./p3c <source_file.p3>
+./model-compiler <source_file.bbfm>
 ```
 
 Example:
 
 ```bash
-./p3c ../examples/podcast.p3
+./model-compiler ../examples/podcast.bbfm
 ```
 
 ## Project Structure
 
 ```text
-p3-compiler/
+model-compiler/
 ├── CMakeLists.txt          # CMake build configuration
 ├── README.md               # This file
 ├── AGENTS.md               # AI agent operating instructions
 ├── src/
-│   ├── lexer.l            # Flex lexer specification
-│   ├── parser.y           # Bison parser specification
-│   └── main.c             # Main entry point
+│   ├── model-compiler.l   # Flex lexer specification
+│   ├── model-compiler.y   # Bison parser specification
+│   ├── Driver.cpp         # Compiler driver implementation
+│   ├── AST.cpp            # AST implementation
+│   └── main.cpp           # Main entry point (C++)
 ├── include/               # Header files
-├── examples/              # Example P3 programs
-│   └── podcast.p3         # Podcast domain model example
+│   ├── Common.h           # Common macros and utilities
+│   ├── Driver.h           # Compiler driver interface
+│   └── AST.h              # AST node definitions
+├── examples/              # Example programs
+│   └── podcast.bbfm       # Podcast domain model example
 └── _build/                # Build artifacts (gitignored)
 ```
 
 ## Compilation Phases
 
-The P3 compiler implements a multi-phase compilation process:
+The compiler implements a multi-phase compilation process:
 
 1. **Lexical Analysis** - Tokenizes the input source code
 2. **Syntax Analysis** - Parses tokens into an abstract syntax tree
-3. **Semantic Analysis** - Type checking and validation (planned)
-4. **Code Generation** - Generates target code (planned):
+3. **AST Construction** - Builds complete Abstract Syntax Tree
+4. **Semantic Analysis** - Type checking and validation (planned)
+5. **Code Generation** - Generates target code (planned):
    - C++ class definitions with inheritance
    - SQLite database schema with foreign keys
 
 ## Type Mappings
 
-| P3 Type | C++ | SQLite |
+| BBFM Type | C++ | SQLite |
 |---------|-----|--------|
 | String | std::string | TEXT |
 | Int | int64_t | INTEGER |
@@ -186,11 +192,13 @@ The P3 compiler implements a multi-phase compilation process:
 **Implemented:**
 
 - Lexical analysis with case-insensitive keywords
-- Syntax analysis supporting full P3 grammar
+- Syntax analysis supporting full grammar
+- AST construction with modern C++23
 - Enum declarations
 - Fabric type declarations with inheritance
 - Field modifiers (cardinality and constraints)
 - All primitive types
+- Optional field shorthand syntax (?)
 
 **Planned:**
 
@@ -220,7 +228,7 @@ The P3 compiler implements a multi-phase compilation process:
 
 ### Comments
 
-```p3
+```bbfm
 // Single-line comment
 
 /*

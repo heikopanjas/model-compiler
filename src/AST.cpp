@@ -201,7 +201,7 @@ void Declaration::Dump(const int indent) const
 void AST::Dump(const int indent) const
 {
     PrintIndent(indent);
-    std::cout << "=== P3 Program AST ===\n\n";
+    std::cout << "=== BBFM Program AST ===\n\n";
 
     for (const auto& decl : declarations_)
     {

@@ -1,6 +1,6 @@
 # AI Agent Operating Instructions
 
-**Last updated:** November 1, 2025 (20:30)
+**Last updated:** November 1, 2025 (21:00)
 
 ## Primary Instructions
 
@@ -134,7 +134,7 @@ fix: update `KString` with "nested 'quotes'" & $special chars!
 
 ## Project Overview
 
-This is a Domain-Specific Language (DSL) compiler for defining podcast object models and their relationships. The compiler is written in C++23 using Flex (lexical analyzer) and Bison (parser generator), built with CMake and Ninja.
+This is a Domain-Specific Language (DSL) compiler for defining podcast object models and their relationships. Part of the Big Bad Feed Machine (BBFM) project, this compiler provides common infrastructure for podcast-related applications. The compiler is written in C++23 using Flex (lexical analyzer) and Bison (parser generator), built with CMake and Ninja.
 
 ### Project Goals
 
@@ -265,7 +265,7 @@ The compiler enables users to define data types and relationships for podcast do
 ### Project Structure
 
 ```text
-p3-compiler/
+model-compiler/
 ├── CMakeLists.txt          # CMake configuration
 ├── src/                    # Source files
 │   ├── model-compiler.l   # Flex lexer specification
@@ -283,9 +283,10 @@ p3-compiler/
 
 ### Language & Compiler Design
 
-- **DSL Name**: P3 (Podcast Project Programming language)
-- **Syntax Style**: C++-like (will be refined iteratively)
-- **Design Philosophy**: UML-inspired but simplified - focuses on data modeling without UML's full complexity
+- **Project Context**: Part of Big Bad Feed Machine (BBFM) - provides common infrastructure for podcast-related applications
+- **DSL Purpose**: Define podcast object models and relationships using a simple, expressive language
+- **Syntax Style**: C++-like, UML-inspired but simplified - focuses on data modeling without UML's full complexity
+- **File Extension**: `.bbfm` for source files
 - **Lexer**: Flex 2.6+
 - **Parser**: Bison 3.8+
 - **Keywords**: `fabric` (define types), `enum` (define enumerations)
@@ -354,7 +355,7 @@ p3-compiler/
    - C++ class generation - To be implemented
    - SQLite schema generation - To be implemented
 
-**Current Status:** The lexer, parser, and AST construction are complete. The compiler successfully parses P3 syntax and builds a complete Abstract Syntax Tree representing enums, fabric types, inheritance, field modifiers, and all primitive types. The AST uses modern C++ with smart pointers and provides a clean dump() method for visualization.
+**Current Status:** The lexer, parser, and AST construction are complete. The compiler successfully parses the BBFM modeling language syntax and builds a complete Abstract Syntax Tree representing enums, fabric types, inheritance, field modifiers, and all primitive types. The AST uses modern C++ with smart pointers and provides a clean Dump() method for visualization.
 
 **Architecture:** The compiler uses a `Driver` class to orchestrate compilation phases. The `main.cpp` file only handles command-line argument parsing and delegates all compilation work to the Driver:
 - **Phase 0** (Driver::Phase0): Lexical analysis and parsing - returns the AST as a unique_ptr
@@ -363,7 +364,7 @@ p3-compiler/
 
 The Driver does not store the AST internally; instead, `Phase0()` returns ownership of the AST to the caller, allowing for flexible AST management. The root AST node is represented by the `AST` class.
 
-### Example P3 Syntax
+### Example BBFM Syntax
 
 ```cpp
 // Fabric base type is implicit - not declared in source code
@@ -426,7 +427,7 @@ fabric Transcript {
 
 ### Type Mapping
 
-| P3 Type | C++ | SQLite |
+| BBFM Type | C++ | SQLite |
 |---------|-----|--------|
 | `String` | `std::string` | `TEXT` |
 | `Int` | `int64_t` | `INTEGER` |
@@ -450,12 +451,28 @@ ninja
 ninja clean
 
 # Test
-_build/model-compiler examples/podcast.p3
+_build/model-compiler examples/podcast.bbfm
 ```
 
 ---
 
 ## Recent Updates & Decisions
+
+### November 1, 2025 (21:00)
+
+- **Project branding update**: Replaced all references to "P3 (Podcast Project Programming language)" with BBFM (Big Bad Feed Machine) branding
+- **File extension change**: Changed source file extension from `.p3` to `.bbfm`
+- **Example files renamed**: Renamed all example files from `.p3` to `.bbfm` extension
+- **Documentation updates**: Updated README.md and AGENTS.md to reflect BBFM project context
+- **Project context clarification**: Emphasized that this compiler is part of the larger BBFM project which provides common infrastructure for podcast-related applications
+- **Terminology updates**:
+  - "P3 language" → "BBFM modeling language"
+  - "P3 syntax" → "BBFM syntax"
+  - "P3 Type" → "BBFM Type"
+  - Example references: `podcast.p3` → `podcast.bbfm`
+- **AST dump header**: Changed output from "P3 Program AST" to "BBFM Program AST"
+- **.gitignore update**: Marked old `p3c` binary name as deprecated
+- **Reasoning**: The compiler is not a standalone "P3" project but rather part of the larger Big Bad Feed Machine (BBFM) ecosystem. Using consistent BBFM branding across all documentation, file extensions, and code makes the project's purpose and context clearer. The `.bbfm` extension better represents the project identity and avoids confusion with other potential "P3" meanings.
 
 ### November 1, 2025 (20:30)
 
@@ -557,7 +574,7 @@ _build/model-compiler examples/podcast.p3
 - **Updated references**: Updated all include statements in `main.cpp`, `AST.cpp`, and `parser.y`
 - **CMake update**: Updated `CMakeLists.txt` to reference `src/AST.cpp`
 - **Project rename**: Renamed CMake project from `p3_compiler` to `model_compiler` and binary from `p3c` to `model-compiler`
-- **Reasoning**: Uppercase file names (AST.h, AST.cpp) better reflect that these files define types and classes, following common C++ convention where header files for major components use uppercase. The project rename reflects a broader scope beyond just P3 language, positioning the compiler as a general model compiler framework.
+- **Reasoning**: Uppercase file names (AST.h, AST.cpp) better reflect that these files define types and classes, following common C++ convention where header files for major components use uppercase. The project rename reflects the broader BBFM (Big Bad Feed Machine) scope, positioning the compiler as infrastructure for podcast-related applications.
 
 ### November 1, 2025 (17:00)
 
@@ -592,11 +609,11 @@ _build/model-compiler examples/podcast.p3
 
 ### November 1, 2025 (16:00)
 
-- **AST Implementation**: Implemented complete Abstract Syntax Tree for P3 language
+- **AST Implementation**: Implemented complete Abstract Syntax Tree for the BBFM modeling language
 - **AST Structure**: Created comprehensive node hierarchy with `Program`, `Declaration`, `EnumDeclaration`, `FabricDeclaration`, `Field`, `TypeSpec`, `Modifier` classes
 - **AST Features**:
   - Modern C++23 with smart pointers (`std::unique_ptr`) for memory management
-  - Support for all P3 language constructs (enums, fabric types, inheritance, fields, modifiers)
+  - Support for all BBFM language constructs (enums, fabric types, inheritance, fields, modifiers)
   - `PrimitiveTypeSpec` and `UserDefinedTypeSpec` for type representation
   - `CardinalityModifier` and `UniqueModifier` for field constraints
   - Clean `dump()` method for AST visualization and debugging
@@ -605,7 +622,7 @@ _build/model-compiler examples/podcast.p3
   - `include/AST.h` - AST node class declarations
   - `src/AST.cpp` - AST implementation with dump methods
   - Updated `CMakeLists.txt` to include AST source
-- **Testing**: Successfully tested with all example P3 files; AST correctly represents parsed programs
+- **Testing**: Successfully tested with all example files; AST correctly represents parsed programs
 - **Reasoning**: AST is essential foundation for semantic analysis and code generation phases. Using modern C++ with smart pointers ensures memory safety and clean resource management. The separation of interface (AST.h) and implementation (AST.cpp) follows best practices for maintainable C++ projects. Void pointer union in Bison parser solves C/C++ linkage issues while maintaining type safety through static_cast in grammar actions.
 
 ### November 1, 2025 (14:30)
@@ -622,8 +639,8 @@ _build/model-compiler examples/podcast.p3
 - **Shorthand modifier syntax**: Implemented optional modifier syntax where `[1]` is the default
 - **Parser enhancement**: Modified parser to accept fields without explicit modifiers (e.g., `String name;` instead of `String name[1];`)
 - **Backward compatibility**: Explicit modifiers still work; both syntaxes are valid
-- **Example updates**: Updated `podcast.p3` example to demonstrate cleaner shorthand syntax
-- **Reasoning**: Reduces verbosity for the most common case (mandatory single values); makes P3 code cleaner and more readable while maintaining full expressiveness when needed. Since `[1]` is the most common modifier, making it the default eliminates repetitive syntax without losing clarity.
+- **Example updates**: Updated `podcast.bbfm` example to demonstrate cleaner shorthand syntax
+- **Reasoning**: Reduces verbosity for the most common case (mandatory single values); makes the modeling language cleaner and more readable while maintaining full expressiveness when needed. Since `[1]` is the most common modifier, making it the default eliminates repetitive syntax without losing clarity.
 
 ### October 14, 2025
 
@@ -648,7 +665,7 @@ _build/model-compiler examples/podcast.p3
 
 - **UUID type removal**: Removed `UUID_TYPE` token from lexer and parser
 - **Fabric typeId clarification**: The Fabric base type's static `typeId` field uses the `Guid` type (not a separate `UUID` type)
-- **Reasoning**: Users never write `UUID` in their P3 code. The `Guid` type serves all identifier needs - both for instance IDs (like `Podcast.id`) and type IDs (like Fabric's static `typeId`). This simplifies the language with a single universal identifier type.
+- **Reasoning**: Users never write `UUID` in their BBFM code. The `Guid` type serves all identifier needs - both for instance IDs (like `Podcast.id`) and type IDs (like Fabric's static `typeId`). This simplifies the language with a single universal identifier type.
 
 ### October 4, 2025 (19:45)
 
@@ -667,7 +684,7 @@ _build/model-compiler examples/podcast.p3
 
 ### October 4, 2025 (19:30)
 
-- **Lexer and parser implementation**: Implemented P3 lexer and parser supporting full syntax
+- **Lexer and parser implementation**: Implemented BBFM lexer and parser supporting full syntax
 - **Features working**: Enums, fabric types, inheritance (`:` syntax), field modifiers (`[1]`, `[0..1]`, `[0..*]`, `[unique]`), all primitive types
 - **Reasoning**: Foundation complete for semantic analysis and code generation phases
 
