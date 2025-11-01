@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.20)
-project(p3_compiler CXX)
+project(model_compiler CXX)
 
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -25,14 +25,15 @@ include_directories(
 )
 
 # Compiler executable
-add_executable(p3c
+add_executable(model-compiler
     src/main.cpp
+    src/AST.cpp
     ${BISON_Parser_OUTPUTS}
     ${FLEX_Lexer_OUTPUTS}
 )
 
 # Compiler flags
-target_compile_options(p3c PRIVATE
+target_compile_options(model-compiler PRIVATE
     -Wall
     -Wextra
     -Wpedantic
@@ -40,8 +41,8 @@ target_compile_options(p3c PRIVATE
 
 # Link with necessary libraries (if flex/bison need them)
 if (APPLE)
-    target_link_libraries(p3c)
+    target_link_libraries(model-compiler)
 endif()
 
 # Install target
-install(TARGETS p3c DESTINATION bin)
+install(TARGETS model-compiler DESTINATION bin)

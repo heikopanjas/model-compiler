@@ -3,6 +3,9 @@
 #include <cstdlib>
 #include <cstring>
 #include <iostream>
+#include <memory>
+#include <vector>
+#include "AST.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -14,6 +17,9 @@ void yyerror(const char *s);
 #ifdef __cplusplus
 }
 #endif
+
+// Global AST root
+std::unique_ptr<p3::Program> g_ast;
 %}
 
 %code requires {
@@ -25,6 +31,17 @@ void yyerror(const char *s);
 %union {
     int integer;
     char *string;
+    void *program;
+    void *declaration;
+    void *enumDecl;
+    void *fabricDecl;
+    void *field;
+    void *typeSpec;
+    void *modifier;
+    void *declarationList;
+    void *stringList;
+    void *fieldList;
+    void *modifierList;
 }
 
 /* Token declarations */
@@ -35,93 +52,209 @@ void yyerror(const char *s);
 %token <string> IDENTIFIER
 %token <integer> INTEGER_LITERAL
 
-%type <string> type_spec
+%type <program> program
+%type <declarationList> declaration_list
+%type <declaration> declaration
+%type <enumDecl> enum_declaration
+%type <fabricDecl> fabric_declaration
+%type <stringList> enum_value_list
+%type <fieldList> field_list
+%type <field> field
+%type <typeSpec> type_spec
+%type <modifierList> modifier_spec modifier_list
+%type <modifier> modifier
+%type <integer> field_modifiers
 
 %%
 
 program:
     /* empty */
+    {
+        auto* prog = new p3::Program(std::vector<std::unique_ptr<p3::Declaration>>());
+        $$ = prog;
+        g_ast = std::unique_ptr<p3::Program>(prog);
+    }
     | declaration_list
-    { std::cout << "P3 program parsed successfully!\n"; }
+    {
+        auto* list = static_cast<std::vector<std::unique_ptr<p3::Declaration>>*>($1);
+        auto* prog = new p3::Program(std::move(*list));
+        delete list;
+        $$ = prog;
+        g_ast = std::unique_ptr<p3::Program>(prog);
+    }
     ;
 
 declaration_list:
     declaration
+    {
+        auto* list = new std::vector<std::unique_ptr<p3::Declaration>>();
+        list->push_back(std::unique_ptr<p3::Declaration>(static_cast<p3::Declaration*>($1)));
+        $$ = list;
+    }
     | declaration_list declaration
+    {
+        auto* list = static_cast<std::vector<std::unique_ptr<p3::Declaration>>*>($1);
+        list->push_back(std::unique_ptr<p3::Declaration>(static_cast<p3::Declaration*>($2)));
+        $$ = list;
+    }
     ;
 
 declaration:
     enum_declaration
+    { $$ = new p3::Declaration(std::unique_ptr<p3::EnumDeclaration>(static_cast<p3::EnumDeclaration*>($1))); }
     | fabric_declaration
+    { $$ = new p3::Declaration(std::unique_ptr<p3::FabricDeclaration>(static_cast<p3::FabricDeclaration*>($1))); }
     ;
 
 enum_declaration:
     ENUM IDENTIFIER LBRACE enum_value_list RBRACE
-    { std::cout << "Enum: " << $2 << "\n"; free($2); }
+    {
+        auto* values = static_cast<std::vector<std::string>*>($4);
+        $$ = new p3::EnumDeclaration($2, std::move(*values));
+        free($2);
+        delete values;
+    }
     ;
 
 enum_value_list:
     IDENTIFIER
-    { std::cout << "  - " << $1 << "\n"; free($1); }
+    {
+        auto* list = new std::vector<std::string>();
+        list->push_back($1);
+        free($1);
+        $$ = list;
+    }
     | enum_value_list COMMA IDENTIFIER
-    { std::cout << "  - " << $3 << "\n"; free($3); }
+    {
+        auto* list = static_cast<std::vector<std::string>*>($1);
+        list->push_back($3);
+        free($3);
+        $$ = list;
+    }
     ;
 
 fabric_declaration:
     FABRIC IDENTIFIER LBRACE field_list RBRACE
-    { std::cout << "Fabric: " << $2 << "\n"; free($2); }
+    {
+        auto* fields = static_cast<std::vector<std::unique_ptr<p3::Field>>*>($4);
+        $$ = new p3::FabricDeclaration($2, "", std::move(*fields));
+        free($2);
+        delete fields;
+    }
     | FABRIC IDENTIFIER COLON IDENTIFIER LBRACE field_list RBRACE
-    { std::cout << "Fabric: " << $2 << " : " << $4 << "\n"; free($2); free($4); }
+    {
+        auto* fields = static_cast<std::vector<std::unique_ptr<p3::Field>>*>($6);
+        $$ = new p3::FabricDeclaration($2, $4, std::move(*fields));
+        free($2);
+        free($4);
+        delete fields;
+    }
     ;
 
 field_list:
     /* empty */
+    { $$ = new std::vector<std::unique_ptr<p3::Field>>(); }
     | field_list field
+    {
+        auto* list = static_cast<std::vector<std::unique_ptr<p3::Field>>*>($1);
+        list->push_back(std::unique_ptr<p3::Field>(static_cast<p3::Field*>($2)));
+        $$ = list;
+    }
     ;
 
 field:
     field_modifiers type_spec IDENTIFIER modifier_spec SEMICOLON
-    { std::cout << "  Field: " << $2 << " " << $3 << "\n"; free($2); free($3); }
+    {
+        auto* type = static_cast<p3::TypeSpec*>($2);
+        auto* modifiers = static_cast<std::vector<std::unique_ptr<p3::Modifier>>*>($4);
+        $$ = new p3::Field(
+            std::unique_ptr<p3::TypeSpec>(type),
+            $3,
+            std::move(*modifiers),
+            $1 != 0
+        );
+        free($3);
+        delete modifiers;
+    }
     | field_modifiers type_spec IDENTIFIER SEMICOLON
-    { std::cout << "  Field: " << $2 << " " << $3 << " [1 - default]\n"; free($2); free($3); }
+    {
+        // Default modifier: [1] (mandatory single value)
+        auto* type = static_cast<p3::TypeSpec*>($2);
+        auto modifiers = std::vector<std::unique_ptr<p3::Modifier>>();
+        modifiers.push_back(std::make_unique<p3::CardinalityModifier>(1, 1));
+
+        $$ = new p3::Field(
+            std::unique_ptr<p3::TypeSpec>(type),
+            $3,
+            std::move(modifiers),
+            $1 != 0
+        );
+        free($3);
+    }
     | field_modifiers type_spec IDENTIFIER QUESTION SEMICOLON
-    { std::cout << "  Field: " << $2 << " " << $3 << " [0..1 - optional]\n"; free($2); free($3); }
+    {
+        // Optional shorthand: [0..1]
+        auto* type = static_cast<p3::TypeSpec*>($2);
+        auto modifiers = std::vector<std::unique_ptr<p3::Modifier>>();
+        modifiers.push_back(std::make_unique<p3::CardinalityModifier>(0, 1));
+
+        $$ = new p3::Field(
+            std::unique_ptr<p3::TypeSpec>(type),
+            $3,
+            std::move(modifiers),
+            $1 != 0
+        );
+        free($3);
+    }
     ;
 
 field_modifiers:
     /* empty */
+    { $$ = 0; }
     | STATIC
+    { $$ = 1; }
     ;
 
 type_spec:
-    STRING_TYPE     { $$ = strdup("String"); }
-    | INT_TYPE      { $$ = strdup("Int"); }
-    | REAL_TYPE     { $$ = strdup("Real"); }
-    | TIMESTAMP_TYPE { $$ = strdup("Timestamp"); }
-    | TIMESPAN_TYPE { $$ = strdup("Timespan"); }
-    | DATE_TYPE     { $$ = strdup("Date"); }
-    | GUID_TYPE     { $$ = strdup("Guid"); }
-    | IDENTIFIER    { $$ = $1; }
+    STRING_TYPE     { $$ = new p3::PrimitiveTypeSpec(p3::PrimitiveType::STRING); }
+    | INT_TYPE      { $$ = new p3::PrimitiveTypeSpec(p3::PrimitiveType::INT); }
+    | REAL_TYPE     { $$ = new p3::PrimitiveTypeSpec(p3::PrimitiveType::REAL); }
+    | TIMESTAMP_TYPE { $$ = new p3::PrimitiveTypeSpec(p3::PrimitiveType::TIMESTAMP); }
+    | TIMESPAN_TYPE { $$ = new p3::PrimitiveTypeSpec(p3::PrimitiveType::TIMESPAN); }
+    | DATE_TYPE     { $$ = new p3::PrimitiveTypeSpec(p3::PrimitiveType::DATE); }
+    | GUID_TYPE     { $$ = new p3::PrimitiveTypeSpec(p3::PrimitiveType::GUID); }
+    | IDENTIFIER    { $$ = new p3::UserDefinedTypeSpec($1); free($1); }
     ;
 
 modifier_spec:
     LBRACKET modifier_list RBRACKET
+    { $$ = $2; }
     ;
 
 modifier_list:
     modifier
+    {
+        auto* list = new std::vector<std::unique_ptr<p3::Modifier>>();
+        list->push_back(std::unique_ptr<p3::Modifier>(static_cast<p3::Modifier*>($1)));
+        $$ = list;
+    }
     | modifier_list COMMA modifier
+    {
+        auto* list = static_cast<std::vector<std::unique_ptr<p3::Modifier>>*>($1);
+        list->push_back(std::unique_ptr<p3::Modifier>(static_cast<p3::Modifier*>($3)));
+        $$ = list;
+    }
     ;
 
 modifier:
     INTEGER_LITERAL
-    { std::cout << "[" << $1 << "]"; }
+    { $$ = new p3::CardinalityModifier($1, $1); }
     | INTEGER_LITERAL DOTDOT INTEGER_LITERAL
-    { std::cout << "[" << $1 << ".." << $3 << "]"; }
+    { $$ = new p3::CardinalityModifier($1, $3); }
     | INTEGER_LITERAL DOTDOT ASTERISK
-    { std::cout << "[" << $1 << "..*]"; }
+    { $$ = new p3::CardinalityModifier($1, -1); }
     | UNIQUE
-    { std::cout << "[unique]"; }
+    { $$ = new p3::UniqueModifier(); }
     ;
 
 %%

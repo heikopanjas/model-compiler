@@ -1,6 +1,6 @@
 # AI Agent Operating Instructions
 
-**Last updated:** November 1, 2025
+**Last updated:** November 1, 2025 (18:00)
 
 ## Primary Instructions
 
@@ -157,6 +157,80 @@ The compiler enables users to define data types and relationships for podcast do
 - **Build Directory**: `_build/` (not `build/`)
 - **C++ Standard**: C++23
 
+### C++ Coding Standards
+
+**General Principles:**
+
+- Follow modern C++ best practices (C++23 standard)
+- Use RAII principles for resource management
+- Prefer smart pointers (`std::unique_ptr`, `std::shared_ptr`) over raw pointers
+- Use const-correctness throughout the codebase
+- This style provides extra safety and consistency throughout the codebase
+
+**Functions and Methods:**
+
+- All function input parameters should be const (e.g., `void SetTitle(const std::string& title)`)
+- All functions that return class data without modification should be const (e.g., `std::string GetTitle() const`)
+- Pass by const reference for complex types, by value for primitives
+- Use trailing return types when it improves clarity
+
+**Classes and Destructors:**
+
+- All destructors should be virtual (even when deleted)
+- All abstract/interface classes should have a protected virtual destructor
+- Use the Rule of Zero when possible (let compiler generate special members)
+- When implementing special members, follow the Rule of Five
+
+**Naming Conventions:**
+
+- Types (classes, structs, enums, typedefs): Upper PascalCase (e.g., `Episode`, `SharedObject`, `MediaType`)
+- Functions/methods: Upper PascalCase (e.g., `GetTitle`, `SetDuration`, `ParseInput`)
+- Variables and function parameters: camelCase (e.g., `bufferSize`, `episodeCount`, `userName`)
+- Member variables: camelCase with underscore postfix (e.g., `dataSize_`, `title_`, `description_`)
+- Constants: UPPER_SNAKE_CASE (e.g., `MAX_EPISODE_LENGTH`, `DEFAULT_TIMEOUT`)
+- Remove redundant prefixes from class names (e.g., use `Model` instead of `P3Model`)
+
+**Comments and Documentation:**
+
+- Always use modern C++ line comments (`//`) even for multi-line comments
+- Document public APIs with clear Doxygen-style comments in header files
+- Use traditional Doxygen syntax:
+  - `///` for Doxygen comments
+  - `\brief` for brief descriptions
+  - `\param` for parameters
+  - `\return` for return values
+  - Example:
+
+    ```cpp
+    /// \brief Sets the episode title
+    /// \param title The new title for the episode
+    void SetTitle(const std::string& title);
+    ```
+
+- Implementation files (.cpp) should use inline `//` comments for logic explanation
+- Keep comments concise and focused on "why" rather than "what"
+
+**Documentation Tools:**
+
+- Use Graphviz DOT for class diagrams and dependency diagrams:
+  - Use `@dot...@enddot` blocks for custom graphs
+  - Good for showing data flow, component relationships, and class structures
+  - Use professional styling with white backgrounds and clear fonts
+  - Example: `@dot digraph example { ... } @enddot`
+- **UML Diagram Guidelines**: Treat String, Guid, Timestamp, Timespan as primitive types
+  - These should appear as attributes in class diagrams, not as separate class boxes
+  - Focus diagrams on domain model relationships, not implementation utility types
+  - Keep diagrams clean by treating runtime utilities as built-in primitives
+
+**Documentation Accuracy:**
+
+- **CRITICAL: Always verify documentation against actual implementation**
+- README.md must show real API patterns, not fictional functions
+- Use actual struct member names and types from header files
+- Integration examples must use real function signatures and member access patterns
+- All type names must match implementation (e.g., `Guid` not `GUID`)
+- Keep documentation synchronized with code changes
+
 ### Project Structure
 
 ```text
@@ -165,8 +239,10 @@ p3-compiler/
 ├── src/                    # Source files
 │   ├── lexer.l            # Flex lexer specification
 │   ├── parser.y           # Bison parser specification
+│   ├── AST.cpp            # AST implementation
 │   └── main.cpp           # Main entry point (C++)
-├── include/               # Header files (to be created)
+├── include/               # Header files
+│   └── AST.h              # AST node definitions
 ├── examples/              # Test programs
 └── _build/                # Build artifacts (gitignored)
 ```
@@ -238,12 +314,13 @@ p3-compiler/
 
 1. Lexical Analysis (tokenization) ✅ Implemented
 2. Syntax Analysis (parsing) ✅ Implemented
-3. Semantic Analysis (type checking, validation) - To be implemented
-4. Code Generation:
+3. **AST Construction** ✅ Implemented
+4. Semantic Analysis (type checking, validation) - To be implemented
+5. Code Generation:
    - C++ class generation - To be implemented
    - SQLite schema generation - To be implemented
 
-**Current Status:** The lexer and parser successfully parse P3 syntax including enums, fabric types, inheritance, field modifiers, and all primitive types.
+**Current Status:** The lexer, parser, and AST construction are complete. The compiler successfully parses P3 syntax and builds a complete Abstract Syntax Tree representing enums, fabric types, inheritance, field modifiers, and all primitive types. The AST uses modern C++ with smart pointers and provides a clean dump() method for visualization.
 
 ### Example P3 Syntax
 
@@ -332,12 +409,72 @@ ninja
 ninja clean
 
 # Test
-_build/p3c examples/podcast.p3
+_build/model-compiler examples/podcast.p3
 ```
 
 ---
 
 ## Recent Updates & Decisions
+
+### November 1, 2025 (18:00)
+
+- **File naming convention**: Renamed AST files to use uppercase naming
+- **Files renamed**:
+  - `include/ast.h` → `include/AST.h`
+  - `src/ast.cpp` → `src/AST.cpp`
+- **Updated references**: Updated all include statements in `main.cpp`, `AST.cpp`, and `parser.y`
+- **CMake update**: Updated `CMakeLists.txt` to reference `src/AST.cpp`
+- **Project rename**: Renamed CMake project from `p3_compiler` to `model_compiler` and binary from `p3c` to `model-compiler`
+- **Reasoning**: Uppercase file names (AST.h, AST.cpp) better reflect that these files define types and classes, following common C++ convention where header files for major components use uppercase. The project rename reflects a broader scope beyond just P3 language, positioning the compiler as a general model compiler framework.
+
+### November 1, 2025 (17:00)
+
+- **C++ Coding Guidelines Implementation**: Applied all coding guidelines to existing source code
+- **Method Naming**: Renamed all methods to Upper PascalCase:
+  - Getters: `getType()` → `GetType()`, `getName()` → `GetName()`, etc.
+  - Boolean checks: `isPrimitive()` → `IsPrimitive()`, `isStatic()` → `IsStatic()`, etc.
+  - Helpers: `dump()` → `Dump()`, `printIndent()` → `PrintIndent()`, etc.
+  - Static methods: `typeToString()` → `TypeToString()`
+- **Doxygen Documentation**: Added comprehensive Doxygen-style comments to all public APIs in AST.h:
+  - Used `///` for Doxygen comments
+  - Added `\brief` descriptions for all classes and methods
+  - Added `\param` for all parameters
+  - Added `\return` for return values
+- **Parameter Handling**: Marked unused `indent` parameters with `(void)indent;` to suppress warnings
+- **Const Correctness**: Made all function parameters const where appropriate
+- **Testing**: Verified all changes compile cleanly and produce identical output
+- **Reasoning**: Implementing coding standards early in the project ensures consistency as the codebase grows. Using Upper PascalCase for methods aligns with the convention and makes the API more professional. Doxygen comments improve code documentation and enable automatic API documentation generation.
+
+### November 1, 2025 (16:30)
+
+- **C++ Coding Standards Consolidation**: Integrated manually added C++ coding guidelines into the Coding Standards & Conventions section
+- **Documentation Organization**: Organized coding standards into clear subsections:
+  - General Principles (RAII, smart pointers, const-correctness)
+  - Functions and Methods (const parameters, const methods)
+  - Classes and Destructors (virtual destructors, Rule of Five/Zero)
+  - Naming Conventions (PascalCase for types/functions, camelCase for variables)
+  - Comments and Documentation (C++ line comments, Doxygen style)
+  - Documentation Tools (Graphviz DOT, UML guidelines)
+  - Documentation Accuracy (verification against implementation)
+- **Reasoning**: Consolidating coding standards into a comprehensive, well-organized section makes them easier to follow and reference. Clear subsections help AI agents and human developers quickly find relevant guidelines. The standards now cover all aspects of C++ development in the project from naming to documentation.
+
+### November 1, 2025 (16:00)
+
+- **AST Implementation**: Implemented complete Abstract Syntax Tree for P3 language
+- **AST Structure**: Created comprehensive node hierarchy with `Program`, `Declaration`, `EnumDeclaration`, `FabricDeclaration`, `Field`, `TypeSpec`, `Modifier` classes
+- **AST Features**:
+  - Modern C++23 with smart pointers (`std::unique_ptr`) for memory management
+  - Support for all P3 language constructs (enums, fabric types, inheritance, fields, modifiers)
+  - `PrimitiveTypeSpec` and `UserDefinedTypeSpec` for type representation
+  - `CardinalityModifier` and `UniqueModifier` for field constraints
+  - Clean `dump()` method for AST visualization and debugging
+- **Parser Integration**: Updated Bison parser to construct AST during parsing using void pointer union for C/C++ interop
+- **File Organization**:
+  - `include/AST.h` - AST node class declarations
+  - `src/AST.cpp` - AST implementation with dump methods
+  - Updated `CMakeLists.txt` to include AST source
+- **Testing**: Successfully tested with all example P3 files; AST correctly represents parsed programs
+- **Reasoning**: AST is essential foundation for semantic analysis and code generation phases. Using modern C++ with smart pointers ensures memory safety and clean resource management. The separation of interface (AST.h) and implementation (AST.cpp) follows best practices for maintainable C++ projects. Void pointer union in Bison parser solves C/C++ linkage issues while maintaining type safety through static_cast in grammar actions.
 
 ### November 1, 2025 (14:30)
 

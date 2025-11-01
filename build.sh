@@ -23,4 +23,4 @@ echo "Building with Ninja..."
 ninja
 
 echo ""
-echo "Build complete! Executable: $BUILD_DIR/p3c"
+echo "Build complete! Executable: $BUILD_DIR/model-compiler"
