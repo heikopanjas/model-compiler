@@ -4,8 +4,8 @@ class UserPreferences {
     String userId;
     Bool emailNotifications;      // mandatory boolean
     Bool pushNotifications;
-    Bool darkMode?;              // optional boolean
-    Bool isActive[1];            // explicit mandatory
+    Bool darkMode[optional];      // optional boolean
+    Bool isActive[1];             // explicit mandatory
 }
 
 class FeatureFlags {

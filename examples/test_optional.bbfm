@@ -1,14 +1,14 @@
-// Test file for question mark optional syntax
+// Test file for optional modifier syntax
 
 class Person {
     // Mandatory fields (default [1])
     String firstName;
     String lastName;
 
-    // Optional fields using ? shorthand (equivalent to [0..1])
-    String middleName?;
-    String nickname?;
-    Int age?;
+    // Optional fields using optional modifier (equivalent to [0..1])
+    String middleName[optional];
+    String nickname[optional];
+    Int age[optional];
 
     // Explicit syntax still works
     String email[0..1];

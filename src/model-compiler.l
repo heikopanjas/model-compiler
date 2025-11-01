@@ -36,6 +36,7 @@ WHITESPACE  [ \t\r]+
 "class"         { return CLASS; }
 "inherits"      { return INHERITS; }
 "enum"          { return ENUM; }
+"optional"      { return OPTIONAL; }
 "unique"        { return UNIQUE; }
 
 {ID}            {
@@ -65,7 +66,6 @@ WHITESPACE  [ \t\r]+
 "."             { return DOT; }
 ".."            { return DOTDOT; }
 "*"             { return ASTERISK; }
-"?"             { return QUESTION; }
 
 "//".* { /* single-line comment */ }
 "/*"([^*]|\*+[^*/])*\*+"/" { /* multi-line comment */ }

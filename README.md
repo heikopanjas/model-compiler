@@ -92,19 +92,18 @@ Field cardinality and constraints are specified using square bracket notation:
 
 - `[1]` - Mandatory single value (default if no modifier specified)
 - `[0..1]` - Optional single value
+- `[optional]` - Optional single value (equivalent to `[0..1]`)
 - `[1..*]` - Array with at least one element
 - `[0..*]` - Array that may be empty
 - `[unique]` - Unique constraint
-- Modifiers can be combined: `[1,unique]`
+- Modifiers can be combined: `[optional,unique]`, `[1,unique]`
 
 **Shorthand Syntax:**
 
 - **Default cardinality**: Fields without modifiers default to `[1]` (mandatory)
   - `String title;` is equivalent to `String title[1];`
-- **Optional shorthand**: Use `?` for optional fields
-  - `String author?;` is equivalent to `String author[0..1];`
 
-These shortcuts make the most common field types cleaner and more readable while maintaining full expressiveness when needed.
+This approach makes the most common field types cleaner and more readable while maintaining full expressiveness when needed.
 
 ### Design Philosophy
 
@@ -134,7 +133,7 @@ class AudioAsset inherits Asset {
 class Podcast {
     String title;
     String description;
-    String author?;              // shorthand for [0..1] (optional)
+    String author[optional];     // optional field
     String rssUrl[1,unique];     // mandatory + unique
     Episode episodes[0..*];      // one-to-many relationship
 }
@@ -145,7 +144,7 @@ class Episode {
     Timespan duration;
     MediaType mediaType;
     AudioAsset audio;            // one-to-one relationship
-    Transcript transcript?;      // shorthand for [0..1] (optional)
+    Transcript transcript[optional]; // optional field
 }
 
 class Transcript {
@@ -262,7 +261,7 @@ The compiler implements a multi-phase compilation process:
 - Class type declarations with inheritance
 - Field modifiers (cardinality and constraints)
 - All primitive types
-- Optional field shorthand syntax (?)
+- Optional modifier syntax
 
 **Planned:**
 
@@ -278,6 +277,7 @@ The compiler implements a multi-phase compilation process:
 - `class` - Define a new type
 - `enum` - Define an enumeration
 - `inherits` - Specify inheritance relationship
+- `optional` - Optional field modifier (equivalent to `[0..1]`)
 - `unique` - Unique constraint modifier
 
 ### Primitive Types

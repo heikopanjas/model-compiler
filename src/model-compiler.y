@@ -51,10 +51,10 @@ std::unique_ptr<bbfm::AST> g_ast;
 }
 
 /* Token declarations */
-%token CLASS INHERITS ENUM UNIQUE
+%token CLASS INHERITS ENUM OPTIONAL UNIQUE
 %token STRING_TYPE INT_TYPE REAL_TYPE BOOL_TYPE TIMESTAMP_TYPE TIMESPAN_TYPE DATE_TYPE GUID_TYPE
 %token LBRACE RBRACE LBRACKET RBRACKET LPAREN RPAREN
-%token SEMICOLON COLON COMMA DOT DOTDOT ASTERISK QUESTION
+%token SEMICOLON COLON COMMA DOT DOTDOT ASTERISK
 %token <string> IDENTIFIER
 %token <integer> INTEGER_LITERAL
 
@@ -197,21 +197,6 @@ field:
         );
         free($3);
     }
-    | field_modifiers type_spec IDENTIFIER QUESTION SEMICOLON
-    {
-        // Optional shorthand: [0..1]
-        auto* type = static_cast<bbfm::TypeSpec*>($2);
-        auto modifiers = std::vector<std::unique_ptr<bbfm::Modifier>>();
-        modifiers.push_back(std::make_unique<bbfm::CardinalityModifier>(0, 1));
-
-        $$ = new bbfm::Field(
-            std::unique_ptr<bbfm::TypeSpec>(type),
-            $3,
-            std::move(modifiers),
-            $1 != 0
-        );
-        free($3);
-    }
     ;
 
 field_modifiers:
@@ -258,6 +243,8 @@ modifier:
     { $$ = new bbfm::CardinalityModifier($1, $3); }
     | INTEGER_LITERAL DOTDOT ASTERISK
     { $$ = new bbfm::CardinalityModifier($1, -1); }
+    | OPTIONAL
+    { $$ = new bbfm::CardinalityModifier(0, 1); }  // optional is equivalent to [0..1]
     | UNIQUE
     { $$ = new bbfm::UniqueModifier(); }
     ;

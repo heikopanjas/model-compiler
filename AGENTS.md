@@ -1,6 +1,6 @@
 # AI Agent Operating Instructions
 
-**Last updated:** November 1, 2025 (22:45)
+**Last updated:** November 1, 2025 (23:00)
 
 ## Primary Instructions
 
@@ -299,10 +299,10 @@ model-compiler/
   - Modifiers are specified in square brackets `[]` after the field name
   - **Default modifier**: `[1]` (mandatory single value) - applied when no modifiers are specified
   - Shorthand syntax: `String name;` is equivalent to `String name[1];`
-  - **Optional shorthand**: `String name?;` is equivalent to `String name[0..1];`
   - Cardinality: `[1]` (mandatory), `[0..1]` (optional), `[0..*]` (optional array), `[1..*]` (required array with at least one element)
+  - Optional modifier: `[optional]` is equivalent to `[0..1]`
   - Constraints: `[unique]` for unique fields
-  - Modifiers can be combined: `[1,unique]` for mandatory unique field
+  - Modifiers can be combined: `[optional,unique]` for optional unique field
 
 ### Language Features
 
@@ -404,9 +404,9 @@ class Podcast {
     // Universal metadata fields are automatic (not declared)
     String title;
     String description;
-    String author?;              // optional field using ? shorthand
-    String rssUrl[1,unique];     // mandatory + unique (explicit modifiers)
-    Episode episodes[0..*];      // one-to-many (may be empty)
+    String author[optional];         // optional field using optional modifier
+    String rssUrl[1,unique];         // mandatory + unique (explicit modifiers)
+    Episode episodes[0..*];          // one-to-many (may be empty)
 }
 
 class Episode {
@@ -414,8 +414,8 @@ class Episode {
     Date publishedAt;
     Timespan duration;
     MediaType mediaType;
-    AudioAsset audio;            // one-to-one relationship
-    Transcript transcript?;      // optional one-to-one using ? shorthand
+    AudioAsset audio;                // one-to-one relationship
+    Transcript transcript[optional]; // optional one-to-one using optional modifier
 }
 
 class Transcript {
@@ -457,6 +457,15 @@ _build/model-compiler examples/podcast.bbfm
 ---
 
 ## Recent Updates & Decisions
+
+### November 1, 2025 (23:00)
+
+- **Optional modifier**: Replaced `?` shorthand syntax with `[optional]` modifier
+- **Syntax change**: Changed from `String author?;` to `String author[optional];`
+- **Modifier list enhancement**: `optional` can be combined with other modifiers like `[optional,unique]`
+- **Consistency improvement**: All field constraints now use the same square bracket modifier syntax
+- **Files updated**: AGENTS.md, README.md, examples, lexer, parser, and AST
+- **Reasoning**: Using `[optional]` instead of `?` provides a more consistent syntax where all field modifiers use the same square bracket notation. This makes the language easier to parse and understand, eliminates special cases, and allows `optional` to be naturally combined with other modifiers in a uniform way. The `?` suffix was a special case that broke the pattern of bracket-based modifiers.
 
 ### November 1, 2025 (22:45)
 

@@ -25,7 +25,7 @@ class AudioAsset inherits Asset {
 class Podcast {
     String title;
     String description;
-    String author?;              // Optional field using ? shorthand
+    String author[optional];     // Optional field using optional modifier
     String rssUrl[1,unique];     // Mandatory + unique
     Episode episodes[0..*];      // One-to-many (may be empty)
 }
@@ -36,7 +36,7 @@ class Episode {
     Timespan duration;
     MediaType mediaType;
     AudioAsset audio;            // One-to-one relationship
-    Transcript transcript?;      // Optional one-to-one using ? shorthand
+    Transcript transcript[optional]; // Optional one-to-one using optional modifier
 }
 
 class Transcript {

@@ -5,11 +5,11 @@ class TestType {
     String name;
     Int age;
 
-    // Optional field using ? shorthand (equivalent to [0..1])
-    String middleName?;
+    // Optional field using optional modifier (equivalent to [0..1])
+    String middleName[optional];
 
     // Explicit modifiers still work
     String email[1,unique];
-    String nickname[0..1];      // Same as middleName? above
+    String nickname[0..1];        // Same as middleName[optional] above
     String tags[0..*];
 }
