@@ -21,10 +21,10 @@ struct TypeSymbol
         PRIMITIVE
     };
 
-    Kind                     kind;
-    std::string              name;
-    const EnumDeclaration*   enumDecl;  // Non-null if kind == ENUM
-    const ClassDeclaration*  classDecl; // Non-null if kind == CLASS
+    Kind                    kind;
+    std::string             name;
+    const EnumDeclaration*  enumDecl;  // Non-null if kind == ENUM
+    const ClassDeclaration* classDecl; // Non-null if kind == CLASS
 
     /// \brief Construct a primitive type symbol
     /// \param typeName The primitive type name
@@ -36,8 +36,7 @@ struct TypeSymbol
 
     /// \brief Construct a class type symbol
     /// \param classDeclaration Pointer to the class declaration
-    TypeSymbol(const ClassDeclaration* classDeclaration) :
-        kind(Kind::CLASS), name(classDeclaration->GetName()), enumDecl(nullptr), classDecl(classDeclaration)
+    TypeSymbol(const ClassDeclaration* classDeclaration) : kind(Kind::CLASS), name(classDeclaration->GetName()), enumDecl(nullptr), classDecl(classDeclaration)
     {
     }
 };

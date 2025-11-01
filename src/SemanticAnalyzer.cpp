@@ -63,7 +63,7 @@ bool SemanticAnalyzer::BuildSymbolTable()
         else if (Declaration::Kind::CLASS == decl->GetKind())
         {
             const ClassDeclaration* classDecl = decl->AsClass();
-            const std::string&     name     = classDecl->GetName();
+            const std::string&      name      = classDecl->GetName();
 
             // Check for duplicate type names
             if (TypeExists(name))
@@ -517,7 +517,7 @@ void SemanticAnalyzer::DumpSymbolTable() const
                 GetAllFields(entry.second.classDecl, allFields);
                 if (false == allFields.empty())
                 {
-                std::cout << "    Features:\n";
+                    std::cout << "    Features:\n";
                     for (const auto* field : allFields)
                     {
                         std::cout << "      " << field->GetName() << ": ";
