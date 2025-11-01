@@ -38,12 +38,12 @@ Every type in the BBFM modeling language automatically has six universal metadat
 - **`modificationDate`** (Timestamp) - The date and time when an instance was last modified. Updated whenever the object changes.
 - **`comment`** (String) - A user-provided comment or note field for storing arbitrary text associated with the instance.
 
-These fields are automatically available on all types. You never declare them in your class definitions. When you create a type like:
+These fields are automatically available on all types. **You never declare them in your class definitions.** When you create a type like:
 
 ```bbfm
 class Podcast {
-    String title;
-    String description;
+    feature title: String;
+    feature description: String;
 }
 ```
 
@@ -51,14 +51,14 @@ The generated code will include the universal metadata fields, so the actual str
 
 ```bbfm
 class Podcast {
-    feature typeId: Guid;                 // universal metadata
-    feature id: Guid;                     // universal metadata
-    feature cardinality: Int;             // universal metadata
-    feature creationDate: Timestamp;      // universal metadata
-    feature modificationDate: Timestamp;  // universal metadata
-    feature comment: String;              // universal metadata
-    feature title: String;                // defined in Podcast
-    feature description: String;          // defined in Podcast
+    feature typeId: Guid;                 // universal metadata (automatic)
+    feature id: Guid;                     // universal metadata (automatic)
+    feature cardinality: Int;             // universal metadata (automatic)
+    feature creationDate: Timestamp;      // universal metadata (automatic)
+    feature modificationDate: Timestamp;  // universal metadata (automatic)
+    feature comment: String;              // universal metadata (automatic)
+    feature title: String;                // user-defined
+    feature description: String;          // user-defined
 }
 ```
 
@@ -75,6 +75,7 @@ class AudioAsset inherits Asset {
 ```
 
 Results in:
+
 - All types have universal metadata: `typeId`, `id`, `cardinality`, `creationDate`, `modificationDate`, `comment`
 - `AudioAsset` inherits from `Asset` (gets the `url` field)
 
@@ -175,6 +176,7 @@ class AudioAsset inherits Asset {
 ```
 
 Invariants are validated during semantic analysis to ensure:
+
 - All referenced fields exist (including inherited fields)
 - Type compatibility of expressions
 - Proper syntax and operator usage
@@ -393,6 +395,100 @@ Examples:
 # View symbol table
 ./_build/model-compiler --dump-symbol-table examples/podcast.fm
 ```
+
+### Symbol Table Dump
+
+The `--dump-symbol-table` option displays the symbol table after semantic analysis, providing detailed information about all types, fields, invariants, and computed features in the program.
+
+**Output Format:**
+
+The symbol table dump shows:
+
+- **Primitive types**: All built-in types (String, Int, Real, Bool, Timestamp, Timespan, Date, Guid)
+- **Enumerations**: Enum names with their values
+- **Classes**: User-defined types with inheritance, features, invariants, and computed features
+
+**Field Origin Notation:**
+
+The dump uses qualified name syntax to indicate where features and invariants are declared:
+
+- `Self::fieldName` - Field declared in the current class
+- `Base::fieldName` - Field inherited from a base class
+
+**Example Output:**
+
+```text
+Symbol Table:
+  Total symbols: 11 (8 primitives, 1 enums, 2 classes)
+
+Primitive Types:
+  String
+  Int
+  Real
+  Bool
+  Timestamp
+  Timespan
+  Date
+  Guid
+
+Enumerations:
+  enum MediaType { AUDIO, VIDEO }
+
+Classes:
+  class Asset {
+    Features:
+      Self::url: String [1..1]
+  }
+
+  class AudioAsset inherits Asset {
+    Features:
+      Base::url: String [1..1]
+      Self::format: String [1..1]
+      Self::fileSize: Int [1..1]
+    Invariants:
+      Self::maxFileSize: (fileSize <= 500000000)
+  }
+
+  class Shape {
+    Features:
+      Self::width: Int [1..1]
+      Self::height: Int [1..1]
+      Self::area: Int [1..1] = Self::width * Self::height
+    Invariants:
+      Self::positiveWidth: (width > 0)
+      Self::positiveHeight: (height > 0)
+  }
+
+  class ColoredShape inherits Shape {
+    Features:
+      Base::width: Int [1..1]
+      Base::height: Int [1..1]
+      Base::area: Int [1..1] = Base::width * Base::height
+      Self::depth: Int [1..1]
+      Self::color: String [1..1]
+      Self::volume: Int [1..1] = Base::width * Base::height * Self::depth
+      Self::doubleArea: Int [1..1] = Base::area * 2
+    Invariants:
+      Base::positiveWidth: (width > 0)
+      Base::positiveHeight: (height > 0)
+      Self::positiveDepth: (depth > 0)
+  }
+```
+
+**Computed Features with Expressions:**
+
+Computed features show their complete expression with field origin annotations. For example:
+
+- `Self::area: Int [1..1] = Self::width * Self::height` - Uses fields from current class
+- `Self::volume: Int [1..1] = Base::width * Base::height * Self::depth` - Mix of inherited and local fields
+- `Self::doubleArea: Int [1..1] = Base::area * 2` - References inherited computed feature
+
+This visualization helps developers understand:
+
+- Which fields are locally declared vs. inherited
+- How computed features derive their values
+- What constraints (invariants) apply to each class
+- The complete interface of each type including inherited members
 
 ## Project Structure
 

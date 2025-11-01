@@ -1,6 +1,6 @@
 # AI Agent Operating Instructions
 
-**Last updated:** November 1, 2025 (14:50)
+**Last updated:** November 1, 2025 (15:00)
 
 ## Primary Instructions
 
@@ -1489,6 +1489,26 @@ _build/model-compiler --help
 - **Files modified**: SemanticAnalyzer.h, SemanticAnalyzer.cpp
 - **Test coverage**: Tested with computed features in inheritance scenarios and member access expressions
 - **Reasoning**: Displaying field origins in computed feature expressions provides critical insight into which fields are being referenced and whether they come from the current class or base classes. This is especially valuable when debugging complex inheritance hierarchies and understanding data flow in computed features. The enhancement makes the symbol table dump more informative and helps developers understand the complete picture of field dependencies and inheritance relationships at a glance.
+
+### November 1, 2025 (15:00)
+
+- **README documentation update**: Enhanced README with comprehensive symbol table dump documentation
+- **Changes made**:
+  - Added new "Symbol Table Dump" section explaining the `--dump-symbol-table` feature
+  - Documented Self::/Base:: qualified name notation for field origin markers
+  - Provided example symbol table output showing primitives, enums, and classes
+  - Explained how computed features display annotated expressions
+  - Showed examples of inheritance with mixed Self:: and Base:: fields
+  - Added explanation of what the visualization helps developers understand
+  - Fixed outdated syntax in Universal Metadata Fields section (removed old `String title;` example)
+  - Clarified that universal metadata fields are automatic and NOT user-declared
+  - Fixed markdown linting issues (added blank lines around lists)
+- **Sections enhanced**:
+  - Universal Metadata Fields - emphasized automatic nature with bold text
+  - Usage section - expanded with Symbol Table Dump subsection
+  - Added comprehensive example output showing real symbol table dump format
+- **Files modified**: README.md
+- **Reasoning**: The README was missing documentation for the recently enhanced symbol table dump feature. Adding this section provides users with clear examples of the output format and explains the Self::/Base:: notation that indicates field origin. This is critical documentation for one of the compiler's primary diagnostic tools. The syntax fixes ensure all examples use current BBFM language syntax with the `feature` keyword. Making the "NOT user-declared" aspect explicit prevents confusion about universal metadata fields.
 
 ### October 4, 2025 (17:00)
 
