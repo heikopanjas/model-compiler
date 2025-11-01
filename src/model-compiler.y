@@ -60,6 +60,9 @@ std::unique_ptr<bbfm::AST> g_ast;
 %token LE GE EQ NE LT GT
 %token <string> IDENTIFIER
 %token <integer> INTEGER_LITERAL
+%token <string> REAL_LITERAL
+%token <string> STRING_LITERAL
+%token <string> BOOL_LITERAL
 
 %type <ast> program
 %type <declarationList> declaration_list
@@ -74,6 +77,9 @@ std::unique_ptr<bbfm::AST> g_ast;
 %type <typeSpec> type_spec
 %type <modifierList> modifier_spec modifier_list
 %type <modifier> modifier
+%type <string> field_name
+%type <string> attribute_name
+%type <string> literal_value
 
 %%
 
@@ -187,54 +193,90 @@ invariant_list:
     }
     ;
 
+literal_value:
+    INTEGER_LITERAL { $$ = strdup(std::to_string($1).c_str()); }
+    | REAL_LITERAL  { $$ = $1; }
+    | STRING_LITERAL { $$ = $1; }
+    | BOOL_LITERAL  { $$ = $1; }
+    ;
+
+attribute_name:
+    IDENTIFIER      { $$ = $1; }
+    | STRING_TYPE   { $$ = strdup("string"); }
+    | INT_TYPE      { $$ = strdup("int"); }
+    | REAL_TYPE     { $$ = strdup("real"); }
+    | BOOL_TYPE     { $$ = strdup("bool"); }
+    | TIMESTAMP_TYPE { $$ = strdup("timestamp"); }
+    | TIMESPAN_TYPE { $$ = strdup("timespan"); }
+    | DATE_TYPE     { $$ = strdup("date"); }
+    | GUID_TYPE     { $$ = strdup("guid"); }
+    ;
+
 invariant:
-    INVARIANT IDENTIFIER COLON IDENTIFIER LE INTEGER_LITERAL SEMICOLON
+    INVARIANT IDENTIFIER COLON attribute_name LE literal_value SEMICOLON
     {
-        // Build expression string: "identifier <= value"
-        std::string expr = std::string($4) + " <= " + std::to_string($6);
+        std::string expr = std::string($4) + " <= " + std::string($6);
         $$ = new bbfm::Invariant($2, expr);
         free($2);
         free($4);
+        free($6);
     }
-    | INVARIANT IDENTIFIER COLON IDENTIFIER GE INTEGER_LITERAL SEMICOLON
+    | INVARIANT IDENTIFIER COLON attribute_name GE literal_value SEMICOLON
     {
-        std::string expr = std::string($4) + " >= " + std::to_string($6);
+        std::string expr = std::string($4) + " >= " + std::string($6);
         $$ = new bbfm::Invariant($2, expr);
         free($2);
         free($4);
+        free($6);
     }
-    | INVARIANT IDENTIFIER COLON IDENTIFIER LT INTEGER_LITERAL SEMICOLON
+    | INVARIANT IDENTIFIER COLON attribute_name LT literal_value SEMICOLON
     {
-        std::string expr = std::string($4) + " < " + std::to_string($6);
+        std::string expr = std::string($4) + " < " + std::string($6);
         $$ = new bbfm::Invariant($2, expr);
         free($2);
         free($4);
+        free($6);
     }
-    | INVARIANT IDENTIFIER COLON IDENTIFIER GT INTEGER_LITERAL SEMICOLON
+    | INVARIANT IDENTIFIER COLON attribute_name GT literal_value SEMICOLON
     {
-        std::string expr = std::string($4) + " > " + std::to_string($6);
+        std::string expr = std::string($4) + " > " + std::string($6);
         $$ = new bbfm::Invariant($2, expr);
         free($2);
         free($4);
+        free($6);
     }
-    | INVARIANT IDENTIFIER COLON IDENTIFIER EQ INTEGER_LITERAL SEMICOLON
+    | INVARIANT IDENTIFIER COLON attribute_name EQ literal_value SEMICOLON
     {
-        std::string expr = std::string($4) + " == " + std::to_string($6);
+        std::string expr = std::string($4) + " == " + std::string($6);
         $$ = new bbfm::Invariant($2, expr);
         free($2);
         free($4);
+        free($6);
     }
-    | INVARIANT IDENTIFIER COLON IDENTIFIER NE INTEGER_LITERAL SEMICOLON
+    | INVARIANT IDENTIFIER COLON attribute_name NE literal_value SEMICOLON
     {
-        std::string expr = std::string($4) + " != " + std::to_string($6);
+        std::string expr = std::string($4) + " != " + std::string($6);
         $$ = new bbfm::Invariant($2, expr);
         free($2);
         free($4);
+        free($6);
     }
     ;
 
+field_name:
+    IDENTIFIER      { $$ = $1; }
+    | STRING_TYPE   { $$ = strdup("string"); }
+    | INT_TYPE      { $$ = strdup("int"); }
+    | REAL_TYPE     { $$ = strdup("real"); }
+    | BOOL_TYPE     { $$ = strdup("bool"); }
+    | TIMESTAMP_TYPE { $$ = strdup("timestamp"); }
+    | TIMESPAN_TYPE { $$ = strdup("timespan"); }
+    | DATE_TYPE     { $$ = strdup("date"); }
+    | GUID_TYPE     { $$ = strdup("guid"); }
+    ;
+
 field:
-    FEATURE IDENTIFIER COLON type_spec modifier_spec SEMICOLON
+    FEATURE field_name COLON type_spec modifier_spec SEMICOLON
     {
         auto* type = static_cast<bbfm::TypeSpec*>($4);
         auto* modifiers = static_cast<std::vector<std::unique_ptr<bbfm::Modifier>>*>($5);
@@ -247,7 +289,7 @@ field:
         free($2);
         delete modifiers;
     }
-    | FEATURE IDENTIFIER COLON type_spec SEMICOLON
+    | FEATURE field_name COLON type_spec SEMICOLON
     {
         // Default modifier: [1] (mandatory single value)
         auto* type = static_cast<bbfm::TypeSpec*>($4);

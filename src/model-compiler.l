@@ -21,7 +21,6 @@ extern "C" {
 
 %option noyywrap
 %option yylineno
-%option case-insensitive
 %option nounput
 %option noinput
 
@@ -29,6 +28,7 @@ DIGIT       [0-9]
 LETTER      [a-zA-Z]
 ID          {LETTER}({LETTER}|{DIGIT}|_)*
 INTEGER     {DIGIT}+
+REAL        {DIGIT}+\.{DIGIT}+([eE][+-]?{DIGIT}+)?
 WHITESPACE  [ \t\r]+
 
 %%
@@ -40,21 +40,28 @@ WHITESPACE  [ \t\r]+
 "invariant"     { return INVARIANT; }
 "optional"      { return OPTIONAL; }
 "unique"        { return UNIQUE; }
+"String"        { return STRING_TYPE; }
+"Int"           { return INT_TYPE; }
+"Real"          { return REAL_TYPE; }
+"Bool"          { return BOOL_TYPE; }
+"Timestamp"     { return TIMESTAMP_TYPE; }
+"Timespan"      { return TIMESPAN_TYPE; }
+"Date"          { return DATE_TYPE; }
+"Guid"          { return GUID_TYPE; }
+"true"          { yylval.string = strdup("true"); return BOOL_LITERAL; }
+"false"         { yylval.string = strdup("false"); return BOOL_LITERAL; }
 
 {ID}            {
-    // Check for type keywords (case-insensitive)
-    if (strcasecmp(yytext, "String") == 0) return STRING_TYPE;
-    if (strcasecmp(yytext, "Int") == 0) return INT_TYPE;
-    if (strcasecmp(yytext, "Real") == 0) return REAL_TYPE;
-    if (strcasecmp(yytext, "Bool") == 0) return BOOL_TYPE;
-    if (strcasecmp(yytext, "Timestamp") == 0) return TIMESTAMP_TYPE;
-    if (strcasecmp(yytext, "Timespan") == 0) return TIMESPAN_TYPE;
-    if (strcasecmp(yytext, "Date") == 0) return DATE_TYPE;
-    if (strcasecmp(yytext, "Guid") == 0) return GUID_TYPE;
     yylval.string = strdup(yytext);
     return IDENTIFIER;
 }
+{REAL}          { yylval.string = strdup(yytext); return REAL_LITERAL; }
 {INTEGER}       { yylval.integer = atoi(yytext); return INTEGER_LITERAL; }
+\"([^\"\\]|\\.)*\"  {
+    // String literal with escape sequences
+    yylval.string = strdup(yytext);
+    return STRING_LITERAL;
+}
 
 "{"             { return LBRACE; }
 "}"             { return RBRACE; }

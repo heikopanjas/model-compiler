@@ -42,7 +42,7 @@ class Podcast {
 
 class Episode {
     feature title: String;
-    feature publishedAt: Date;
+    feature publicationDate: Date;
     feature duration: Timespan;
     feature mediaType: MediaType;
     feature audio: AudioAsset;            // One-to-one relationship
@@ -52,4 +52,17 @@ class Episode {
 class Transcript {
     feature text: String;
     feature language: String;
+}
+
+class Tag {
+    feature name: String;
+    feature timestamp: Timestamp;
+
+    invariant validTimestamp: timestamp >= 0;
+}
+
+class Region inherits Tag {
+    feature duration: Timespan;
+
+    invariant validRegion: duration > 0;
 }

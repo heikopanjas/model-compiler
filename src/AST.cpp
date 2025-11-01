@@ -125,8 +125,8 @@ void Field::Dump(const int indent) const
     {
         std::cout << "static ";
     }
+    std::cout << "feature " << name_ << ": ";
     type_->Dump(0);
-    std::cout << " " << name_;
 
     // Print modifiers
     for (const auto& mod : modifiers_)

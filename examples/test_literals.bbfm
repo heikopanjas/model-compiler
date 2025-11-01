@@ -1,0 +1,9 @@
+class Test {
+    feature count: Int;
+    feature price: Real;
+    feature name: String;
+
+    invariant validCount: count >= 0;
+    invariant maxPrice: price <= 999.99;
+    invariant nonEmpty: name != "";
+}

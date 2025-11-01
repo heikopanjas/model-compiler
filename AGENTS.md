@@ -1,6 +1,6 @@
 # AI Agent Operating Instructions
 
-**Last updated:** November 1, 2025 (23:45)
+**Last updated:** November 2, 2025 (00:45)
 
 ## Primary Instructions
 
@@ -294,7 +294,7 @@ model-compiler/
   - All type names use PascalCase
   - User-defined types: PascalCase (e.g., `Podcast`, `Episode`)
   - Primitive types: PascalCase (e.g., `String`, `Int`, `Real`)
-  - Language is case-insensitive for keywords and type names
+  - **Case Sensitivity**: Keywords are lowercase and case-sensitive (`class`, `enum`, `feature`, etc.); type names are PascalCase and case-sensitive (`String`, `Int`, `Timestamp`, etc.)
 - **Field Declaration Syntax**:
   - Fields are declared using the `feature` keyword followed by name, colon, type, and optional modifiers
   - Syntax: `feature fieldName: TypeName [modifiers];`
@@ -474,6 +474,41 @@ _build/model-compiler examples/podcast.bbfm
 ---
 
 ## Recent Updates & Decisions
+
+### November 2, 2025 (00:45)
+
+- **Case-sensitivity simplification**: Made the language fully case-sensitive for keywords and type names
+- **Lexer simplification**: Replaced verbose case-insensitive patterns (e.g., `[cC][lL][aA][sS][sS]`) with simple string literals (e.g., `"class"`)
+- **Rationale**:
+  - Massive code reduction: ~30 lines of complex patterns reduced to ~10 clean lines
+  - Better maintainability: Adding new keywords is now trivial
+  - Modern convention: All modern DSLs (Rust, Swift, Kotlin, TypeScript) are case-sensitive
+  - Improved tooling: Better IDE/editor support for syntax highlighting and autocomplete
+  - Consistency: Eliminates confusion between case-insensitive keywords and case-sensitive identifiers
+- **Breaking change**: Users must now write exact case (`class`, not `CLASS`; `String`, not `string`)
+- **Files updated**: model-compiler.l (lexer), AGENTS.md
+- **Testing**: Verified all existing test files work; confirmed incorrect case is properly rejected
+- **Reasoning**: We already removed `%option case-insensitive` to fix parser ambiguities, so we were using verbose patterns to simulate case-insensitivity. This change completes the transition to full case-sensitivity, making the codebase cleaner and following modern language design best practices.
+
+### November 2, 2025 (00:30)
+
+- **Parser ambiguity fix**: Fixed issue where field names matching type keywords caused parser errors
+- **Problem**: Statement like `feature timestamp: Timestamp;` failed because both the field name and type name were tokenized as `TIMESTAMP_TYPE`
+- **Solution**: Removed `%option case-insensitive` from lexer and implemented explicit case-insensitive patterns for keywords only (e.g., `[tT][iI][mM][eE][sS][tT][aA][mM][pP]`)
+- **Grammar enhancement**: Added `field_name` and `attribute_name` grammar rules that allow type keywords to be used as identifiers in field declarations and invariant expressions
+- **Invariant literal support**: Extended invariants to support INTEGER, REAL, STRING, and BOOL literals
+- **Lexer additions**:
+  - `REAL_LITERAL` token for floating-point numbers (pattern: `{DIGIT}+\.{DIGIT}+([eE][+-]?{DIGIT}+)?`)
+  - `STRING_LITERAL` token for quoted strings (pattern: `\"([^\"\\]|\\.)*\"`)
+  - `BOOL_LITERAL` token for true/false values (case-insensitive patterns: `[tT][rR][uU][eE]`, `[fF][aA][lL][sS][eE]`)
+- **Parser additions**:
+  - `literal_value` grammar rule that accepts INTEGER_LITERAL, REAL_LITERAL, STRING_LITERAL, or BOOL_LITERAL
+  - `field_name` rule allows type keywords (String, Int, Timestamp, etc.) as field names
+  - `attribute_name` rule allows type keywords as attribute names in invariant expressions
+- **Type support in invariants**: Timestamp and Timespan work with REAL_LITERAL since they map to double internally
+- **Files updated**: model-compiler.l (lexer), model-compiler.y (parser)
+- **Testing**: Verified with test cases including field names matching type names and invariants with all literal types
+- **Reasoning**: The ambiguity between type keywords and identifiers is a common problem in DSLs. By removing global case-insensitivity and making keywords case-insensitive only through explicit patterns, we allow identifiers (field names, attribute names) to be case-sensitive and potentially match type keyword spellings. The grammar rules `field_name` and `attribute_name` explicitly allow type tokens to be used as identifiers where appropriate, solving the conflict. This provides maximum flexibility for users who want to name fields naturally (e.g., "timestamp" for a Timestamp field) while maintaining clear keyword recognition.
 
 ### November 1, 2025 (23:45)
 

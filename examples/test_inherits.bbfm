@@ -1,0 +1,7 @@
+class Tag {
+    feature name: String;
+}
+
+class Region inherits Tag {
+    feature duration: Timespan;
+}

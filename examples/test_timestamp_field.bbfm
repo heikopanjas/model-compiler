@@ -1,0 +1,7 @@
+// Test case for field name matching type name
+class Tag {
+    feature name: String;
+    feature timestamp: Timestamp;
+    feature timespan: Timespan;
+    feature date: Date;
+}

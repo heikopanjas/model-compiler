@@ -1,0 +1,15 @@
+class TestAllTypes {
+    feature count: Int;
+    feature price: Real;
+    feature name: String;
+    feature active: Bool;
+    feature timestamp: Timestamp;
+    feature timespan: Timespan;
+
+    invariant validCount: count >= 0;
+    invariant maxPrice: price <= 999.99;
+    invariant nonEmpty: name != "";
+    invariant isActive: active == true;
+    invariant validTimestamp: timestamp >= 0.0;
+    invariant validTimespan: timespan > 0.0;
+}
