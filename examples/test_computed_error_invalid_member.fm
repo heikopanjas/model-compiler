@@ -1,0 +1,13 @@
+// Test error: accessing non-existent member
+
+class Point {
+    feature x: Int;
+    feature y: Int;
+}
+
+class Rectangle {
+    feature topLeft: Point;
+    
+    // ERROR: Point has no member 'z'
+    feature depth: Int = topLeft.z;
+}

@@ -138,6 +138,38 @@ private:
     /// \param fields Output set to store field names
     void CollectFieldReferences(const Expression* expr, std::set<std::string>& fields) const;
 
+    /// \brief Validate computed features for a class declaration
+    /// \param classDecl The class declaration to validate
+    /// \return True if all computed features are valid, false otherwise
+    bool ValidateComputedFeatures(const ClassDeclaration* classDecl);
+
+    /// \brief Validate a single computed feature expression
+    /// \param field The field with computed feature
+    /// \param classDecl The containing class
+    /// \param availableFields Set of fields available for reference
+    /// \return True if valid, false otherwise
+    bool ValidateComputedFeatureExpression(const Field* field, const ClassDeclaration* classDecl, const std::set<std::string>& availableFields);
+
+    /// \brief Validate member access expression
+    /// \param memberAccess The member access expression
+    /// \param classDecl The containing class
+    /// \param errorContext Context string for error messages
+    /// \return True if valid, false otherwise
+    bool ValidateMemberAccess(const MemberAccessExpression* memberAccess, const ClassDeclaration* classDecl, const std::string& errorContext);
+
+    /// \brief Validate member access in an expression recursively
+    /// \param expr The expression to validate
+    /// \param classDecl The containing class
+    /// \param errorContext Context string for error messages
+    /// \return True if valid, false otherwise
+    bool ValidateMemberAccessInExpression(const Expression* expr, const ClassDeclaration* classDecl, const std::string& errorContext);
+
+    /// \brief Get the type of a field by name in a class
+    /// \param classDecl The class to search
+    /// \param fieldName The field name
+    /// \return Pointer to TypeSymbol or nullptr if not found
+    const TypeSymbol* GetFieldType(const ClassDeclaration* classDecl, const std::string& fieldName) const;
+
     /// \brief Check if a type exists in symbol table
     /// \param typeName The type name to check
     /// \return True if type exists, false otherwise

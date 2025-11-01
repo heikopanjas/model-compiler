@@ -180,6 +180,12 @@ bool SemanticAnalyzer::ValidateClassDeclaration(const ClassDeclaration* classDec
         success = false;
     }
 
+    // Validate computed features
+    if (!ValidateComputedFeatures(classDecl))
+    {
+        success = false;
+    }
+
     return success;
 }
 
@@ -375,6 +381,15 @@ void SemanticAnalyzer::CollectFieldReferences(const Expression* expr, std::set<s
         return;
     }
 
+    // Check if this is a member access expression
+    const MemberAccessExpression* memberAccess = dynamic_cast<const MemberAccessExpression*>(expr);
+    if (nullptr != memberAccess)
+    {
+        // Recursively collect from the object expression
+        CollectFieldReferences(memberAccess->GetObject(), fields);
+        return;
+    }
+
     // Check if this is a binary expression
     const BinaryExpression* binExpr = dynamic_cast<const BinaryExpression*>(expr);
     if (nullptr != binExpr)
@@ -412,6 +427,238 @@ void SemanticAnalyzer::CollectFieldReferences(const Expression* expr, std::set<s
     }
 
     // Literals don't contain field references
+}
+
+bool SemanticAnalyzer::ValidateComputedFeatures(const ClassDeclaration* classDecl)
+{
+    bool success = true;
+
+    // Get all fields including inherited ones
+    std::vector<const Field*> allFields;
+    GetAllFields(classDecl, allFields);
+
+    // Build set of available field names for quick lookup
+    std::set<std::string> availableFields;
+    for (const auto* field : allFields)
+    {
+        availableFields.insert(field->GetName());
+    }
+
+    // Validate each computed feature
+    for (const auto& field : classDecl->GetFields())
+    {
+        if (field->IsComputed())
+        {
+            if (!ValidateComputedFeatureExpression(field.get(), classDecl, availableFields))
+            {
+                success = false;
+            }
+        }
+    }
+
+    return success;
+}
+
+bool SemanticAnalyzer::ValidateComputedFeatureExpression(const Field* field, const ClassDeclaration* classDecl, const std::set<std::string>& availableFields)
+{
+    bool               success = true;
+    const Expression*  expr    = field->GetInitializer();
+
+    if (nullptr == expr)
+    {
+        return true; // Not a computed feature
+    }
+
+    // Check cardinality - computed features must be single-valued [1]
+    const CardinalityModifier* cardinality = field->GetCardinalityModifier();
+    if (nullptr != cardinality)
+    {
+        if (cardinality->IsArray())
+        {
+            ReportError("Computed feature '" + field->GetName() + "' in class '" + classDecl->GetName() +
+                        "' cannot be an array - computed features must have cardinality [1]");
+            success = false;
+        }
+    }
+
+    // Collect field references from the expression
+    std::set<std::string> referencedFields;
+    CollectFieldReferences(expr, referencedFields);
+
+    // Validate that all referenced fields exist
+    for (const std::string& refField : referencedFields)
+    {
+        if (0 == availableFields.count(refField))
+        {
+            ReportError("Computed feature '" + field->GetName() + "' in class '" + classDecl->GetName() +
+                        "' references undefined field '" + refField + "'");
+            success = false;
+        }
+    }
+
+    // Validate member access expressions
+    if (!ValidateMemberAccessInExpression(expr, classDecl, "computed feature '" + field->GetName() + "'"))
+    {
+        success = false;
+    }
+
+    return success;
+}
+
+bool SemanticAnalyzer::ValidateMemberAccessInExpression(const Expression* expr, const ClassDeclaration* classDecl, const std::string& errorContext)
+{
+    if (nullptr == expr)
+    {
+        return true;
+    }
+
+    bool success = true;
+
+    // Check if this is a member access expression
+    const MemberAccessExpression* memberAccess = dynamic_cast<const MemberAccessExpression*>(expr);
+    if (nullptr != memberAccess)
+    {
+        if (!ValidateMemberAccess(memberAccess, classDecl, errorContext))
+        {
+            success = false;
+        }
+        // Don't recurse - ValidateMemberAccess handles the entire chain
+        return success;
+    }
+
+    // Recursively check binary expressions
+    const BinaryExpression* binExpr = dynamic_cast<const BinaryExpression*>(expr);
+    if (nullptr != binExpr)
+    {
+        if (!ValidateMemberAccessInExpression(binExpr->GetLeft(), classDecl, errorContext))
+        {
+            success = false;
+        }
+        if (!ValidateMemberAccessInExpression(binExpr->GetRight(), classDecl, errorContext))
+        {
+            success = false;
+        }
+        return success;
+    }
+
+    // Recursively check unary expressions
+    const UnaryExpression* unaryExpr = dynamic_cast<const UnaryExpression*>(expr);
+    if (nullptr != unaryExpr)
+    {
+        return ValidateMemberAccessInExpression(unaryExpr->GetOperand(), classDecl, errorContext);
+    }
+
+    // Recursively check parenthesized expressions
+    const ParenthesizedExpression* parenExpr = dynamic_cast<const ParenthesizedExpression*>(expr);
+    if (nullptr != parenExpr)
+    {
+        return ValidateMemberAccessInExpression(parenExpr->GetExpression(), classDecl, errorContext);
+    }
+
+    // Recursively check function call arguments
+    const FunctionCall* funcCall = dynamic_cast<const FunctionCall*>(expr);
+    if (nullptr != funcCall)
+    {
+        for (const auto& arg : funcCall->GetArguments())
+        {
+            if (!ValidateMemberAccessInExpression(arg.get(), classDecl, errorContext))
+            {
+                success = false;
+            }
+        }
+        return success;
+    }
+
+    // Field references and literals don't need member access validation
+    return true;
+}
+
+bool SemanticAnalyzer::ValidateMemberAccess(const MemberAccessExpression* memberAccess, const ClassDeclaration* classDecl, const std::string& errorContext)
+{
+    bool success = true;
+
+    // Get the object expression (left side of the dot)
+    const Expression* object = memberAccess->GetObject();
+    
+    // Check if object is a field reference
+    const FieldReference* fieldRef = dynamic_cast<const FieldReference*>(object);
+    if (nullptr != fieldRef)
+    {
+        const std::string& objectFieldName = fieldRef->GetFieldName();
+        
+        // Find the field type
+        const TypeSymbol* fieldType = GetFieldType(classDecl, objectFieldName);
+        if (nullptr == fieldType)
+        {
+            ReportError("In " + errorContext + ": field '" + objectFieldName + "' not found in class '" + classDecl->GetName() + "'");
+            return false;
+        }
+
+        // Verify it's a user-defined type (not a primitive)
+        if (TypeSymbol::Kind::CLASS != fieldType->kind)
+        {
+            ReportError("In " + errorContext + ": cannot access member '" + memberAccess->GetMemberName() +
+                        "' on non-class field '" + objectFieldName + "'");
+            return false;
+        }
+
+        // Verify the member exists in the field's type
+        const ClassDeclaration* fieldClass = fieldType->classDecl;
+        const TypeSymbol*       memberType = GetFieldType(fieldClass, memberAccess->GetMemberName());
+        if (nullptr == memberType)
+        {
+            ReportError("In " + errorContext + ": class '" + fieldType->name + "' has no member '" +
+                        memberAccess->GetMemberName() + "'");
+            return false;
+        }
+    }
+    else
+    {
+        // Could be a nested member access (e.g., a.b.c) - recurse
+        const MemberAccessExpression* nestedAccess = dynamic_cast<const MemberAccessExpression*>(object);
+        if (nullptr != nestedAccess)
+        {
+            // Validate the nested access first
+            if (!ValidateMemberAccess(nestedAccess, classDecl, errorContext))
+            {
+                return false;
+            }
+            // TODO: Get the type of the nested access and validate the member on that type
+            // For now, we just validate the chain exists
+        }
+    }
+
+    return success;
+}
+
+const TypeSymbol* SemanticAnalyzer::GetFieldType(const ClassDeclaration* classDecl, const std::string& fieldName) const
+{
+    // Get all fields including inherited
+    std::vector<const Field*> allFields;
+    const_cast<SemanticAnalyzer*>(this)->GetAllFields(classDecl, allFields);
+
+    // Find the field
+    for (const auto* field : allFields)
+    {
+        if (field->GetName() == fieldName)
+        {
+            const TypeSpec* typeSpec = field->GetType();
+            
+            if (typeSpec->IsPrimitive())
+            {
+                const PrimitiveTypeSpec* primType = static_cast<const PrimitiveTypeSpec*>(typeSpec);
+                const std::string typeName = PrimitiveTypeSpec::TypeToString(primType->GetType());
+                return LookupType(typeName);
+            }
+            else if (typeSpec->IsUserDefined())
+            {
+                const UserDefinedTypeSpec* userType = static_cast<const UserDefinedTypeSpec*>(typeSpec);
+                return LookupType(userType->GetTypeName());
+            }
+        }
+    }
+
+    return nullptr;
 }
 
 bool SemanticAnalyzer::TypeExists(const std::string& typeName) const

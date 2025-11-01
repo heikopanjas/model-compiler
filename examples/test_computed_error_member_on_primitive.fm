@@ -1,0 +1,9 @@
+// Test error: member access on primitive type
+
+class Rectangle {
+    feature width: Int;
+    feature height: Int;
+    
+    // ERROR: cannot access member 'x' on Int field 'width'
+    feature computed: Int = width.x;
+}
