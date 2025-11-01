@@ -197,10 +197,10 @@ Computed features are auto-calculated fields whose values are derived from other
 class Rectangle {
     feature width: Int;
     feature height: Int;
-    
+
     // Simple arithmetic
     feature area: Int = width * height;
-    
+
     // Complex expression
     feature perimeter: Int = (width + height) * 2;
 }
@@ -208,7 +208,7 @@ class Rectangle {
 class Point {
     feature x: Int;
     feature y: Int;
-    
+
     invariant validX: x >= 0;
     invariant validY: y >= 0;
 }
@@ -216,7 +216,7 @@ class Point {
 class Shape {
     feature width: Int;
     feature height: Int;
-    
+
     invariant positiveWidth: width > 0;
     invariant positiveHeight: height > 0;
 }
@@ -224,14 +224,14 @@ class Shape {
 class Rectangle inherits Shape {
     feature topLeft: Point;
     feature bottomRight: Point;
-    
+
     // Member access expressions
     feature computedWidth: Int = bottomRight.x - topLeft.x;
     feature computedHeight: Int = bottomRight.y - topLeft.y;
-    
+
     // Computed features can reference other computed features
     feature computedArea: Int = computedWidth * computedHeight;
-    
+
     // Invariants can reference computed features
     invariant areaMatchesFields: computedArea == width * height;
 }
@@ -250,13 +250,13 @@ The compiler performs comprehensive type checking for computed features:
 class Example {
     feature intValue: Int;
     feature realValue: Real;
-    
+
     // ✅ Valid: Int → Real promotion (widening)
     feature computed1: Real = intValue * 2;
-    
+
     // ❌ Error: Real → Int would lose precision (narrowing)
     // feature computed2: Int = realValue * 2.0;
-    
+
     // ✅ Valid: Exact type match
     feature computed3: Int = intValue + 5;
 }
@@ -312,7 +312,7 @@ class Transcript {
     feature text: String;
     feature language: String;
     feature wordCount: Int;
-    
+
     // Computed feature example
     feature isLongTranscript: Bool = wordCount > 10000;
 }

@@ -1,6 +1,6 @@
 # AI Agent Operating Instructions
 
-**Last updated:** November 1, 2025 (23:00)
+**Last updated:** November 2, 2025 (00:15)
 
 ## Primary Instructions
 
@@ -534,6 +534,32 @@ _build/model-compiler --help
 ---
 
 ## Recent Updates & Decisions
+
+### November 2, 2025 (00:15)
+
+- **Type checking for computed features**: Implemented comprehensive type inference and validation for computed feature expressions
+- **Features added**:
+  - Type inference - recursively determines expression result types by walking the expression tree
+  - Type compatibility checking - verifies expression type matches declared field type
+  - Type promotion rules - allows safe widening (Int → Real), rejects narrowing (Real → Int)
+  - Member access type tracking - tracks types through object.field chains
+  - Binary expression type inference - handles arithmetic operators with type widening
+  - Unary expression type inference - NOT returns Bool, NEG returns operand type
+- **Type promotion rules**:
+  - Int → Real: allowed (safe widening conversion)
+  - Real → Int: rejected (lossy narrowing conversion)
+  - Timestamp/Timespan ↔ Real: allowed (same internal representation)
+  - Exact type matches always allowed
+- **Implementation details**:
+  - Added InferExpressionType() - recursively infers expression result types
+  - Added IsTypeCompatible() - checks type compatibility with promotion rules
+  - Added PrimitiveNameToExpressionType() - converts type names to Expression::Type enum
+  - Updated ValidateComputedFeatureExpression() to validate type compatibility
+  - Enhanced binary/unary expression type inference to recursively infer operand types
+- **Test coverage**: Added 3 test cases - Real→Int error, member access type error, Int→Real promotion valid
+- **Files modified**: SemanticAnalyzer.h, SemanticAnalyzer.cpp, plus 3 new type test files
+- **Commit**: 37bd864 - feat(semantic): add type checking for computed features
+- **Reasoning**: Type checking is critical before code generation to prevent generating invalid code. Detecting type mismatches at compile time (e.g., assigning Real expression to Int field) prevents runtime errors. Type promotion rules follow common language conventions where widening is safe but narrowing requires explicit conversion. This ensures type safety while allowing natural expressions like Int fields promoting to Real in calculations.
 
 ### November 1, 2025 (23:00)
 
