@@ -380,13 +380,15 @@ void yyerror(const char *s) {
     // Show the source line if available
     if (yylloc.first_line > 0 && yylloc.first_line <= static_cast<int>(g_source_lines.size())) {
         const std::string& line = g_source_lines[yylloc.first_line - 1];
-        std::cerr << line << "\n";
+        bbfm::Console::ReportError(line);
 
         // Show a caret pointing to the error column
+        std::ostringstream caretLine;
         for (int i = 1; i < yylloc.first_column; ++i) {
-            std::cerr << " ";
+            caretLine << " ";
         }
-        std::cerr << "^\n";
+        caretLine << "^";
+        bbfm::Console::ReportError(caretLine.str());
     }
 }
 

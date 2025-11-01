@@ -1,6 +1,6 @@
 # AI Agent Operating Instructions
 
-**Last updated:** November 2, 2025 (00:00)
+**Last updated:** November 2, 2025 (00:05)
 
 ## Primary Instructions
 
@@ -512,6 +512,14 @@ _build/model-compiler examples/podcast.bbfm
 ---
 
 ## Recent Updates & Decisions
+
+### November 2, 2025 (00:05)
+
+- **Parser error output complete**: Finalized Console class integration in model-compiler.y
+- **Change**: Updated remaining `std::cerr` calls in yyerror() to use Console::ReportError()
+- **Details**: Source line display and caret pointer now use Console class with ostringstream for formatting
+- **Result**: All compiler output now goes through Console class for consistent message handling
+- **Reasoning**: Completing the Console class integration ensures all output is centralized and can be easily controlled or redirected. The error formatting remains identical but now uses the same output mechanism as the rest of the compiler.
 
 ### November 2, 2025 (00:00)
 
