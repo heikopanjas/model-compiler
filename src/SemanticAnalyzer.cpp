@@ -1062,8 +1062,7 @@ void SemanticAnalyzer::DumpSymbolTable() const
                     {
                         // Determine if this is a local or inherited field
                         bool isLocal = (0 != localFieldSet.count(field));
-                        std::cout << "      " << (isLocal ? "<self>" : "<base>") << " ";
-                        std::cout << field->GetName() << ": ";
+                        std::cout << "      " << (isLocal ? "Self::" : "Base::") << field->GetName() << ": ";
 
                         // Get type name based on TypeSpec type
                         const TypeSpec* typeSpec = field->GetType();
@@ -1101,6 +1100,18 @@ void SemanticAnalyzer::DumpSymbolTable() const
                             }
                             std::cout << "]";
                         }
+
+                        // Show computed feature expression with annotated field origins
+                        if (field->IsComputed())
+                        {
+                            const Expression* initializer = field->GetInitializer();
+                            if (nullptr != initializer)
+                            {
+                                std::string annotatedExpr = AnnotateExpressionWithOrigin(initializer, entry.second.classDecl, localFieldSet);
+                                std::cout << " = " << annotatedExpr;
+                            }
+                        }
+
                         std::cout << "\n";
                     }
                 }
@@ -1124,8 +1135,7 @@ void SemanticAnalyzer::DumpSymbolTable() const
                     {
                         // Determine if this is a local or inherited invariant
                         bool isLocal = (0 != localInvariantSet.count(invariant));
-                        std::cout << "      " << (isLocal ? "<self>" : "<base>") << " ";
-                        std::cout << invariant->GetName() << ": ";
+                        std::cout << "      " << (isLocal ? "Self::" : "Base::") << invariant->GetName() << ": ";
                         if (nullptr != invariant->GetExpression())
                         {
                             std::cout << invariant->GetExpression()->ToString();
@@ -1140,5 +1150,131 @@ void SemanticAnalyzer::DumpSymbolTable() const
     }
 
     std::cout << "========================================\n";
+}
+
+std::string
+    SemanticAnalyzer::AnnotateExpressionWithOrigin(const Expression* expr, const ClassDeclaration* classDecl, const std::set<const Field*>& localFields) const
+{
+    if (nullptr == expr)
+    {
+        return "";
+    }
+
+    // Handle different expression types
+    if (const BinaryExpression* binExpr = dynamic_cast<const BinaryExpression*>(expr))
+    {
+        std::string left  = AnnotateExpressionWithOrigin(binExpr->GetLeft(), classDecl, localFields);
+        std::string right = AnnotateExpressionWithOrigin(binExpr->GetRight(), classDecl, localFields);
+        std::string op;
+
+        switch (binExpr->GetOperator())
+        {
+            case BinaryExpression::Op::ADD:
+                op = " + ";
+                break;
+            case BinaryExpression::Op::SUB:
+                op = " - ";
+                break;
+            case BinaryExpression::Op::MUL:
+                op = " * ";
+                break;
+            case BinaryExpression::Op::DIV:
+                op = " / ";
+                break;
+            case BinaryExpression::Op::MOD:
+                op = " % ";
+                break;
+            case BinaryExpression::Op::LT:
+                op = " < ";
+                break;
+            case BinaryExpression::Op::GT:
+                op = " > ";
+                break;
+            case BinaryExpression::Op::LE:
+                op = " <= ";
+                break;
+            case BinaryExpression::Op::GE:
+                op = " >= ";
+                break;
+            case BinaryExpression::Op::EQ:
+                op = " == ";
+                break;
+            case BinaryExpression::Op::NE:
+                op = " != ";
+                break;
+            case BinaryExpression::Op::AND:
+                op = " && ";
+                break;
+            case BinaryExpression::Op::OR:
+                op = " || ";
+                break;
+        }
+
+        return left + op + right;
+    }
+    else if (const UnaryExpression* unaryExpr = dynamic_cast<const UnaryExpression*>(expr))
+    {
+        std::string operand = AnnotateExpressionWithOrigin(unaryExpr->GetOperand(), classDecl, localFields);
+        if (UnaryExpression::Op::NEG == unaryExpr->GetOperator())
+        {
+            return "-" + operand;
+        }
+        else if (UnaryExpression::Op::NOT == unaryExpr->GetOperator())
+        {
+            return "!" + operand;
+        }
+    }
+    else if (const FieldReference* fieldRef = dynamic_cast<const FieldReference*>(expr))
+    {
+        // Look up the field to determine if it's local or inherited
+        const std::string& fieldName = fieldRef->GetFieldName();
+
+        // Find this field in all fields
+        std::vector<const Field*> allFields;
+        GetAllFields(classDecl, allFields);
+
+        bool         isLocal    = false;
+        const Field* foundField = nullptr;
+        for (const auto* field : allFields)
+        {
+            if (fieldName == field->GetName())
+            {
+                foundField = field;
+                isLocal    = (0 != localFields.count(field));
+                break;
+            }
+        }
+
+        // Annotate with origin marker
+        if (nullptr != foundField)
+        {
+            return (isLocal ? "Self::" : "Base::") + fieldName;
+        }
+        else
+        {
+            return fieldName; // Fallback if not found
+        }
+    }
+    else if (const MemberAccessExpression* memberExpr = dynamic_cast<const MemberAccessExpression*>(expr))
+    {
+        std::string object = AnnotateExpressionWithOrigin(memberExpr->GetObject(), classDecl, localFields);
+        std::string member = memberExpr->GetMemberName();
+        return object + "." + member;
+    }
+    else if (const LiteralExpression* litExpr = dynamic_cast<const LiteralExpression*>(expr))
+    {
+        return litExpr->ToString();
+    }
+    else if (const ParenthesizedExpression* parenExpr = dynamic_cast<const ParenthesizedExpression*>(expr))
+    {
+        std::string inner = AnnotateExpressionWithOrigin(parenExpr->GetExpression(), classDecl, localFields);
+        return "(" + inner + ")";
+    }
+    else if (const FunctionCall* funcCall = dynamic_cast<const FunctionCall*>(expr))
+    {
+        return funcCall->ToString(); // Function calls not yet implemented, use default
+    }
+
+    return expr->ToString(); // Fallback
 }
 } // namespace bbfm

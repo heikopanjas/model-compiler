@@ -1,0 +1,19 @@
+// Test computed features with inheritance to show <base> and <self> markers
+
+class Shape {
+    feature width: Int;
+    feature height: Int;
+
+    // Computed feature using local fields
+    feature area: Int = width * height;
+}
+
+class ColoredShape inherits Shape {
+    feature depth: Int;
+
+    // Computed feature using both inherited (width, height) and local (depth) fields
+    feature volume: Int = width * height * depth;
+
+    // Computed feature using only inherited field
+    feature doubleArea: Int = area * 2;
+}

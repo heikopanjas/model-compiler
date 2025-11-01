@@ -1,6 +1,6 @@
 # AI Agent Operating Instructions
 
-**Last updated:** November 2, 2025 (00:15)
+**Last updated:** November 1, 2025 (14:50)
 
 ## Primary Instructions
 
@@ -1446,6 +1446,49 @@ _build/model-compiler --help
 
 - **Build system selection**: Use Ninja instead of Make
 - **Reasoning**: Ninja provides faster parallel builds and cleaner output, better for iterative compiler development
+
+### November 1, 2025 (14:50)
+
+- **Symbol table dump format consistency**: Updated all features and invariants to use qualified name syntax
+- **Changes made**:
+  - Updated feature display: `<self> name` → `Self::name`, `<base> name` → `Base::name`
+  - Updated invariant display: `<self> constraint` → `Self::constraint`, `<base> constraint` → `Base::constraint`
+  - Now all parts of the symbol table dump use consistent `Self::`/`Base::` notation
+- **Example output**:
+  - Features: `Self::width: Int [1..1]` (was `<self> width: Int [1..1]`)
+  - Inherited: `Base::url: String [1..1]` (was `<base> url: String [1..1]`)
+  - Invariants: `Self::maxFileSize: (fileSize <= 500000000)` (was `<self> maxFileSize: ...`)
+- **Files modified**: SemanticAnalyzer.cpp
+- **Reasoning**: Completing the transition to qualified name syntax ensures consistency across the entire symbol table dump. All features, invariants, and computed expressions now use the same professional `::` notation, making the output uniform and easier to read.
+
+### November 1, 2025 (14:45)
+
+- **Annotation format improvement**: Changed field origin markers to qualified name syntax
+- **Changes made**:
+  - Updated `AnnotateExpressionWithOrigin()` to use `Self::` and `Base::` prefixes instead of `<self>` and `<base>` markers
+  - Format change: `<self> width` → `Self::width`, `<base> height` → `Base::height`
+- **Example output**:
+  - Simple: `area: Int [1..1] = Self::width * Self::height`
+  - With inheritance: `volume: Int [1..1] = Base::width * Base::height * Self::depth`
+  - With member access: `width: Int [1..1] = Self::bottomRight.x - Self::topLeft.x`
+- **Files modified**: SemanticAnalyzer.cpp
+- **Reasoning**: The qualified name syntax (`Self::` and `Base::`) is more readable and looks like standard scoped identifiers found in many programming languages. This format is cleaner and easier to parse visually compared to the angle bracket notation, making the symbol table dump more professional and intuitive to understand.
+
+### November 1, 2025 (14:30)
+
+- **Symbol table dump enhancement**: Enhanced display of computed features with annotated field origin markers
+- **Changes made**:
+  - Added `AnnotateExpressionWithOrigin()` method to recursively annotate expressions with `<base>`/`<self>` markers
+  - Updated `DumpSymbolTable()` to display computed feature expressions with field origin annotations
+  - Method handles all expression types: binary, unary, field reference, member access, literals, and parenthesized
+  - Field references within computed feature expressions now show whether they reference local or inherited fields
+- **Example output**:
+  - Simple: `area: Int [1..1] = <self> width * <self> height`
+  - With inheritance: `volume: Int [1..1] = <base> width * <base> height * <self> depth`
+  - With member access: `width: Int [1..1] = <self> bottomRight.x - <self> topLeft.x`
+- **Files modified**: SemanticAnalyzer.h, SemanticAnalyzer.cpp
+- **Test coverage**: Tested with computed features in inheritance scenarios and member access expressions
+- **Reasoning**: Displaying field origins in computed feature expressions provides critical insight into which fields are being referenced and whether they come from the current class or base classes. This is especially valuable when debugging complex inheritance hierarchies and understanding data flow in computed features. The enhancement makes the symbol table dump more informative and helps developers understand the complete picture of field dependencies and inheritance relationships at a glance.
 
 ### October 4, 2025 (17:00)
 

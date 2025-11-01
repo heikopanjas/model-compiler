@@ -63,7 +63,10 @@ class Tag {
 }
 
 class Region inherits Tag {
-    feature duration: Timespan;
+    feature startTime: Timestamp = timestamp;
+    feature endTime: Timestamp;
+    feature duration: Timespan = (endTime - startTime);
 
-    invariant validRegion: duration > 0;
+    invariant validRegion: endTime > startTime;
+    invariant validDuration: duration >= 0;
 }

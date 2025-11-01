@@ -197,6 +197,13 @@ private:
     /// \return Pointer to type symbol or nullptr if not found
     const TypeSymbol* LookupType(const std::string& typeName) const;
 
+    /// \brief Annotate expression with field origin markers
+    /// \param expr The expression to annotate
+    /// \param classDecl The containing class
+    /// \param localFields Set of locally declared fields
+    /// \return String representation with <base>/<self> markers
+    std::string AnnotateExpressionWithOrigin(const Expression* expr, const ClassDeclaration* classDecl, const std::set<const Field*>& localFields) const;
+
     /// \brief Report a semantic error
     /// \param message The error message
     void ReportError(const std::string& message);
