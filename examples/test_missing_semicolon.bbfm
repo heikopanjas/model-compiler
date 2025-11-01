@@ -1,0 +1,4 @@
+class Test {
+    feature name: String
+    feature age: Int;
+}

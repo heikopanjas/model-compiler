@@ -1,7 +1,10 @@
 #include "Driver.h"
 #include "AST.h"
 #include <cstdio>
+#include <fstream>
 #include <iostream>
+#include <string>
+#include <vector>
 
 // External C functions from Flex/Bison
 extern "C" {
@@ -16,6 +19,10 @@ extern int yyparse(void);
 // variable when parsing completes, and the driver retrieves it afterward.
 // This is the standard pattern for Bison parsers.
 extern std::unique_ptr<bbfm::AST> g_ast;
+
+// Global filename and source lines for error reporting
+extern std::string              g_current_filename;
+extern std::vector<std::string> g_source_lines;
 
 namespace bbfm {
 // ============================================================================
@@ -44,7 +51,23 @@ std::unique_ptr<AST> Driver::Phase0()
 
     const std::string& filename = sourceFiles_[0];
 
-    // Open the source file
+    // Set global filename for error reporting
+    g_current_filename = filename;
+
+    // Read source file lines for error reporting
+    g_source_lines.clear();
+    std::ifstream infile(filename);
+    if (infile.is_open())
+    {
+        std::string line;
+        while (std::getline(infile, line))
+        {
+            g_source_lines.push_back(line);
+        }
+        infile.close();
+    }
+
+    // Open the source file for parsing
     yyin = fopen(filename.c_str(), "r");
     if (nullptr == yyin)
     {
@@ -65,7 +88,6 @@ std::unique_ptr<AST> Driver::Phase0()
     // Check parsing result
     if (0 != result)
     {
-        std::cerr << "Parsing failed.\n";
         hasErrors_ = true;
         return nullptr;
     }

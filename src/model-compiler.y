@@ -5,6 +5,8 @@
 #include <iostream>
 #include <memory>
 #include <vector>
+#include <fstream>
+#include <sstream>
 #include "AST.h"
 
 #ifdef __cplusplus
@@ -20,7 +22,15 @@ void yyerror(const char *s);
 
 // Global AST root
 std::unique_ptr<bbfm::AST> g_ast;
+
+// Global filename for error reporting
+std::string g_current_filename;
+
+// Cache of source file lines for error reporting
+std::vector<std::string> g_source_lines;
 %}
+
+%locations
 
 %code requires {
     #ifdef __cplusplus
@@ -359,7 +369,21 @@ extern "C" {
 #endif
 
 void yyerror(const char *s) {
-    std::cerr << "Error at line " << yylineno << ": " << s << "\n";
+    std::cerr << g_current_filename << ":" << yylloc.first_line
+              << ":" << yylloc.first_column
+              << ": error: " << s << "\n";
+
+    // Show the source line if available
+    if (yylloc.first_line > 0 && yylloc.first_line <= static_cast<int>(g_source_lines.size())) {
+        const std::string& line = g_source_lines[yylloc.first_line - 1];
+        std::cerr << line << "\n";
+
+        // Show a caret pointing to the error column
+        for (int i = 1; i < yylloc.first_column; ++i) {
+            std::cerr << " ";
+        }
+        std::cerr << "^\n";
+    }
 }
 
 #ifdef __cplusplus

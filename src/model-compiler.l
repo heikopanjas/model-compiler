@@ -13,6 +13,13 @@ extern "C" {
 #include <strings.h>
 #include <iostream>
 
+/* Column tracking */
+int yycolumn = 1;
+
+#define YY_USER_ACTION yylloc.first_line = yylloc.last_line = yylineno; \
+    yylloc.first_column = yycolumn; yylloc.last_column = yycolumn + yyleng - 1; \
+    yycolumn += yyleng;
+
 /* Define yylex with C linkage */
 #ifdef __cplusplus
 #define YY_DECL extern "C" int yylex (void)
@@ -86,7 +93,7 @@ WHITESPACE  [ \t\r]+
 "/*"([^*]|\*+[^*/])*\*+"/" { /* multi-line comment */ }
 
 {WHITESPACE}    { /* ignore whitespace */ }
-\n              { /* ignore newlines */ }
+\n              { yycolumn = 1; /* reset column on newline */ }
 
 .               { std::cerr << "Unknown character: " << yytext << "\n"; }
 

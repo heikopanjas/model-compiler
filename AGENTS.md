@@ -1,6 +1,6 @@
 # AI Agent Operating Instructions
 
-**Last updated:** November 2, 2025 (00:45)
+**Last updated:** November 2, 2025 (01:00)
 
 ## Primary Instructions
 
@@ -474,6 +474,27 @@ _build/model-compiler examples/podcast.bbfm
 ---
 
 ## Recent Updates & Decisions
+
+### November 2, 2025 (01:00)
+
+- **Enhanced error diagnostics**: Improved parser error reporting to show filename, line, column, and source context
+- **Column tracking**: Added column number tracking in lexer using `yycolumn` variable
+- **Location tracking**: Enabled Bison `%locations` directive for full position tracking
+- **Source line caching**: Driver now reads and caches source file lines for error display
+- **Error format**: Changed from basic "Error at line X" to compiler-style "file:line:column: error: message"
+- **Visual error pointer**: Shows the actual source line with a caret (^) pointing to the error column
+- **Example output**:
+
+  ```text
+  examples/test_error.bbfm:2:18: error: syntax error
+      feature name String;
+                   ^
+  ```
+
+- **Files updated**: model-compiler.l (lexer), model-compiler.y (parser), Driver.cpp
+- **Global variables added**: `g_current_filename`, `g_source_lines` for error reporting
+- **Lexer changes**: Added `YY_USER_ACTION` macro to track column positions and reset on newlines
+- **Reasoning**: Professional error diagnostics are essential for usability. The enhanced format matches modern compiler conventions (GCC, Clang, Rust) making errors easier to locate and fix. Showing the source line with a visual pointer dramatically improves the user experience when debugging syntax errors.
 
 ### November 2, 2025 (00:45)
 
