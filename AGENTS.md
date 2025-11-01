@@ -1,6 +1,6 @@
 # AI Agent Operating Instructions
 
-**Last updated:** November 1, 2025 (18:00)
+**Last updated:** November 1, 2025 (19:20)
 
 ## Primary Instructions
 
@@ -166,6 +166,7 @@ The compiler enables users to define data types and relationships for podcast do
 - Prefer smart pointers (`std::unique_ptr`, `std::shared_ptr`) over raw pointers
 - Use const-correctness throughout the codebase
 - This style provides extra safety and consistency throughout the codebase
+- **Namespace**: All compiler code uses the `bbfm` namespace
 
 **Functions and Methods:**
 
@@ -239,9 +240,11 @@ p3-compiler/
 ├── src/                    # Source files
 │   ├── lexer.l            # Flex lexer specification
 │   ├── parser.y           # Bison parser specification
+│   ├── Driver.cpp         # Compiler driver implementation
 │   ├── AST.cpp            # AST implementation
 │   └── main.cpp           # Main entry point (C++)
 ├── include/               # Header files
+│   ├── Driver.h           # Compiler driver interface
 │   └── AST.h              # AST node definitions
 ├── examples/              # Test programs
 └── _build/                # Build artifacts (gitignored)
@@ -321,6 +324,13 @@ p3-compiler/
    - SQLite schema generation - To be implemented
 
 **Current Status:** The lexer, parser, and AST construction are complete. The compiler successfully parses P3 syntax and builds a complete Abstract Syntax Tree representing enums, fabric types, inheritance, field modifiers, and all primitive types. The AST uses modern C++ with smart pointers and provides a clean dump() method for visualization.
+
+**Architecture:** The compiler uses a `Driver` class to orchestrate compilation phases. The `main.cpp` file only handles command-line argument parsing and delegates all compilation work to the Driver:
+- **Phase 0** (Driver::Phase0): Lexical analysis and parsing - returns the AST as a unique_ptr
+- **Phase 1** (to be implemented): Semantic analysis - type checking and validation
+- **Phase 2** (to be implemented): Code generation - C++ classes and SQL schemas
+
+The Driver does not store the AST internally; instead, `Phase0()` returns ownership of the AST to the caller, allowing for flexible AST management. The root AST node is represented by the `AST` class.
 
 ### Example P3 Syntax
 
@@ -415,6 +425,51 @@ _build/model-compiler examples/podcast.p3
 ---
 
 ## Recent Updates & Decisions
+
+### November 1, 2025 (19:20)
+
+- **AST root node rename**: Renamed `Program` class to `AST`
+- **Files updated**: AST.h, AST.cpp, Driver.h, Driver.cpp, main.cpp, parser.y
+- **Updated references**:
+  - `std::unique_ptr<Program>` → `std::unique_ptr<AST>`
+  - `bbfm::Program` → `bbfm::AST`
+  - Parser union member `program` → `ast`
+  - Variable names `prog` → `ast` in parser
+- **Documentation updated**: Comments and docstrings now refer to AST instead of Program
+- **Reasoning**: The name `AST` is more descriptive and accurately represents that this class is the Abstract Syntax Tree root node. It avoids confusion with the concept of a "program" as executable code versus a data structure. The term AST is standard in compiler literature and makes the codebase more immediately understandable.
+
+### November 1, 2025 (19:15)
+
+- **Driver API refactoring**: Modified `Driver::Phase0()` to return AST as `std::unique_ptr<AST>`
+- **Return value change**: `Phase0()` now returns `std::unique_ptr<AST>` instead of `bool`
+  - Returns `nullptr` on failure
+  - Returns AST ownership to caller on success
+- **Removed methods**:
+  - `Driver::GetAST()` - no longer needed since Phase0 returns the AST
+  - `Driver::DumpAST()` - redundant with `AST::Dump()` method
+- **Driver state simplified**: Driver no longer stores AST internally (removed `ast_` member variable)
+- **main.cpp updated**: Now receives AST from `Phase0()` and calls `ast->Dump()` directly
+- **Reasoning**: Returning the AST directly from Phase0 provides clearer ownership semantics and a more functional programming style. The caller receives the AST and decides what to do with it (dump, analyze, transform, etc.). This eliminates the need for getter methods and makes the Driver's lifecycle simpler. The AST class already has a `Dump()` method, so having a wrapper in Driver was redundant.
+
+### November 1, 2025 (19:00)
+
+- **Namespace rename**: Renamed C++ namespace from `p3` to `bbfm`
+- **Files updated**: All source files (AST.h, AST.cpp, Driver.h, Driver.cpp, main.cpp, parser.y)
+- **Redundant scopes removed**: Within the `bbfm` namespace, type references no longer need the `bbfm::` prefix (e.g., `std::unique_ptr<AST>` instead of `std::unique_ptr<bbfm::AST>` in Driver.h)
+- **Reasoning**: The `bbfm` namespace better reflects the project's broader purpose and provides a unique identifier. Removing redundant namespace prefixes within the namespace itself improves code readability and follows standard C++ practices.
+
+### November 1, 2025 (18:30)
+
+- **Driver class implementation**: Created new `Driver` class to orchestrate compilation phases
+- **Separation of concerns**: `main.cpp` now only handles command-line argument parsing
+- **Phase 0 implementation**: Actual parsing moved to `Driver::Phase0()` method
+- **Files added**:
+  - `include/Driver.h` - Driver class interface
+  - `src/Driver.cpp` - Driver class implementation
+- **Architecture improvement**: Clear separation between CLI handling and compilation logic
+- **Multi-file support**: Driver prepared for future multi-file compilation (currently single file)
+- **Error handling**: Driver tracks compilation errors through `HasErrors()` method
+- **Reasoning**: Separating the driver from main() creates a cleaner architecture where main.cpp is just a thin CLI wrapper. This makes the compiler easier to test, embed in other applications, and extend with additional compilation phases. The Driver class will orchestrate all future phases (semantic analysis, code generation) in a consistent way.
 
 ### November 1, 2025 (18:00)
 

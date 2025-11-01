@@ -1,49 +1,37 @@
-#include "AST.h"
-#include <cstdlib>
-#include <fstream>
+#include "Driver.h"
 #include <iostream>
 #include <memory>
-
-extern "C" {
-    extern FILE* yyin;
-}
-
-extern int                          yyparse(void);
-extern std::unique_ptr<p3::Program> g_ast;
+#include <vector>
 
 int main(int argc, char* argv[])
 {
-    if (argc > 1)
-    {
-        yyin = fopen(argv[1], "r");
-        if (!yyin)
-        {
-            std::cerr << "Error: Could not open file '" << argv[1] << "'\n";
-            return 1;
-        }
-    }
-    else
+    // Parse command line arguments
+    if (argc < 2)
     {
         std::cout << "Usage: " << argv[0] << " <source_file>\n";
         return 1;
     }
 
-    int result = yyparse();
-
-    if (yyin != stdin)
+    // Collect source files from command line
+    std::vector<std::string> sourceFiles;
+    for (int i = 1; i < argc; ++i)
     {
-        fclose(yyin);
+        sourceFiles.push_back(argv[i]);
     }
 
-    if (result == 0 && g_ast)
+    // Create driver with source files
+    bbfm::Driver driver(sourceFiles);
+
+    // Phase 0: Lexical analysis and parsing
+    std::unique_ptr<bbfm::AST> ast = driver.Phase0();
+    if (!ast)
     {
-        std::cout << "\nParsing successful!\n\n";
-        g_ast->Dump();
-    }
-    else
-    {
-        std::cerr << "Parsing failed.\n";
+        return 1;
     }
 
-    return result;
+    // Dump the AST for debugging
+    std::cout << "\n";
+    ast->Dump();
+
+    return 0;
 }

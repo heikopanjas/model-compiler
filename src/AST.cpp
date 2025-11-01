@@ -2,7 +2,7 @@
 #include <iostream>
 #include <string>
 
-namespace p3 {
+namespace bbfm {
 // ============================================================================
 // Helper Functions
 // ============================================================================
@@ -194,10 +194,10 @@ void Declaration::Dump(const int indent) const
 }
 
 // ============================================================================
-// Program Implementation
+// AST Implementation
 // ============================================================================
 
-void Program::Dump(const int indent) const
+void AST::Dump(const int indent) const
 {
     PrintIndent(indent);
     std::cout << "=== P3 Program AST ===\n\n";
@@ -211,4 +211,4 @@ void Program::Dump(const int indent) const
     PrintIndent(indent);
     std::cout << "=== End of AST ===\n";
 }
-} // namespace p3
+} // namespace bbfm

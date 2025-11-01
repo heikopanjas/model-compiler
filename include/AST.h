@@ -5,10 +5,10 @@
 #include <string>
 #include <vector>
 
-namespace p3 {
+namespace bbfm {
 // Forward declarations
 class ASTNode;
-class Program;
+class AST;
 class Declaration;
 class EnumDeclaration;
 class FabricDeclaration;
@@ -437,21 +437,21 @@ public:
 };
 
 // ============================================================================
-// Program (Root Node)
+// AST (Root Node)
 // ============================================================================
 
 /// \brief Represents a complete P3 program (root AST node)
-class Program : public ASTNode
+class AST : public ASTNode
 {
 private:
     std::vector<std::unique_ptr<Declaration>> declarations_;
 
 public:
-    /// \brief Construct a program from declarations
+    /// \brief Construct an AST from declarations
     /// \param declarations Vector of top-level declarations
-    explicit Program(std::vector<std::unique_ptr<Declaration>> declarations) : declarations_(std::move(declarations)) {}
+    explicit AST(std::vector<std::unique_ptr<Declaration>> declarations) : declarations_(std::move(declarations)) {}
 
-    /// \brief Get all declarations in the program
+    /// \brief Get all declarations in the AST
     /// \return Vector of declarations
     const std::vector<std::unique_ptr<Declaration>>& GetDeclarations() const
     {
@@ -460,6 +460,6 @@ public:
 
     void Dump(int indent = 0) const override;
 };
-} // namespace p3
+} // namespace bbfm
 
 #endif // AST_H

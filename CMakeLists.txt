@@ -27,6 +27,7 @@ include_directories(
 # Compiler executable
 add_executable(model-compiler
     src/main.cpp
+    src/Driver.cpp
     src/AST.cpp
     ${BISON_Parser_OUTPUTS}
     ${FLEX_Lexer_OUTPUTS}
