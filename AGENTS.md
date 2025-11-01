@@ -1,6 +1,6 @@
 # AI Agent Operating Instructions
 
-**Last updated:** November 1, 2025 (20:45)
+**Last updated:** November 1, 2025 (21:00)
 
 ## Primary Instructions
 
@@ -514,6 +514,31 @@ _build/model-compiler examples/podcast.fm
 ---
 
 ## Recent Updates & Decisions
+
+### November 1, 2025 (21:00)
+
+- **Symbol table dump enhancement**: Added origin markers for inherited vs. local features and invariants
+- **Changes made**:
+  - Modified `DumpSymbolTable()` method in SemanticAnalyzer to prefix features and invariants with origin markers
+  - Inherited features/invariants show `<base>` prefix
+  - Locally declared features/invariants show `<self>` prefix
+  - Uses set-based lookup to determine if a feature/invariant is local to the class or inherited
+- **Example output**:
+
+  ```text
+  class AudioAsset inherits Asset {
+    Features:
+      <base> url: String [1..1]
+      <self> format: String [1..1]
+      <self> fileSize: Int [1..1]
+    Invariants:
+      <self> maxFileSize: fileSize <= 500000000
+  }
+  ```
+
+- **Files modified**: `src/SemanticAnalyzer.cpp`
+- **Testing**: Verified with comprehensive_test.fm and podcast.fm examples showing correct origin markers
+- **Reasoning**: The symbol table dump now clearly indicates which features and invariants are inherited versus locally declared, making it much easier to understand class hierarchies and identify where members are defined. This is especially useful when debugging inheritance chains and understanding the complete interface of derived classes. The `<base>`/`<self>` markers provide immediate visual feedback about member origin without requiring developers to trace through base classes manually.
 
 ### November 1, 2025 (20:45)
 

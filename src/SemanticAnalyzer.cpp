@@ -515,12 +515,24 @@ void SemanticAnalyzer::DumpSymbolTable() const
                 // Show fields (including inherited)
                 std::vector<const Field*> allFields;
                 GetAllFields(entry.second.classDecl, allFields);
+
+                // Also get just the local fields for comparison
+                const auto&            localFields = entry.second.classDecl->GetFields();
+                std::set<const Field*> localFieldSet;
+                for (const auto& field : localFields)
+                {
+                    localFieldSet.insert(field.get());
+                }
+
                 if (false == allFields.empty())
                 {
                     std::cout << "    Features:\n";
                     for (const auto* field : allFields)
                     {
-                        std::cout << "      " << field->GetName() << ": ";
+                        // Determine if this is a local or inherited field
+                        bool isLocal = (0 != localFieldSet.count(field));
+                        std::cout << "      " << (isLocal ? "<self>" : "<base>") << " ";
+                        std::cout << field->GetName() << ": ";
 
                         // Get type name based on TypeSpec type
                         const TypeSpec* typeSpec = field->GetType();
@@ -565,12 +577,24 @@ void SemanticAnalyzer::DumpSymbolTable() const
                 // Show invariants (including inherited)
                 std::vector<const Invariant*> allInvariants;
                 GetAllInvariants(entry.second.classDecl, allInvariants);
+
+                // Also get just the local invariants for comparison
+                const auto&                localInvariants = entry.second.classDecl->GetInvariants();
+                std::set<const Invariant*> localInvariantSet;
+                for (const auto& invariant : localInvariants)
+                {
+                    localInvariantSet.insert(invariant.get());
+                }
+
                 if (false == allInvariants.empty())
                 {
                     std::cout << "    Invariants:\n";
                     for (const auto* invariant : allInvariants)
                     {
-                        std::cout << "      " << invariant->GetName() << ": " << invariant->GetExpression() << "\n";
+                        // Determine if this is a local or inherited invariant
+                        bool isLocal = (0 != localInvariantSet.count(invariant));
+                        std::cout << "      " << (isLocal ? "<self>" : "<base>") << " ";
+                        std::cout << invariant->GetName() << ": " << invariant->GetExpression() << "\n";
                     }
                 }
 
