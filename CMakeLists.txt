@@ -9,8 +9,8 @@ find_package(FLEX REQUIRED)
 find_package(BISON REQUIRED)
 
 # Flex and Bison sources
-set(LEXER_SOURCE ${CMAKE_SOURCE_DIR}/src/lexer.l)
-set(PARSER_SOURCE ${CMAKE_SOURCE_DIR}/src/parser.y)
+set(LEXER_SOURCE ${CMAKE_SOURCE_DIR}/src/model-compiler.l)
+set(PARSER_SOURCE ${CMAKE_SOURCE_DIR}/src/model-compiler.y)
 
 # Generate lexer and parser
 FLEX_TARGET(Lexer ${LEXER_SOURCE} ${CMAKE_BINARY_DIR}/lexer.cpp)

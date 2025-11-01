@@ -1,6 +1,6 @@
 # AI Agent Operating Instructions
 
-**Last updated:** November 1, 2025 (19:20)
+**Last updated:** November 1, 2025 (20:30)
 
 ## Primary Instructions
 
@@ -174,6 +174,7 @@ The compiler enables users to define data types and relationships for podcast do
 - All functions that return class data without modification should be const (e.g., `std::string GetTitle() const`)
 - Pass by const reference for complex types, by value for primitives
 - Use trailing return types when it improves clarity
+- For intentionally unused parameters, use the `UNREFERENCED_PARAMETER(param)` macro from `Common.h`
 
 **Classes and Destructors:**
 
@@ -181,6 +182,16 @@ The compiler enables users to define data types and relationships for podcast do
 - All abstract/interface classes should have a protected virtual destructor
 - Use the Rule of Zero when possible (let compiler generate special members)
 - When implementing special members, follow the Rule of Five
+
+**Comparison and Conditional Expressions:**
+
+- Always place constants on the left side of comparisons
+- Use explicit `nullptr` comparisons instead of implicit boolean conversion
+- Examples:
+  - ✅ Correct: `if (nullptr == ast_)` or `if (0 == value)`
+  - ❌ Incorrect: `if (!ast_)` or `if (ast_ == nullptr)`
+- Reasoning: Prevents accidental assignment (`=`) instead of comparison (`==`); compiler will error on `nullptr = ast_` but may allow `ast_ = nullptr`
+- Apply to all comparisons with literals, nullptr, and constants
 
 **Naming Conventions:**
 
@@ -190,6 +201,25 @@ The compiler enables users to define data types and relationships for podcast do
 - Member variables: camelCase with underscore postfix (e.g., `dataSize_`, `title_`, `description_`)
 - Constants: UPPER_SNAKE_CASE (e.g., `MAX_EPISODE_LENGTH`, `DEFAULT_TIMEOUT`)
 - Remove redundant prefixes from class names (e.g., use `Model` instead of `P3Model`)
+- **Include guards**: Use format `__CLASS_NAME_H_INCL__` where CLASS_NAME matches the class declared in the file
+  - Single word class: `__Driver_H_INCL__` becomes `__DRIVER_H_INCL__`
+  - Multi-word class: `__TestTools_H_INCL__` becomes `__TEST_TOOLS_H_INCL__`
+  - Insert underscore between each word in PascalCase class names
+  - Examples: `Driver` → `__DRIVER_H_INCL__`, `TestTools` → `__TEST_TOOLS_H_INCL__`, `AST` → `__AST_H_INCL__`
+
+**Header File Structure:**
+
+- All header files must use 8-byte alignment for types using `#pragma pack`
+- Include alignment pragmas at the top (after include guard) and restore at the bottom (before closing include guard)
+- Use cross-compiler compatible pragmas for MSVC, GCC, and Clang:
+
+  ```cpp
+  // At top of header (after include guard, before includes)
+  #pragma pack(push, 8)
+
+  // At bottom of header (before closing include guard)
+  #pragma pack(pop)
+  ```
 
 **Comments and Documentation:**
 
@@ -238,12 +268,13 @@ The compiler enables users to define data types and relationships for podcast do
 p3-compiler/
 ├── CMakeLists.txt          # CMake configuration
 ├── src/                    # Source files
-│   ├── lexer.l            # Flex lexer specification
-│   ├── parser.y           # Bison parser specification
+│   ├── model-compiler.l   # Flex lexer specification
+│   ├── model-compiler.y   # Bison parser specification
 │   ├── Driver.cpp         # Compiler driver implementation
 │   ├── AST.cpp            # AST implementation
 │   └── main.cpp           # Main entry point (C++)
 ├── include/               # Header files
+│   ├── Common.h           # Common macros and utilities
 │   ├── Driver.h           # Compiler driver interface
 │   └── AST.h              # AST node definitions
 ├── examples/              # Test programs
@@ -425,6 +456,52 @@ _build/model-compiler examples/podcast.p3
 ---
 
 ## Recent Updates & Decisions
+
+### November 1, 2025 (20:30)
+
+- **Common.h header created**: Added new header file for common macros and utilities
+- **UNREFERENCED_PARAMETER macro**: Implemented macro to handle intentionally unused function parameters
+- **Macro definition**: `#define UNREFERENCED_PARAMETER(param) (void)(param)`
+- **Codebase updated**: Replaced all `(void)indent; // Unused parameter` with `UNREFERENCED_PARAMETER(indent)` in AST.cpp
+- **Coding guidelines updated**: Added requirement to use `UNREFERENCED_PARAMETER` macro from Common.h for unused parameters
+- **Reasoning**: Using a macro instead of raw `(void)param` casts makes the code more self-documenting and consistent. The macro name clearly indicates the intent to suppress warnings for intentionally unused parameters. This is a common pattern in professional codebases (e.g., Windows SDK uses a similar approach). Centralizing the definition in Common.h also makes it easy to adjust the implementation if needed for different compilers.
+
+### November 1, 2025 (20:15)
+
+- **Header file alignment**: Added requirement for 8-byte alignment in all header files
+- **Cross-compiler compatibility**: Implemented pragma pack directives compatible with MSVC, GCC, and Clang
+- **Structure**: Use `#pragma pack(push, 8)` at top of header and `#pragma pack(pop)` at bottom
+- **Location**: Alignment pragmas placed after include guard opening, before includes at top; before include guard closing at bottom
+- **Reasoning**: Ensures consistent memory layout across different compilers and platforms. 8-byte alignment is standard for modern 64-bit systems and prevents potential ABI issues when code is compiled with different compilers or used as a library. The push/pop pattern preserves any alignment settings from including files.
+
+### November 1, 2025 (20:00)
+
+- **Include guard naming convention**: Defined standard format for header file include guards
+- **Format**: `__CLASS_NAME_H_INCL__` where CLASS_NAME is the class declared in the file
+- **Rules**:
+  - Convert class name to UPPER_SNAKE_CASE
+  - Single word: `Driver` → `__DRIVER_H_INCL__`
+  - Multi-word PascalCase: Insert underscore between words, e.g., `TestTools` → `__TEST_TOOLS_H_INCL__`
+  - All caps acronyms: `AST` → `__AST_H_INCL__`
+- **Reasoning**: Provides consistent, predictable naming pattern for include guards based on the primary class in the file. The double underscore prefix/suffix and _INCL suffix clearly identify these as include guards while avoiding conflicts with standard library macros.
+
+### November 1, 2025 (19:45)
+
+- **Comparison ordering rule**: Added coding guideline for constant-left comparisons
+- **Explicit nullptr checks**: Mandate explicit `nullptr` comparisons instead of implicit boolean conversion
+- **New rule**: Always write `if (nullptr == ptr)` instead of `if (!ptr)` or `if (ptr == nullptr)`
+- **Guideline location**: Added new "Comparison and Conditional Expressions" subsection to C++ Coding Standards
+- **Reasoning**: Constant-left comparisons prevent accidental assignment bugs where `=` is used instead of `==`. The compiler will error on `nullptr = ptr` but may silently allow `ptr = nullptr` in a conditional. This defensive programming practice catches errors at compile time rather than runtime. Additionally, explicit nullptr comparisons make the intent clearer and more maintainable.
+
+### November 1, 2025 (19:30)
+
+- **Lexer and parser file naming**: Renamed lexer and parser files to use project name prefix
+- **Files renamed**:
+  - `src/lexer.l` → `src/model-compiler.l`
+  - `src/parser.y` → `src/model-compiler.y`
+- **CMakeLists.txt updated**: Updated LEXER_SOURCE and PARSER_SOURCE paths to reference new filenames
+- **Build verification**: Confirmed project builds successfully with renamed files
+- **Reasoning**: Using the project name prefix (model-compiler) for lexer and parser files creates consistency with the binary name and makes the files more identifiable in the project. This follows common convention where core compiler components are named after the project itself.
 
 ### November 1, 2025 (19:20)
 

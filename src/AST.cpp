@@ -1,4 +1,5 @@
 #include "AST.h"
+#include "Common.h"
 #include <iostream>
 #include <string>
 
@@ -44,7 +45,7 @@ const char* PrimitiveTypeSpec::TypeToString(const PrimitiveType type)
 
 void PrimitiveTypeSpec::Dump(const int indent) const
 {
-    (void)indent; // Unused parameter
+    UNREFERENCED_PARAMETER(indent);
     std::cout << TypeToString(type_);
 }
 
@@ -54,7 +55,7 @@ void PrimitiveTypeSpec::Dump(const int indent) const
 
 void UserDefinedTypeSpec::Dump(const int indent) const
 {
-    (void)indent; // Unused parameter
+    UNREFERENCED_PARAMETER(indent);
     std::cout << typeName_;
 }
 
@@ -64,7 +65,7 @@ void UserDefinedTypeSpec::Dump(const int indent) const
 
 void CardinalityModifier::Dump(const int indent) const
 {
-    (void)indent; // Unused parameter
+    UNREFERENCED_PARAMETER(indent);
     std::cout << "[" << minCardinality_;
     if (maxCardinality_ == -1)
     {
@@ -83,7 +84,7 @@ void CardinalityModifier::Dump(const int indent) const
 
 void UniqueModifier::Dump(const int indent) const
 {
-    (void)indent; // Unused parameter
+    UNREFERENCED_PARAMETER(indent);
     std::cout << "[unique]";
 }
 
@@ -168,7 +169,7 @@ void FabricDeclaration::Dump(const int indent) const
     PrintIndent(indent);
     std::cout << "fabric " << name_;
 
-    if (!baseType_.empty())
+    if (false == baseType_.empty())
     {
         std::cout << " : " << baseType_;
     }

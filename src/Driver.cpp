@@ -8,7 +8,13 @@ extern "C" {
     extern FILE* yyin;
 }
 
-extern int                        yyparse(void);
+extern int yyparse(void);
+
+// Global AST variable used for communication between parser and driver.
+// This must be global because yyparse() has signature int yyparse(void)
+// with no parameters or return value for the AST. The parser sets this
+// variable when parsing completes, and the driver retrieves it afterward.
+// This is the standard pattern for Bison parsers.
 extern std::unique_ptr<bbfm::AST> g_ast;
 
 namespace bbfm {
@@ -40,7 +46,7 @@ std::unique_ptr<AST> Driver::Phase0()
 
     // Open the source file
     yyin = fopen(filename.c_str(), "r");
-    if (!yyin)
+    if (nullptr == yyin)
     {
         std::cerr << "Error: Could not open file '" << filename << "'\n";
         hasErrors_ = true;
@@ -57,7 +63,7 @@ std::unique_ptr<AST> Driver::Phase0()
     }
 
     // Check parsing result
-    if (result != 0)
+    if (0 != result)
     {
         std::cerr << "Parsing failed.\n";
         hasErrors_ = true;
@@ -65,7 +71,7 @@ std::unique_ptr<AST> Driver::Phase0()
     }
 
     // Transfer ownership of AST from global to caller
-    if (!g_ast)
+    if (nullptr == g_ast)
     {
         std::cerr << "Error: Parser succeeded but no AST was created\n";
         hasErrors_ = true;

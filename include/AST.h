@@ -1,5 +1,8 @@
-#ifndef AST_H
-#define AST_H
+#ifndef __AST_H_INCL__
+#define __AST_H_INCL__
+
+// Set 8-byte alignment for all types in this header
+#pragma pack(push, 8)
 
 #include <memory>
 #include <string>
@@ -462,4 +465,7 @@ public:
 };
 } // namespace bbfm
 
-#endif // AST_H
+// Restore previous alignment
+#pragma pack(pop)
+
+#endif // __AST_H_INCL__

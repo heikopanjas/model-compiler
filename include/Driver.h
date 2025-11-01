@@ -1,5 +1,8 @@
-#ifndef DRIVER_H
-#define DRIVER_H
+#ifndef __DRIVER_H_INCL__
+#define __DRIVER_H_INCL__
+
+// Set 8-byte alignment for all types in this header
+#pragma pack(push, 8)
 
 #include "AST.h"
 #include <memory>
@@ -39,4 +42,7 @@ public:
 };
 } // namespace bbfm
 
-#endif // DRIVER_H
+// Restore previous alignment
+#pragma pack(pop)
+
+#endif // __DRIVER_H_INCL__

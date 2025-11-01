@@ -28,6 +28,12 @@ std::unique_ptr<bbfm::AST> g_ast;
     #endif
 }
 
+// NOTE: This union uses void* (raw pointers) instead of smart pointers
+// because Bison's %union only supports POD (Plain Old Data) types.
+// std::unique_ptr and std::shared_ptr cannot be stored in a union.
+// Raw pointers are created with 'new' and immediately wrapped in
+// std::unique_ptr in the grammar actions, ensuring safe ownership transfer.
+// This is the standard pattern for Bison parsers in C++.
 %union {
     int integer;
     char *string;

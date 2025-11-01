@@ -24,7 +24,7 @@ int main(int argc, char* argv[])
 
     // Phase 0: Lexical analysis and parsing
     std::unique_ptr<bbfm::AST> ast = driver.Phase0();
-    if (!ast)
+    if (nullptr == ast)
     {
         return 1;
     }
