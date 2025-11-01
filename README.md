@@ -122,23 +122,49 @@ This approach makes the most common field types cleaner and more readable while 
 
 ### Invariants
 
-Invariants are boolean constraints on class attributes that express domain rules and validation requirements:
+Invariants are boolean constraints on class attributes that express domain rules and validation requirements using a powerful expression system:
 
 - Declared using the `invariant` keyword
 - Syntax: `invariant name: expression;`
-- Support comparison operators: `<=`, `>=`, `<`, `>`, `==`, `!=`
-- Currently support simple expressions (attribute operator literal)
+- **Expression support**:
+  - **Arithmetic operators**: `+`, `-`, `*`, `/`, `%`
+  - **Comparison operators**: `<`, `>`, `<=`, `>=`, `==`, `!=`
+  - **Logical operators**: `&&` (AND), `||` (OR), `!` (NOT)
+  - **Parentheses**: For grouping and precedence control
+  - **Literals**: Integer, real, string, boolean values
+  - **Field references**: Access to class attributes
+  - **Unary operators**: `-` (negation), `!` (logical NOT)
 
 **Examples:**
 
 ```bbfm
-class Image {
+class Rectangle {
     feature width: Int;
     feature height: Int;
+    feature maxArea: Int;
 
-    invariant validWidth: width <= 3840;     // Max 4K width
-    invariant validHeight: height <= 2160;   // Max 4K height
-    invariant minWidth: width >= 100;        // Minimum width
+    // Simple comparison
+    invariant positiveWidth: width > 0;
+
+    // Arithmetic expression
+    invariant validArea: width * height <= maxArea;
+
+    // Complex expression with parentheses
+    invariant aspectRatio: (width + height) * 2 <= 1000;
+
+    // Logical operators
+    invariant validDimensions: width >= 10 && height >= 10;
+}
+
+class Temperature {
+    feature celsius: Real;
+    feature fahrenheit: Real;
+
+    // Arithmetic with real numbers
+    invariant conversion: fahrenheit == celsius * 1.8 + 32.0;
+
+    // Negative numbers
+    invariant aboveAbsoluteZero: celsius >= -273.15;
 }
 
 class AudioAsset inherits Asset {
@@ -148,7 +174,12 @@ class AudioAsset inherits Asset {
 }
 ```
 
-Invariants will be used during semantic analysis for type checking and can generate validation code in target languages.
+Invariants are validated during semantic analysis to ensure:
+- All referenced fields exist (including inherited fields)
+- Type compatibility of expressions
+- Proper syntax and operator usage
+
+The expression system enables declarative constraints that will generate validation code in target languages.
 
 ### Design Philosophy
 
@@ -250,13 +281,30 @@ ninja clean
 ## Usage
 
 ```bash
+# Basic compilation
 ./_build/model-compiler <source_file.fm>
+
+# Dump AST (syntax tree) for debugging
+./_build/model-compiler --dump-syntax-tree <source_file.fm>
+
+# Dump symbol table after semantic analysis
+./_build/model-compiler --dump-symbol-table <source_file.fm>
+
+# Show help
+./_build/model-compiler --help
 ```
 
-Example:
+Examples:
 
 ```bash
+# Compile a file
 ./_build/model-compiler examples/podcast.fm
+
+# View syntax tree
+./_build/model-compiler --dump-syntax-tree examples/podcast.fm
+
+# View symbol table
+./_build/model-compiler --dump-symbol-table examples/podcast.fm
 ```
 
 ## Project Structure
@@ -291,14 +339,18 @@ model-compiler/
 The compiler implements a multi-phase compilation process:
 
 1. **Phase 0: Lexical Analysis & Parsing** ✅ - Tokenizes input and parses into AST
+   - Full expression grammar with operator precedence
+   - Builds expression AST nodes for invariants
 2. **Phase 1: Semantic Analysis** ✅ - Type checking and validation
    - Symbol table construction
    - Type validation (primitives, enums, user-defined types)
    - Inheritance validation (cycle detection, base type verification)
    - Field uniqueness validation (including inherited fields)
-   - Invariant validation (field reference checking)
+   - Invariant validation (expression AST traversal, field reference checking)
+   - Expression type inference and validation
 3. **Phase 2: Code Generation** 🚧 - Planned:
    - Swift class definitions with inheritance
+   - Invariant validation code generation
 
 ## Type Mappings
 
@@ -320,6 +372,7 @@ The compiler implements a multi-phase compilation process:
   - Lexical analysis with case-sensitive keywords and types
   - Syntax analysis supporting full grammar
   - AST construction with modern C++23 and smart pointers
+  - Expression grammar with operator precedence (arithmetic, comparison, logical)
   - Enhanced error diagnostics with file:line:column format
   - Visual error pointers showing source context
 
@@ -328,7 +381,14 @@ The compiler implements a multi-phase compilation process:
   - Class type declarations with inheritance (`inherits` keyword)
   - Field declarations with `feature` keyword
   - Field modifiers (cardinality and constraints)
-  - Invariant constraints with comparison operators and literals
+  - **Expression system** with full operator support:
+    - Arithmetic: `+`, `-`, `*`, `/`, `%`
+    - Comparison: `<`, `>`, `<=`, `>=`, `==`, `!=`
+    - Logical: `&&`, `||`, `!`
+    - Parentheses for grouping
+    - Literals: integer, real, string, boolean
+    - Field references and complex nested expressions
+  - Invariant constraints using expression AST
   - All primitive types (String, Int, Real, Bool, Timestamp, Timespan, Date, Guid)
   - Optional modifier syntax and shorthand syntax
 
@@ -337,13 +397,15 @@ The compiler implements a multi-phase compilation process:
   - Type validation for all type references
   - Inheritance validation with cycle detection
   - Field uniqueness validation including inherited fields
-  - Invariant validation (field reference checking)
+  - Invariant validation using expression AST traversal
+  - Expression field reference validation
   - Comprehensive error reporting
 
 **🚧 Planned:**
 
 - **Phase 2 (Code Generation)**:
   - Swift code generation (class definitions, inheritance hierarchies)
+  - Invariant validation code generation
   - Additional target languages
 
 ## Language Specification

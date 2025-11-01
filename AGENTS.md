@@ -1,6 +1,6 @@
 # AI Agent Operating Instructions
 
-**Last updated:** November 1, 2025 (22:00)
+**Last updated:** November 1, 2025 (22:15)
 
 ## Primary Instructions
 
@@ -507,13 +507,32 @@ ninja
 # Clean
 ninja clean
 
-# Test
+# Run the compiler
 _build/model-compiler examples/podcast.fm
+
+# Dump AST (syntax tree) for debugging
+_build/model-compiler --dump-syntax-tree examples/podcast.fm
+
+# Dump symbol table after semantic analysis
+_build/model-compiler --dump-symbol-table examples/podcast.fm
+
+# Show help
+_build/model-compiler --help
 ```
 
 ---
 
 ## Recent Updates & Decisions
+
+### November 1, 2025 (22:15)
+
+- **Documentation update**: Corrected command-line option names in AGENTS.md and README.md
+- **Changes made**:
+  - Updated references from `--dump-ast` to `--dump-syntax-tree`
+  - Updated references from `--dump-symtab` to `--dump-symbol-table`
+  - Added comprehensive usage examples in README.md showing all command-line options
+  - Added debugging commands to Build Commands section in AGENTS.md
+- **Reasoning**: The command-line options were implemented as `--dump-syntax-tree` and `--dump-symbol-table` but documentation was using outdated or incorrect option names. Correcting this prevents confusion and ensures documentation accurately reflects the actual CLI interface.
 
 ### November 1, 2025 (22:00)
 
