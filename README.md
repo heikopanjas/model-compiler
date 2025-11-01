@@ -50,27 +50,28 @@ class Podcast {
 
 The generated code will include the universal metadata fields, so the actual structure is:
 
-```
-Podcast
-├── typeId (Guid)                 // universal metadata
-├── id (Guid)                     // universal metadata
-├── cardinality (Int)             // universal metadata
-├── creationDate (Timestamp)      // universal metadata
-├── modificationDate (Timestamp)  // universal metadata
-├── comment (String)              // universal metadata
-├── title (String)                // defined in Podcast
-└── description (String)          // defined in Podcast
+```bbfm
+class Podcast {
+    feature typeId: Guid;                 // universal metadata
+    feature id: Guid;                     // universal metadata
+    feature cardinality: Int;             // universal metadata
+    feature creationDate: Timestamp;      // universal metadata
+    feature modificationDate: Timestamp;  // universal metadata
+    feature comment: String;              // universal metadata
+    feature title: String;                // defined in Podcast
+    feature description: String;          // defined in Podcast
+}
 ```
 
 User-defined inheritance works as expected. For example:
 
 ```bbfm
 class Asset {
-    String url;
+    feature url: String;
 }
 
 class AudioAsset inherits Asset {
-    String format;
+    feature format: String;
 }
 ```
 
@@ -88,7 +89,7 @@ So an `AudioAsset` instance has: universal metadata (6 fields) + Asset fields (u
 
 ### Field Modifiers
 
-Field cardinality and constraints are specified using square bracket notation:
+Fields are declared using the `feature` keyword followed by a colon and the type specification. Field cardinality and constraints are specified using square bracket notation:
 
 - `[1]` - Mandatory single value (default if no modifier specified)
 - `[0..1]` - Optional single value
@@ -98,12 +99,57 @@ Field cardinality and constraints are specified using square bracket notation:
 - `[unique]` - Unique constraint
 - Modifiers can be combined: `[optional,unique]`, `[1,unique]`
 
+**Field Declaration Syntax:**
+
+```bbfm
+feature fieldName: TypeName [modifiers];
+```
+
+**Examples:**
+
+```bbfm
+feature title: String;                    // mandatory (default [1])
+feature author: String [optional];        // optional field
+feature rssUrl: String [1,unique];        // mandatory + unique
+feature episodes: Episode [0..*];         // array (may be empty)
+```
+
 **Shorthand Syntax:**
 
 - **Default cardinality**: Fields without modifiers default to `[1]` (mandatory)
-  - `String title;` is equivalent to `String title[1];`
+  - `feature title: String;` is equivalent to `feature title: String [1];`
 
 This approach makes the most common field types cleaner and more readable while maintaining full expressiveness when needed.
+
+### Invariants
+
+Invariants are boolean constraints on class attributes that express domain rules and validation requirements:
+
+- Declared using the `invariant` keyword
+- Syntax: `invariant name: expression;`
+- Support comparison operators: `<=`, `>=`, `<`, `>`, `==`, `!=`
+- Currently support simple expressions (attribute operator literal)
+
+**Examples:**
+
+```bbfm
+class Image {
+    feature width: Int;
+    feature height: Int;
+
+    invariant validWidth: width <= 3840;     // Max 4K width
+    invariant validHeight: height <= 2160;   // Max 4K height
+    invariant minWidth: width >= 100;        // Minimum width
+}
+
+class AudioAsset inherits Asset {
+    feature fileSize: Int;
+
+    invariant maxFileSize: fileSize <= 500000000;  // Max 500MB
+}
+```
+
+Invariants will be used during semantic analysis for type checking and can generate validation code in target languages.
 
 ### Design Philosophy
 
@@ -120,34 +166,40 @@ enum MediaType {
 
 // Define a base type
 class Asset {
-    String url;
+    feature url: String;
 }
 
 // Define a derived type with inheritance
 class AudioAsset inherits Asset {
-    String format;
-    Int fileSize;
+    feature format: String;
+    feature fileSize: Int;
+
+    invariant maxFileSize: fileSize <= 500000000;  // Max 500MB
 }
 
 // Define a type with relationships
 class Podcast {
-    String title;
-    String description;
-    String author[optional];     // optional field
-    String rssUrl[1,unique];     // mandatory + unique
-    Episode episodes[0..*];      // one-to-many relationship
+    feature title: String;
+    feature description: String;
+    feature author: String [optional];     // optional field
+    feature rssUrl: String [1,unique];     // mandatory + unique
+    feature episodes: Episode [0..*];      // one-to-many relationship
 }
 
 class Episode {
-    String title;
-    Date publishedAt;
-    Timespan duration;
-    MediaType mediaType;
-    AudioAsset audio;            // one-to-one relationship
-    Transcript transcript[optional]; // optional field
+    feature title: String;
+    feature publishedAt: Date;
+    feature duration: Timespan;
+    feature mediaType: MediaType;
+    feature audio: AudioAsset;                  // one-to-one relationship
+    feature transcript: Transcript [optional];  // optional field
 }
 
 class Transcript {
+    feature text: String;
+    feature language: String;
+}
+```
     String text;
     String language;
 }
@@ -259,7 +311,9 @@ The compiler implements a multi-phase compilation process:
 - AST construction with modern C++23
 - Enum declarations
 - Class type declarations with inheritance
+- Field declarations with `feature` keyword
 - Field modifiers (cardinality and constraints)
+- Invariant constraints with comparison operators
 - All primitive types
 - Optional modifier syntax
 
@@ -277,6 +331,8 @@ The compiler implements a multi-phase compilation process:
 - `class` - Define a new type
 - `enum` - Define an enumeration
 - `inherits` - Specify inheritance relationship
+- `feature` - Declare a class field/attribute
+- `invariant` - Declare a boolean constraint
 - `optional` - Optional field modifier (equivalent to `[0..1]`)
 - `unique` - Unique constraint modifier
 
