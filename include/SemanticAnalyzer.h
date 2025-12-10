@@ -75,6 +75,16 @@ public:
     /// \brief Dump the symbol table to stdout
     void DumpSymbolTable() const;
 
+    /// \brief Get all invariants for a class including inherited invariants
+    /// \param classDecl The class declaration
+    /// \param allInvariants Output vector to store all invariants
+    void GetAllInvariants(const ClassDeclaration* classDecl, std::vector<const Invariant*>& allInvariants) const;
+
+    /// \brief Collect all field references from an expression
+    /// \param expr The expression to analyze
+    /// \param fields Output set to store field names
+    void CollectFieldReferences(const Expression* expr, std::set<std::string>& fields) const;
+
 private:
     const AST*                        ast_;
     std::map<std::string, TypeSymbol> symbolTable_;
@@ -118,11 +128,6 @@ private:
     /// \param visited Set of visited class names for cycle detection
     void GetAllFieldsHelper(const ClassDeclaration* classDecl, std::vector<const Field*>& allFields, std::set<std::string>& visited) const;
 
-    /// \brief Get all invariants for a class including inherited invariants
-    /// \param classDecl The class declaration
-    /// \param allInvariants Output vector to store all invariants
-    void GetAllInvariants(const ClassDeclaration* classDecl, std::vector<const Invariant*>& allInvariants) const;
-
     /// \brief Helper function to get all invariants with cycle detection
     /// \param classDecl The class declaration
     /// \param allInvariants Output vector to store all invariants
@@ -138,11 +143,6 @@ private:
     /// \param classDecl The class declaration to validate
     /// \return True if all invariants are valid, false otherwise
     bool ValidateInvariants(const ClassDeclaration* classDecl);
-
-    /// \brief Collect all field references from an expression
-    /// \param expr The expression to analyze
-    /// \param fields Output set to store field names
-    void CollectFieldReferences(const Expression* expr, std::set<std::string>& fields) const;
 
     /// \brief Validate computed features for a class declaration
     /// \param classDecl The class declaration to validate

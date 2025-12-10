@@ -4,10 +4,7 @@
 #include <iostream>
 
 namespace bbfm {
-SemanticAnalyzer::SemanticAnalyzer(const AST* ast, const std::vector<std::string>& namespaces)
-    : ast_(ast), namespaces_(namespaces), hasErrors_(false)
-{
-}
+SemanticAnalyzer::SemanticAnalyzer(const AST* ast, const std::vector<std::string>& namespaces) : ast_(ast), namespaces_(namespaces), hasErrors_(false) {}
 
 std::string SemanticAnalyzer::FormatNamespacePrefix() const
 {
@@ -1012,7 +1009,7 @@ void SemanticAnalyzer::DumpSymbolTable() const
         {
             if (TypeSymbol::Kind::PRIMITIVE == entry.second.kind)
             {
-                std::cout << "  intrinsic::" << entry.second.name << "\n";
+                std::cout << "  <builtin>::" << entry.second.name << "\n";
             }
         }
         std::cout << "\n";
@@ -1090,7 +1087,7 @@ void SemanticAnalyzer::DumpSymbolTable() const
                         if (typeSpec->IsPrimitive())
                         {
                             const PrimitiveTypeSpec* primType = dynamic_cast<const PrimitiveTypeSpec*>(typeSpec);
-                            std::cout << "intrinsic::" << PrimitiveTypeSpec::TypeToString(primType->GetType());
+                            std::cout << "<builtin>::" << PrimitiveTypeSpec::TypeToString(primType->GetType());
                         }
                         else
                         {

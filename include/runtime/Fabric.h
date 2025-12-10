@@ -4,12 +4,11 @@
 // Set 8-byte alignment for all types in this header
 #pragma pack(push, 8)
 
-#include "String.h"
 #include "Guid.h"
+#include "String.h"
 #include <cstdint>
 
-namespace bbfm {
-namespace runtime {
+namespace bbfm { namespace runtime {
 /// \brief Base class for all BBFM types providing universal metadata
 ///
 /// Every BBFM type automatically inherits from Fabric, which provides
@@ -57,16 +56,18 @@ public:
     /// \param comment The new comment value
     void SetComment(const String& comment);
 
+    /// \brief Update the modification date to current time
+    void UpdateModificationDate();
+
 protected:
-    Guid   typeId_;           // Type identifier (same for all instances of this type)
-    Guid   id_;               // Instance identifier (unique per instance)
-    int64_t cardinality_;     // Cardinality of the instance
-    double creationDate_;     // Creation timestamp (seconds since epoch)
-    double modificationDate_; // Modification timestamp (seconds since epoch)
-    String comment_;          // User comment/notes
+    Guid    typeId_;           // Type identifier (same for all instances of this type)
+    Guid    id_;               // Instance identifier (unique per instance)
+    int64_t cardinality_;      // Cardinality of the instance
+    double  creationDate_;     // Creation timestamp (seconds since epoch)
+    double  modificationDate_; // Modification timestamp (seconds since epoch)
+    String  comment_;          // User comment/notes
 };
-} // namespace runtime
-} // namespace bbfm
+}} // namespace bbfm::runtime
 
 // Restore previous alignment
 #pragma pack(pop)

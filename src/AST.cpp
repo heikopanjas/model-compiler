@@ -64,7 +64,7 @@ void PrimitiveTypeSpec::Dump(const int indent, const std::string& nsPrefix) cons
 {
     UNREFERENCED_PARAMETER(indent);
     UNREFERENCED_PARAMETER(nsPrefix);
-    std::cout << "intrinsic::" << TypeToString(type_);
+    std::cout << "<builtin>::" << TypeToString(type_);
 }
 
 // ============================================================================
@@ -761,9 +761,8 @@ const Expression* ParenthesizedExpression::GetExpression() const
 // AST Implementation
 // ============================================================================
 
-AST::AST(const std::string& sourceNamespace,
-         std::vector<std::unique_ptr<Declaration>> declarations)
-    : sourceNamespace_(sourceNamespace), declarations_(std::move(declarations))
+AST::AST(const std::string& sourceNamespace, std::vector<std::unique_ptr<Declaration>> declarations) :
+    sourceNamespace_(sourceNamespace), declarations_(std::move(declarations))
 {
 }
 

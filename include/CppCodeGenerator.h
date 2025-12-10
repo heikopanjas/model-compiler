@@ -97,14 +97,55 @@ private:
     /// \param field The computed field
     void GenerateComputedGetter(const Field* field);
 
+    /// \brief Generate setter method for a field
+    /// \param field The field to generate setter for
+    /// \param classDecl The class declaration containing the field
+    void GenerateSetter(const Field* field, const ClassDeclaration* classDecl);
+
+    /// \brief Generate private checker function for a field
+    /// \param field The field to generate checker for
+    /// \param classDecl The class declaration containing the field
+    /// \param invariants Vector of invariants that reference this field
+    void GenerateFieldChecker(const Field* field, const ClassDeclaration* classDecl, const std::vector<const Invariant*>& invariants);
+
+    /// \brief Get invariants that reference a specific field
+    /// \param fieldName The name of the field
+    /// \param classDecl The class declaration
+    /// \return Vector of invariants that reference the field
+    std::vector<const Invariant*> GetInvariantsForField(const std::string& fieldName, const ClassDeclaration* classDecl) const;
+
     /// \brief Convert expression to C++ code
     /// \param expr The expression to convert
+    /// \param objectPrefix Optional prefix for field references (e.g., "obj." for static functions)
+    /// \param fieldToReplace Optional field name to replace with a different value
+    /// \param replacementValue Optional value to use instead of field reference
     /// \return C++ code string
-    std::string ExpressionToCpp(const Expression* expr) const;
+    std::string ExpressionToCpp(
+        const Expression* expr, const std::string& objectPrefix = "", const std::string& fieldToReplace = "", const std::string& replacementValue = "") const;
 
     /// \brief Generate invariant validation methods
     /// \param classDecl The class declaration
     void GenerateInvariantMethods(const ClassDeclaration* classDecl);
+
+    /// \brief Generate static checker functions for invariants
+    /// \param classDecl The class declaration
+    void GenerateStaticCheckerFunctions(const ClassDeclaration* classDecl);
+
+    /// \brief Generate constructor implementation
+    /// \param classDecl The class declaration
+    void GenerateConstructorImplementation(const ClassDeclaration* classDecl);
+
+    /// \brief Generate checker function for a specific field and invariant
+    /// \param field The field being checked
+    /// \param invariant The invariant to check
+    /// \param classDecl The class declaration
+    void GenerateCheckerFunction(const Field* field, const Invariant* invariant, const ClassDeclaration* classDecl);
+
+    /// \brief Determine wrapper type for a field
+    /// \param field The field to wrap
+    /// \param classDecl The class declaration containing the field
+    /// \return The wrapper type string (e.g., "BoundedValue", "UnboundedValue")
+    std::string GetWrapperType(const Field* field, const ClassDeclaration* classDecl) const;
 
     /// \brief Generate universal metadata fields
     /// \param classDecl The class declaration
