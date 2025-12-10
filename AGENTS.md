@@ -1,6 +1,6 @@
 # Project Instructions for AI Coding Agents
 
-**Last updated:** 2025-12-10 (deep night - alias feature complete)
+**Last updated:** 2025-12-11 (morning - checker function naming refactor)
 
 <!-- {mission} -->
 
@@ -98,6 +98,10 @@ When initializing a session or analyzing the workspace, refer to instruction fil
 - **Smart Pointers**: Use `std::unique_ptr` for AST nodes and owned resources
 - **Expression System**: Support arithmetic, comparison, logical operators, member access
 - **Testing**: Test with example `.fm` files in `examples/` directory
+- **Checker Function Naming**: Use `Require_<field>_<invariant>` pattern (e.g., `Require_timestamp_validTimestamp`)
+  - Semantics: "Require" emphasizes that invariant must hold (not just "checking")
+  - Field-first: More natural to read ("requiring timestamp to satisfy validTimestamp")
+  - Bound at compile-time as template parameters in `BoundedValue<T, ParentT, ...Checkers>`
 
 ### Security & Safety
 
@@ -1148,6 +1152,18 @@ After making ANY code changes:
 ---
 
 ## Recent Updates & Decisions
+
+### 2025-12-11 (Morning)
+
+- **Checker Function Naming Refactor**: Changed invariant checker function naming convention for clarity
+- **Old Pattern**: `Check` + invariantName + `_` + fieldName (e.g., `CheckvalidTimestamp_timestamp`)
+- **New Pattern**: `Require_` + fieldName + `_` + invariantName (e.g., `Require_timestamp_validTimestamp`)
+- **Semantics**: "Require" better expresses that invariant must hold (not just passive checking)
+- **Readability**: Field-first order is more natural ("requiring timestamp to satisfy validTimestamp")
+- **Implementation**: Updated CppCodeGenerator.cpp in three locations (lines 188, 500, 1257)
+- **Template Parameters**: Checkers bound at compile-time via non-type template parameters in BoundedValue
+- **Zero Overhead**: Function pointer approach maintains compile-time binding (rejected std::function for performance)
+- **Reasoning**: Cleaner generated code while preserving zero-runtime-overhead design for invariant validation
 
 ### 2025-12-10 (Deep Night)
 

@@ -185,7 +185,7 @@ std::string CppCodeGenerator::GetFieldWrapperType(const Field* field, const Clas
     {
         for (const Invariant* inv : fieldInvariants)
         {
-            templateParams += ", &" + className + "::Check" + inv->GetName() + "_" + field->GetName();
+            templateParams += ", &" + className + "::Require_" + field->GetName() + "_" + inv->GetName();
         }
     }
 
@@ -497,7 +497,7 @@ void CppCodeGenerator::GenerateClassFields(const ClassDeclaration* classDecl)
             {
                 for (const Invariant* inv : fieldInvariants)
                 {
-                    templateParams += ", &" + className + "::Check" + inv->GetName() + "_" + fieldName;
+                    templateParams += ", &" + className + "::Require_" + fieldName + "_" + inv->GetName();
                 }
             }
 
@@ -1246,7 +1246,7 @@ void CppCodeGenerator::GenerateCheckerFunction(const Field* field, const Invaria
 
     // Generate documentation
     WriteIndent(1);
-    output_ << "/// \\brief Check invariant '" << invariantName << "' for field '" << fieldName << "'\n";
+    output_ << "/// \\brief Require invariant '" << invariantName << "' for field '" << fieldName << "'\n";
     WriteIndent(1);
     output_ << "/// \\param object Reference to the containing object\n";
     WriteIndent(1);
@@ -1254,7 +1254,7 @@ void CppCodeGenerator::GenerateCheckerFunction(const Field* field, const Invaria
     WriteIndent(1);
     output_ << "/// \\return True if invariant is satisfied, false otherwise\n";
     WriteIndent(1);
-    output_ << "static bool Check" << invariantName << "_" << fieldName << "(const " << className << "& object, const " << cppType << "& newValue)\n";
+    output_ << "static bool Require_" << fieldName << "_" << invariantName << "(const " << className << "& object, const " << cppType << "& newValue)\n";
     WriteIndent(1);
     output_ << "{\n";
 
