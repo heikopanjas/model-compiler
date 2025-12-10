@@ -38,16 +38,22 @@ public:
     /// \brief Assignment operator - validates invariants before assigning
     /// \param value The new value to assign
     /// \return Reference to this wrapper
+    /// \throws std::invalid_argument if any invariant is violated
     BoundedValue& operator=(const T& value)
     {
         if constexpr (sizeof...(Checkers) > 0)
         {
-            // Call all checker functions using fold expression (C++17)
-            (Checkers(parent_, value), ...);
+            // Call all checker functions and ensure all return true
+            bool allValid = (Checkers(parent_, value) && ...);
+            if (!allValid)
+            {
+                throw std::invalid_argument("Invariant validation failed");
+            }
         }
 
-        // All checks passed - assign value
+        // All checks passed - assign value and update modification date
         value_ = value;
+        parent_.UpdateModificationDate();
         return *this;
     }
 
@@ -146,16 +152,22 @@ public:
     /// \brief Assignment operator - validates invariants before assigning
     /// \param value The new value to assign
     /// \return Reference to this wrapper
+    /// \throws std::invalid_argument if any invariant is violated
     OptionalBoundedValue& operator=(const T& value)
     {
         if constexpr (sizeof...(Checkers) > 0)
         {
-            // Call all checker functions using fold expression (C++17)
-            (Checkers(parent_, value), ...);
+            // Call all checker functions and ensure all return true
+            bool allValid = (Checkers(parent_, value) && ...);
+            if (!allValid)
+            {
+                throw std::invalid_argument("Invariant validation failed");
+            }
         }
 
-        // All checks passed - assign value
+        // All checks passed - assign value and update modification date
         value_ = value;
+        parent_.UpdateModificationDate();
         return *this;
     }
 

@@ -1126,61 +1126,30 @@ void CppCodeGenerator::GenerateCheckerFunction(const Field* field, const Invaria
     WriteIndent(1);
     output_ << "/// \\brief Check invariant '" << invariantName << "' for field '" << fieldName << "'\n";
     WriteIndent(1);
-    output_ << "/// \\param obj Reference to the containing object\n";
+    output_ << "/// \\param object Reference to the containing object\n";
     WriteIndent(1);
     output_ << "/// \\param newValue The new value being assigned to " << fieldName << "\n";
     WriteIndent(1);
-    output_ << "/// \\throws std::invalid_argument if invariant is violated\n";
+    output_ << "/// \\return True if invariant is satisfied, false otherwise\n";
     WriteIndent(1);
-    output_ << "static void Check" << invariantName << "_" << fieldName << "(" << className << "& obj, const " << cppType << "& newValue)\n";
+    output_ << "static bool Check" << invariantName << "_" << fieldName << "(const " << className << "& object, const " << cppType << "& newValue)\n";
     WriteIndent(1);
     output_ << "{\n";
 
-    // Generate invariant check
+    // Generate invariant check with return
     WriteIndent(2);
-    output_ << "// Evaluate invariant expression using newValue\n";
-    WriteIndent(2);
-    output_ << "if (!(";
+    output_ << "return ";
 
     if (nullptr != invariant->GetExpression())
     {
         // Pass fieldName to replace with newValue in the expression
-        output_ << ExpressionToCpp(invariant->GetExpression(), "obj.", fieldName, "newValue");
+        output_ << ExpressionToCpp(invariant->GetExpression(), "object.", fieldName, "newValue");
     }
     else
     {
         output_ << "true";
     }
-    output_ << "))\n";
-    WriteIndent(2);
-    output_ << "{\n";
-    WriteIndent(3);
-    output_ << "throw std::invalid_argument(\"Invariant '" << invariantName << "' violated: ";
-
-    // Include the invariant expression in the error message (without substitution for readability)
-    if (nullptr != invariant->GetExpression())
-    {
-        std::string exprStr = ExpressionToCpp(invariant->GetExpression());
-        // Escape quotes in expression
-        for (size_t i = 0; i < exprStr.length(); ++i)
-        {
-            if (exprStr[i] == '"')
-            {
-                exprStr.insert(i, "\\");
-                ++i;
-            }
-        }
-        output_ << exprStr;
-    }
-
-    output_ << "\");\n";
-    WriteIndent(2);
-    output_ << "}\n\n";
-
-    WriteIndent(2);
-    output_ << "// Invariant passed - update modification date\n";
-    WriteIndent(2);
-    output_ << "obj.UpdateModificationDate();\n";
+    output_ << ";\n";
 
     WriteIndent(1);
     output_ << "}\n\n";

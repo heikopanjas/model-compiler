@@ -1,6 +1,6 @@
 # Project Instructions for AI Coding Agents
 
-**Last updated:** 2025-12-10
+**Last updated:** 2025-12-10 (late night)
 
 <!-- {mission} -->
 
@@ -9,6 +9,7 @@
 **Model Compiler (BBFM)** is a Domain-Specific Language compiler for the Big Bad Feed Machine (BBFM) project. It compiles podcast object models defined in a UML-inspired modeling syntax into target programming languages. The compiler provides a type-safe, expressive language for defining data structures, relationships, constraints (invariants), and computed features, which are then translated into production-ready source code.
 
 **Key Features:**
+
 - UML-inspired DSL for podcast domain modeling
 - Type-safe modeling with primitives, enumerations, and user-defined types
 - Single inheritance support with cycle detection
@@ -190,6 +191,7 @@ When initializing a session or analyzing the workspace, refer to instruction fil
   - `std::weak_ptr` to break circular dependencies
 - Use standard containers instead of manual memory management
 - Examples:
+
   ```cpp
   // Good: RAII with smart pointers
   auto data = std::make_unique<Data>();
@@ -202,6 +204,7 @@ When initializing a session or analyzing the workspace, refer to instruction fil
   // Avoid: Raw pointers requiring manual cleanup
   Data* data = new Data();  // Must remember to delete
   ```
+
 - Let destructors handle cleanup automatically
 
 **Classes and Destructors:**
@@ -212,6 +215,7 @@ When initializing a session or analyzing the workspace, refer to instruction fil
 - When implementing special members, follow the Rule of Five
 - Declare move constructor and move assignment operator when beneficial
 - Examples:
+
   ```cpp
   // Rule of Zero: Compiler generates all special members
   class Simple
@@ -264,6 +268,7 @@ When initializing a session or analyzing the workspace, refer to instruction fil
 - This makes the public interface immediately visible when reading class definitions
 - Group related members together within each section
 - Example:
+
   ```cpp
   class MyClass
   {
@@ -307,6 +312,7 @@ When initializing a session or analyzing the workspace, refer to instruction fil
 - Multi-word class: `TestTools` → `__MYPROJECT_TEST_TOOLS_H_INCL__`
 - Insert underscore between each word in PascalCase class names
 - Examples:
+
   ```cpp
   #ifndef __MYPROJECT_DRIVER_H_INCL__
   #define __MYPROJECT_DRIVER_H_INCL__
@@ -315,6 +321,7 @@ When initializing a session or analyzing the workspace, refer to instruction fil
 
   #endif // __MYPROJECT_DRIVER_H_INCL__
   ```
+
 - Alternative: Use `#pragma once` if all target compilers support it
 
 **Header File Structure:**
@@ -326,6 +333,7 @@ When initializing a session or analyzing the workspace, refer to instruction fil
 - Class declarations
 - Inline function definitions
 - Example:
+
   ```cpp
   #ifndef __MYPROJECT_CLASS_H_INCL__
   #define __MYPROJECT_CLASS_H_INCL__
@@ -352,6 +360,7 @@ When initializing a session or analyzing the workspace, refer to instruction fil
 - All header files must use 8-byte alignment for types using `#pragma pack`
 - Include alignment pragmas at the top and restore at the bottom
 - Use cross-compiler compatible pragmas for MSVC, GCC, and Clang:
+
   ```cpp
   // At top of header (after include guard, before includes)
   #pragma pack(push, 8)
@@ -370,6 +379,7 @@ When initializing a session or analyzing the workspace, refer to instruction fil
 - Anonymous namespace for file-local helpers
 - Class member function implementations
 - Example:
+
   ```cpp
   #include "MyClass.h"
 
@@ -402,6 +412,7 @@ When initializing a session or analyzing the workspace, refer to instruction fil
 - Prefer explicit namespace qualification for clarity
 - Use nested namespaces for hierarchical organization
 - Examples:
+
   ```cpp
   namespace myproject
   {
@@ -428,6 +439,7 @@ When initializing a session or analyzing the workspace, refer to instruction fil
 - Use trailing return types when it improves clarity (e.g., with `auto`)
 - For intentionally unused parameters, use `[[maybe_unused]]` attribute or comment
 - Examples:
+
   ```cpp
   // Good: Clear parameter passing
   void ProcessData(const std::vector<int>& data, int threshold);
@@ -448,6 +460,7 @@ When initializing a session or analyzing the workspace, refer to instruction fil
 - Create meaningful aliases for complex types
 - Document the purpose of type aliases
 - Examples:
+
   ```cpp
   // Good: Clear type aliases
   using UserId = uint64_t;
@@ -464,6 +477,7 @@ When initializing a session or analyzing the workspace, refer to instruction fil
 - Use explicit underlying types when needed
 - Prefix enum values with enum name for clarity (only if not using `enum class`)
 - Examples:
+
   ```cpp
   // Best: enum class (scoped and type-safe)
   enum class Color : uint8_t
@@ -492,6 +506,7 @@ When initializing a session or analyzing the workspace, refer to instruction fil
 - Never throw from destructors
 - Document exceptions in function comments
 - Examples:
+
   ```cpp
   // Good: Optional for nullable values
   std::optional<User> FindUser(const std::string& name);
@@ -522,6 +537,7 @@ When initializing a session or analyzing the workspace, refer to instruction fil
 - Avoid naked `new` and `delete`
 - Use containers for collections of objects
 - Examples:
+
   ```cpp
   // Good: Smart pointers
   auto data = std::make_unique<Data>();
@@ -547,6 +563,7 @@ When initializing a session or analyzing the workspace, refer to instruction fil
 - Implementation files should use inline `//` comments for logic explanation
 - Comment the "why" not the "what"
 - Examples:
+
   ```cpp
   /// \brief Sets the episode title
   /// \param title The new title for the episode
@@ -562,6 +579,7 @@ When initializing a session or analyzing the workspace, refer to instruction fil
 - Use consistent indentation (4 spaces preferred)
 - Braces: Opening brace on next line for functions and blocks
 - Example:
+
   ```cpp
   // Function: opening brace on next line
   void MyClass::ProcessData(const std::vector<int>& data)
@@ -578,6 +596,7 @@ When initializing a session or analyzing the workspace, refer to instruction fil
       }
   }
   ```
+
 - Line length: Keep under 120 characters when practical
 - Use `.clang-format` configuration for automatic formatting
 
@@ -589,6 +608,7 @@ When initializing a session or analyzing the workspace, refer to instruction fil
 - Use `std::string_view` for non-owning string references
 - Use `constexpr` for compile-time constants
 - Examples:
+
   ```cpp
   // Good: auto for obvious types
   auto config = std::make_unique<Config>();
@@ -617,6 +637,7 @@ When initializing a session or analyzing the workspace, refer to instruction fil
 - Provide clear error messages for template failures
 - Document template parameters and requirements
 - Examples:
+
   ```cpp
   // C++20 concepts
   template<typename T>
@@ -647,6 +668,7 @@ When initializing a session or analyzing the workspace, refer to instruction fil
 - Be explicit with captures when clarity is important
 - Use `mutable` when lambda needs to modify captured values
 - Examples:
+
   ```cpp
   // Good: Short algorithm
   std::sort(items.begin(), items.end(),
@@ -678,6 +700,7 @@ When initializing a session or analyzing the workspace, refer to instruction fil
 - Use `<string>` for string handling
 - Use `<filesystem>` (C++17) for file operations
 - Examples:
+
   ```cpp
   // Good: Standard algorithms
   std::sort(data.begin(), data.end());
@@ -702,6 +725,7 @@ When initializing a session or analyzing the workspace, refer to instruction fil
 - Use `consteval` (C++20) to force compile-time evaluation
 - Mark functions `constexpr` when possible for compile-time optimization
 - Examples:
+
   ```cpp
   // Runtime constant
   const int bufferSize = GetBufferSize();
@@ -729,6 +753,7 @@ When initializing a session or analyzing the workspace, refer to instruction fil
 - Test on multiple platforms (Linux, macOS, Windows)
 - Use standard integer types from `<cstdint>`
 - Examples:
+
   ```cpp
   #ifdef _WIN32
       // Windows-specific code
@@ -760,6 +785,7 @@ When initializing a session or analyzing the workspace, refer to instruction fil
 - Mock dependencies for isolated testing
 - Test on all target platforms
 - Examples:
+
   ```cpp
   TEST(MyClassTest, ConstructorInitializesCorrectly)
   {
@@ -781,6 +807,7 @@ When initializing a session or analyzing the workspace, refer to instruction fil
 - Include purpose, parameters, return values, and exceptions
 - Use Doxygen format for API documentation
 - Examples:
+
   ```cpp
   /// \brief Creates a new user account
   /// \param username The unique username for the account
@@ -832,6 +859,7 @@ When initializing a session or analyzing the workspace, refer to instruction fil
 - Generate both shared and static libraries
 - Use CMake targets and properties
 - Example CMakeLists.txt structure:
+
   ```cmake
   cmake_minimum_required(VERSION 3.20)
   project(MyProject VERSION 1.0.0 LANGUAGES CXX)
@@ -1120,6 +1148,17 @@ After making ANY code changes:
 ---
 
 ## Recent Updates & Decisions
+
+### 2025-12-10 (Late Night)
+
+- **Invariant Checker Refactoring**: Improved separation of concerns in validation architecture
+- **Checker Functions**: Now return `bool` instead of `void`, no side effects
+- **Parameter Naming**: Changed `obj` to `object` (no abbreviations)
+- **Const Correctness**: Checker functions use `const ClassName& object` parameter
+- **Exception Handling**: Moved from checker functions to BoundedValue wrapper classes
+- **Modification Date**: Moved UpdateModificationDate() to wrapper assignment operators
+- **Clean Design**: Checker functions are now pure validation predicates
+- **Reasoning**: Better separation of concerns - validation logic separate from error handling and state updates
 
 ### 2025-12-10 (Night)
 
