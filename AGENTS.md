@@ -1,6 +1,6 @@
 # Project Instructions for AI Coding Agents
 
-**Last updated:** 2025-12-11 (morning - checker function naming refactor)
+**Last updated:** 2025-12-11 (evening - critical initialization order fix)
 
 <!-- {mission} -->
 
@@ -1152,6 +1152,20 @@ After making ANY code changes:
 ---
 
 ## Recent Updates & Decisions
+
+### 2025-12-11 (Evening)
+
+- **Critical C++ Initialization Order Fix**: Fixed undefined behavior in alias field generation
+- **Problem**: Alias fields were generated before regular fields, causing dangling references
+- **Root Cause**: C++ initializes members in declaration order, not initializer list order
+- **Impact**: AliasValue wrappers held references to unconstructed target fields
+- **Solution**: Three-pass field generation in GenerateClassFields()
+  - Pass 1: Regular fields (non-alias, non-computed)
+  - Pass 2: Computed fields (may reference regular fields)
+  - Pass 3: Alias fields (must come after targets)
+- **Verification**: Tested with podcast.fm Region class (alias startTime references timestamp)
+- **Documentation**: Updated README.md with alias field examples and wrapper types
+- **Reasoning**: Ensures all target fields exist before alias field construction, preventing undefined behavior
 
 ### 2025-12-11 (Morning)
 

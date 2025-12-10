@@ -29,6 +29,8 @@ Future targets include additional programming languages.
 - **Inheritance**: Support for single inheritance with the `inherits` keyword
 - **Primitive Types**: String, Int, Real, Bool, Timestamp, Timespan, Date, Guid
 - **Enumerations**: Define enums for categorical values
+- **Computed Features**: Fields derived from expressions (read-only)
+- **Alias Fields**: Read-write references to other fields
 - **Case-Sensitive**: Keywords are lowercase and case-sensitive; type names are PascalCase and case-sensitive
 
 ### Universal Metadata Fields
@@ -308,6 +310,40 @@ class Example {
 
 The semantic analyzer ensures all field references exist, member access chains are valid, and type conversions are safe before code generation.
 
+### Alias Fields
+
+Alias fields provide read-write access to other fields with a convenient alternative name. They're particularly useful for giving meaningful names to inherited fields:
+
+- **Syntax**: `alias aliasName = targetFieldName;`
+- **Semantics**: Creates a bidirectional reference to another field
+- **Validation**: Writing to an alias triggers the target field's invariant validation
+- **Restrictions**: Can only alias simple fields (not computed features or other aliases)
+
+**Examples:**
+
+```bbfm
+class Event {
+    feature timestamp: Timestamp;
+    
+    invariant validTimestamp: timestamp >= 0;
+}
+
+class ScheduledEvent inherits Event {
+    feature title: String;
+    
+    // Alias provides convenient access to inherited timestamp field
+    alias startTime = timestamp;
+    
+    // Writing to startTime triggers validTimestamp invariant check
+}
+```
+
+**Use Cases:**
+
+- Provide domain-specific names for inherited fields
+- Create semantic aliases that match business terminology
+- Maintain full invariant validation through the alias
+
 ### Design Philosophy
 
 The BBFM modeling language is inspired by UML class diagrams but deliberately simplified. It focuses on data modeling without the complexity of visibility modifiers, abstract types, interfaces, or stereotypes. The goal is an expressive yet approachable language for domain modeling.
@@ -359,6 +395,19 @@ class Transcript {
 
     // Computed feature example
     feature isLongTranscript: Bool = wordCount > 10000;
+}
+
+class Tag {
+    feature timestamp: Timestamp;
+    
+    invariant validTimestamp: timestamp >= 0;
+}
+
+class NamedTag inherits Tag {
+    feature name: String;
+    
+    // Alias provides semantic name for inherited field
+    alias createdAt = timestamp;
 }
 ```
 
@@ -455,10 +504,12 @@ Examples:
 The `examples/` directory contains a comprehensive test suite demonstrating all language features:
 
 **Main Examples:**
+
 - `podcast.fm` - Complete podcast domain model with classes, enums, inheritance, invariants, and computed features
 - `comprehensive_test.fm` - Tests all language features in a single file
 
 **Feature-Specific Tests:**
+
 - `test_computed_simple.fm` - Basic computed features
 - `test_computed_member_access.fm` - Computed features with member access (object.field)
 - `test_computed_inheritance.fm` - Computed features in inheritance hierarchies
@@ -466,6 +517,7 @@ The `examples/` directory contains a comprehensive test suite demonstrating all 
 - `test_type_promotion_ok.fm` - Valid type promotions (Int → Real)
 
 **Error Validation Tests:**
+
 - `error_test_suite.fm` - Comprehensive error handling test suite
 - `test_circular_inheritance.fm` - Circular inheritance detection
 - `test_duplicate_field.fm` - Duplicate field detection
@@ -661,6 +713,10 @@ The compiler will map BBFM primitive types to target language types. Planned C++
     - Member access expressions: `object.field`
     - Type inference and validation
     - Type promotion rules (Int → Real safe, Real → Int error)
+  - **Alias fields** for read-write field references:
+    - Syntax: `alias name = targetField;`
+    - Provides convenient access to inherited or other fields
+    - Full invariant validation on writes
   - **Expression system** with full operator support:
     - Arithmetic: `+`, `-`, `*`, `/`, `%`
     - Comparison: `<`, `>`, `<=`, `>=`, `==`, `!=`
@@ -693,9 +749,16 @@ The compiler will map BBFM primitive types to target language types. Planned C++
 - C++ header file generation with:
   - Class declarations inheriting from `bbfm::runtime::Fabric` base class
   - Enum class declarations
+  - **Field wrapper types** for type safety and validation:
+    - `BoundedValue<T, ParentT, ...Checkers>` - Fields with invariant constraints
+    - `UnboundedValue<T, ParentT>` - Fields without constraints
+    - `OptionalBoundedValue<T, ParentT, ...Checkers>` - Optional fields with invariants
+    - `OptionalUnboundedValue<T, ParentT>` - Optional fields without constraints
+    - `DynamicValue<T, ParentT>` - Computed features with on-demand evaluation
+    - `AliasValue<WrapperT>` - Alias fields forwarding to target field
+  - **Invariant checker functions**: `Require_<field>_<invariant>` naming pattern
   - Public getter methods (const-correct)
-  - Computed feature methods (inline implementation)
-  - Invariant validation methods (`Validate()` and individual checks)
+  - Computed feature inline implementations
   - Universal metadata fields via Fabric inheritance
   - Namespace wrapping (nested namespace syntax)
   - Optional class/enum prefixes
@@ -718,6 +781,7 @@ The compiler will map BBFM primitive types to target language types. Planned C++
 - `inherits` - Specify inheritance relationship
 - `feature` - Declare a class field/attribute
 - `invariant` - Declare a boolean constraint
+- `alias` - Create read-write reference to another field
 - `namespace` - Declare source file namespace
 - `optional` - Optional field modifier (equivalent to `[0..1]`)
 - `unique` - Unique constraint modifier
@@ -759,6 +823,7 @@ The compiler is organized into several key components:
 ### Coding Standards
 
 This project follows strict C++ coding standards documented in `AGENTS.md`:
+
 - C++23 standard (minimum C++17 compatibility)
 - All code in `bbfm` namespace
 - Include guards format: `__BBFM_CLASS_NAME_H_INCL__`
@@ -780,6 +845,7 @@ MIT License - see LICENSE file for details.
 **Current Phase:** Complete - All 3 Phases Implemented
 
 The compiler completes:
+
 - ✅ Phase 0: Lexical analysis and parsing
 - ✅ Phase 1: Semantic analysis with full type checking
 - ✅ Phase 2: C++ code generation with full feature support

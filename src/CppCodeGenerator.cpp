@@ -416,48 +416,17 @@ void CppCodeGenerator::GenerateClassFields(const ClassDeclaration* classDecl)
     WriteIndent(1);
     output_ << "// User-defined fields\n";
 
+    // CRITICAL: Generate fields in declaration order to ensure proper C++ initialization
+    // 1. Regular fields first (non-alias, non-computed)
+    // 2. Computed fields second (may reference regular fields)
+    // 3. Alias fields last (reference other fields - must be initialized after targets)
+    
+    // Pass 1: Generate regular fields (non-alias, non-computed)
     for (const auto& field : fields)
     {
-        // Handle alias fields separately with AliasValue wrapper
-        if (field->IsAlias())
+        // Skip alias and computed fields - they'll be generated in later passes
+        if (field->IsAlias() || field->IsComputed())
         {
-            // Get the target field name from the FieldReference expression
-            const Expression*     expr     = field->GetInitializer();
-            const FieldReference* fieldRef = dynamic_cast<const FieldReference*>(expr);
-            if (nullptr != fieldRef)
-            {
-                std::string targetFieldName = fieldRef->GetFieldName();
-                std::string fieldName       = field->GetName();
-
-                // Find the target field to determine its wrapper type
-                const Field* targetField = analyzer_->FindFieldInClass(classDecl, targetFieldName);
-                if (nullptr != targetField)
-                {
-                    // Find which class actually declares this field (could be base class)
-                    const ClassDeclaration* targetFieldClass = FindClassDeclaringField(classDecl, targetFieldName);
-                    if (nullptr != targetFieldClass)
-                    {
-                        std::string targetWrapperType = GetFieldWrapperType(targetField, targetFieldClass);
-
-                        // Use AliasValue wrapper that forwards to target field
-                        WriteIndent(1);
-                        output_ << "bbfm::runtime::AliasValue<" << targetWrapperType << "> " << fieldName << "_;\n";
-                    }
-                }
-            }
-            continue;
-        }
-
-        // Handle computed fields separately with DynamicValue wrapper
-        if (field->IsComputed())
-        {
-            std::string cppType   = MapType(field->GetType());
-            std::string className = ApplyClassPrefix(classDecl->GetName());
-            std::string fieldName = field->GetName();
-
-            // Use DynamicValue wrapper for computed fields
-            WriteIndent(1);
-            output_ << "bbfm::runtime::DynamicValue<" << cppType << ", " << className << "> " << fieldName << "_;\n";
             continue;
         }
 
@@ -535,6 +504,57 @@ void CppCodeGenerator::GenerateClassFields(const ClassDeclaration* classDecl)
         else
         {
             output_ << ";\n";
+        }
+    }
+
+    // Pass 2: Generate computed fields (may reference regular fields)
+    for (const auto& field : fields)
+    {
+        if (!field->IsComputed())
+        {
+            continue;
+        }
+
+        std::string cppType   = MapType(field->GetType());
+        std::string className = ApplyClassPrefix(classDecl->GetName());
+        std::string fieldName = field->GetName();
+
+        // Use DynamicValue wrapper for computed fields
+        WriteIndent(1);
+        output_ << "bbfm::runtime::DynamicValue<" << cppType << ", " << className << "> " << fieldName << "_;\n";
+    }
+
+    // Pass 3: Generate alias fields LAST (must come after their target fields)
+    for (const auto& field : fields)
+    {
+        if (!field->IsAlias())
+        {
+            continue;
+        }
+
+        // Get the target field name from the FieldReference expression
+        const Expression*     expr     = field->GetInitializer();
+        const FieldReference* fieldRef = dynamic_cast<const FieldReference*>(expr);
+        if (nullptr != fieldRef)
+        {
+            std::string targetFieldName = fieldRef->GetFieldName();
+            std::string fieldName       = field->GetName();
+
+            // Find the target field to determine its wrapper type
+            const Field* targetField = analyzer_->FindFieldInClass(classDecl, targetFieldName);
+            if (nullptr != targetField)
+            {
+                // Find which class actually declares this field (could be base class)
+                const ClassDeclaration* targetFieldClass = FindClassDeclaringField(classDecl, targetFieldName);
+                if (nullptr != targetFieldClass)
+                {
+                    std::string targetWrapperType = GetFieldWrapperType(targetField, targetFieldClass);
+
+                    // Use AliasValue wrapper that forwards to target field
+                    WriteIndent(1);
+                    output_ << "bbfm::runtime::AliasValue<" << targetWrapperType << "> " << fieldName << "_;\n";
+                }
+            }
         }
     }
 }
