@@ -453,11 +453,10 @@ std::string BinaryExpression::ToString() const
 
 void BinaryExpression::Dump(const int indent, const std::string& nsPrefix) const
 {
-    UNREFERENCED_PARAMETER(nsPrefix);
     PrintIndent(indent);
     std::cout << "BinaryExpression [" << OpToString(op_) << "]\n";
-    left_->Dump(indent + 1);
-    right_->Dump(indent + 1);
+    left_->Dump(indent + 1, nsPrefix);
+    right_->Dump(indent + 1, nsPrefix);
 }
 
 const Expression* BinaryExpression::GetLeft() const
@@ -535,10 +534,9 @@ std::string UnaryExpression::ToString() const
 
 void UnaryExpression::Dump(const int indent, const std::string& nsPrefix) const
 {
-    UNREFERENCED_PARAMETER(nsPrefix);
     PrintIndent(indent);
     std::cout << "UnaryExpression [" << OpToString(op_) << "]\n";
-    operand_->Dump(indent + 1);
+    operand_->Dump(indent + 1, nsPrefix);
 }
 
 const Expression* UnaryExpression::GetOperand() const
@@ -609,10 +607,9 @@ std::string MemberAccessExpression::ToString() const
 
 void MemberAccessExpression::Dump(const int indent, const std::string& nsPrefix) const
 {
-    UNREFERENCED_PARAMETER(nsPrefix);
     PrintIndent(indent);
     std::cout << "MemberAccess: ." << memberName_ << "\n";
-    object_->Dump(indent + 2);
+    object_->Dump(indent + 2, nsPrefix);
 }
 
 const Expression* MemberAccessExpression::GetObject() const
@@ -712,12 +709,11 @@ std::string FunctionCall::ToString() const
 
 void FunctionCall::Dump(const int indent, const std::string& nsPrefix) const
 {
-    UNREFERENCED_PARAMETER(nsPrefix);
     PrintIndent(indent);
     std::cout << "FunctionCall: " << functionName_ << "\n";
     for (const auto& arg : arguments_)
     {
-        arg->Dump(indent + 1);
+        arg->Dump(indent + 1, nsPrefix);
     }
 }
 
@@ -746,10 +742,9 @@ std::string ParenthesizedExpression::ToString() const
 
 void ParenthesizedExpression::Dump(const int indent, const std::string& nsPrefix) const
 {
-    UNREFERENCED_PARAMETER(nsPrefix);
     PrintIndent(indent);
     std::cout << "ParenthesizedExpression\n";
-    expr_->Dump(indent + 1);
+    expr_->Dump(indent + 1, nsPrefix);
 }
 
 const Expression* ParenthesizedExpression::GetExpression() const
