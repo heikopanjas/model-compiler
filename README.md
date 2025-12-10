@@ -1,6 +1,10 @@
-# Model Compiler
+# BBFM Model Compiler
 
 A Domain-Specific Language (DSL) compiler for defining podcast object models and their relationships. Part of the Big Bad Feed Machine (BBFM) project, this compiler provides common infrastructure for podcast-related applications. The modeling language provides a simple, UML-inspired syntax for modeling podcast domain objects, which the compiler translates into source code.
+
+**License:** MIT  
+**Language:** C++23 (minimum C++17)  
+**Current Version:** Phase 0 & 1 complete, Phase 2 (code generation) in development
 
 ## Overview
 
@@ -323,7 +327,7 @@ class Transcript {
 ## Prerequisites
 
 - CMake 3.20 or higher
-- C++23-compatible compiler (GCC or Clang)
+- C++23-compatible compiler (GCC 11+ or Clang 14+, minimum C++17 support required)
 - Flex 2.6+ (lexical analyzer generator)
 - Bison 3.8+ (parser generator)
 - Ninja (build system)
@@ -395,6 +399,33 @@ Examples:
 # View symbol table
 ./_build/model-compiler --dump-symbol-table examples/podcast.fm
 ```
+
+### Example Files
+
+The `examples/` directory contains a comprehensive test suite demonstrating all language features:
+
+**Main Examples:**
+- `podcast.fm` - Complete podcast domain model with classes, enums, inheritance, invariants, and computed features
+- `comprehensive_test.fm` - Tests all language features in a single file
+
+**Feature-Specific Tests:**
+- `test_computed_simple.fm` - Basic computed features
+- `test_computed_member_access.fm` - Computed features with member access (object.field)
+- `test_computed_inheritance.fm` - Computed features in inheritance hierarchies
+- `test_expressions.fm` - Full expression system (arithmetic, logical, comparison)
+- `test_type_promotion_ok.fm` - Valid type promotions (Int → Real)
+
+**Error Validation Tests:**
+- `error_test_suite.fm` - Comprehensive error handling test suite
+- `test_circular_inheritance.fm` - Circular inheritance detection
+- `test_duplicate_field.fm` - Duplicate field detection
+- `test_undefined_type.fm` - Undefined type reference detection
+- `test_type_error_int_real.fm` - Type mismatch errors (Real → Int)
+- `test_computed_error_*.fm` - Computed feature validation errors
+- `test_bad_invariant.fm` - Invalid invariant expressions
+- `test_missing_semicolon.fm` - Syntax error reporting
+- `test_error_column.fm` - Error column position accuracy
+- `test_wrong_case.fm` - Case sensitivity validation
 
 ### Symbol Table Dump
 
@@ -512,8 +543,11 @@ model-compiler/
 │   ├── AST.h              # AST node definitions
 │   ├── SemanticAnalyzer.h # Semantic analyzer interface
 │   └── Console.h          # Console output interface
-├── examples/              # Example programs
-│   └── podcast.fm       # Podcast domain model example
+├── examples/              # Example programs and test files
+│   ├── podcast.fm         # Podcast domain model example
+│   ├── comprehensive_test.fm  # Full language feature test
+│   ├── error_test_suite.fm    # Error handling validation
+│   └── test_*.fm          # Feature-specific test files
 └── _build/                # Build artifacts (gitignored)
 ```
 
@@ -537,15 +571,18 @@ The compiler implements a multi-phase compilation process:
 
 ## Type Mappings
 
+The compiler will map BBFM primitive types to target language types. Planned Swift mappings:
+
 | BBFM Type | Swift |
-|---------|-------|
+|-----------|-------|
 | String | String |
 | Int | Int64 |
 | Real | Double |
 | Bool | Bool |
 | Timestamp | Double |
 | Timespan | Double |
-| Guid | String |
+| Date | String (ISO 8601) |
+| Guid | String (UUID) |
 
 ## Current Status
 
@@ -635,3 +672,44 @@ The compiler implements a multi-phase compilation process:
    Multi-line comment
 */
 ```
+
+## Development
+
+### Code Organization
+
+The compiler is organized into several key components:
+
+- **Lexer** (`model-compiler.l`) - Tokenizes input using Flex
+- **Parser** (`model-compiler.y`) - Parses tokens into AST using Bison
+- **AST** (`AST.h/cpp`) - Abstract Syntax Tree node definitions
+- **SemanticAnalyzer** (`SemanticAnalyzer.h/cpp`) - Type checking and validation
+- **Driver** (`Driver.h/cpp`) - Orchestrates compilation phases
+- **Console** (`Console.h/cpp`) - Error reporting and output formatting
+
+### Coding Standards
+
+This project follows strict C++ coding standards documented in `AGENTS.md`:
+- C++23 standard (minimum C++17 compatibility)
+- All code in `bbfm` namespace
+- Include guards format: `__BBFM_CLASS_NAME_H_INCL__`
+- Smart pointers for resource management
+- Const correctness throughout
+- Doxygen documentation for all public APIs
+- 8-byte alignment pragmas in headers
+
+### Contributing
+
+For detailed development guidelines, coding conventions, and architectural decisions, see `AGENTS.md`.
+
+## License
+
+MIT License - see LICENSE file for details.
+
+## Project Status
+
+**Current Phase:** Phase 2 (Code Generation) - In Development
+
+The compiler currently completes:
+- ✅ Phase 0: Lexical analysis and parsing
+- ✅ Phase 1: Semantic analysis with full type checking
+- 🚧 Phase 2: Swift code generation (planned)

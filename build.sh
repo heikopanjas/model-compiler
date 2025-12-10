@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# P3 Compiler Build Script
+# BBFM Model Compiler Build Script
 # Uses CMake with Ninja generator
 
 set -e  # Exit on error
