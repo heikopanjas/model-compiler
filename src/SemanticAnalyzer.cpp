@@ -512,6 +512,23 @@ bool SemanticAnalyzer::ValidateComputedFeatureExpression(const Field* field, con
         }
     }
 
+    // Validate that no optional fields are referenced
+    for (const std::string& refField : referencedFields)
+    {
+        const Field* referencedField = FindFieldInClass(classDecl, refField);
+        if (nullptr != referencedField)
+        {
+            const CardinalityModifier* cardinality = referencedField->GetCardinalityModifier();
+            if (nullptr != cardinality && cardinality->IsOptional())
+            {
+                ReportError(
+                    "Computed feature '" + field->GetName() + "' in class '" + classDecl->GetName() + "' references optional field '" + refField +
+                    "' - computed features cannot use optional fields because they may not have a value");
+                success = false;
+            }
+        }
+    }
+
     // Validate member access expressions
     if (!ValidateMemberAccessInExpression(expr, classDecl, "computed feature '" + field->GetName() + "'"))
     {
@@ -949,6 +966,29 @@ const TypeSymbol* SemanticAnalyzer::LookupType(const std::string& typeName) cons
         return nullptr;
     }
     return &it->second;
+}
+
+const Field* SemanticAnalyzer::FindFieldInClass(const ClassDeclaration* classDecl, const std::string& fieldName) const
+{
+    if (nullptr == classDecl)
+    {
+        return nullptr;
+    }
+
+    // Get all fields including inherited ones
+    std::vector<const Field*> allFields;
+    GetAllFields(classDecl, allFields);
+
+    // Search for the field by name
+    for (const Field* field : allFields)
+    {
+        if (nullptr != field && field->GetName() == fieldName)
+        {
+            return field;
+        }
+    }
+
+    return nullptr;
 }
 
 void SemanticAnalyzer::ReportError(const std::string& message)

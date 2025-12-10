@@ -1,6 +1,6 @@
 # Project Instructions for AI Coding Agents
 
-**Last updated:** 2025-12-10 (late night)
+**Last updated:** 2025-12-10 (very late night)
 
 <!-- {mission} -->
 
@@ -1148,6 +1148,18 @@ After making ANY code changes:
 ---
 
 ## Recent Updates & Decisions
+
+### 2025-12-10 (Very Late Night)
+
+- **DynamicValue Wrapper**: Implemented `DynamicValue<T, ParentT>` wrapper for computed properties
+- **Consistent Field Approach**: Computed properties now stored as fields with lambda initialization
+- **Constructor Lambdas**: Computed fields initialized with `[](const Parent& parent) { return expr; }` lambdas
+- **Expression Context**: Updated `ExpressionToCpp` to distinguish computed vs regular fields
+- **Implicit Conversion**: Computed fields use implicit conversion, regular fields use `.value_` accessor
+- **Optional Field Restriction**: Added semantic validation to prohibit optional fields in computed expressions
+- **Validation Rule**: Computed features cannot reference optional fields (may not have value at computation time)
+- **FindFieldInClass**: Added public method to SemanticAnalyzer for field lookup with inheritance
+- **Reasoning**: DynamicValue provides consistent field-based interface for computed properties with on-demand evaluation; optional field restriction prevents undefined behavior
 
 ### 2025-12-10 (Late Night)
 

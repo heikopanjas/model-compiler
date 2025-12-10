@@ -85,6 +85,12 @@ public:
     /// \param fields Output set to store field names
     void CollectFieldReferences(const Expression* expr, std::set<std::string>& fields) const;
 
+    /// \brief Find a field in a class (including inherited fields)
+    /// \param classDecl The class to search
+    /// \param fieldName The field name to find
+    /// \return Pointer to the Field or nullptr if not found
+    const Field* FindFieldInClass(const ClassDeclaration* classDecl, const std::string& fieldName) const;
+
 private:
     const AST*                        ast_;
     std::map<std::string, TypeSymbol> symbolTable_;

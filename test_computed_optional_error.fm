@@ -1,0 +1,14 @@
+// Test: Computed feature with optional field reference (should fail)
+//
+// This test verifies that the compiler prohibits using optional fields
+// in computed property expressions, since optional values may not be
+// defined at computation time.
+
+class Item {
+    feature price: Real;
+    feature discount: Real [optional];  // Optional field
+
+    // ERROR: Computed feature references optional field 'discount'
+    // This should fail semantic validation
+    feature finalPrice: Real = price - discount;
+}

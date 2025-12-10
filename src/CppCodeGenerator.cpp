@@ -306,17 +306,7 @@ void CppCodeGenerator::GenerateClass(const ClassDeclaration* classDecl)
 
     // Note: Universal metadata getters (GetTypeId, GetId, etc.) are inherited from Fabric
 
-    // Generate computed getter methods (these are still needed)
-    const auto& fields = classDecl->GetFields();
-    for (const auto& field : fields)
-    {
-        if (field->IsComputed())
-        {
-            GenerateComputedGetter(field.get());
-        }
-    }
-
-    // Generate user-defined fields (no longer private, structs are public by default)
+    // Generate user-defined fields (including computed fields as DynamicValue wrappers)
     GenerateClassFields(classDecl);
 
     // Generate static checker functions for invariants
@@ -346,9 +336,16 @@ void CppCodeGenerator::GenerateClassFields(const ClassDeclaration* classDecl)
 
     for (const auto& field : fields)
     {
-        // Skip computed fields - they don't have storage
+        // Handle computed fields separately with DynamicValue wrapper
         if (field->IsComputed())
         {
+            std::string cppType   = MapType(field->GetType());
+            std::string className = ApplyClassPrefix(classDecl->GetName());
+            std::string fieldName = field->GetName();
+
+            // Use DynamicValue wrapper for computed fields
+            WriteIndent(1);
+            output_ << "bbfm::runtime::DynamicValue<" << cppType << ", " << className << "> " << fieldName << "_;\n";
             continue;
         }
 
@@ -515,77 +512,14 @@ void CppCodeGenerator::GenerateGetter(const Field* field)
 
 void CppCodeGenerator::GenerateComputedGetter(const Field* field)
 {
-    if (nullptr == field || !field->IsComputed())
-    {
-        return;
-    }
-
-    // Get the C++ type (computed features are always mandatory [1])
-    std::string cppType = MapType(field->GetType());
-
-    // Generate getter method
-    std::string getterName = "Get" + field->GetName();
-
-    // Capitalize first letter of getter name
-    if (false == getterName.empty())
-    {
-        getterName[3] = static_cast<char>(std::toupper(getterName[3]));
-    }
-
-    WriteIndent(1);
-    output_ << "/// \\brief Get the computed " << field->GetName() << " field\n";
-    WriteIndent(1);
-    output_ << "/// \\return The computed " << field->GetName() << " value\n";
-    WriteIndent(1);
-
-    // Computed features return by value for primitives, by const reference for complex types
-    bool isPrimitive   = field->GetType()->IsPrimitive();
-    bool returnByValue = isPrimitive;
-
-    // Check if it's a custom runtime type
-    if (isPrimitive)
-    {
-        const PrimitiveTypeSpec* primType = dynamic_cast<const PrimitiveTypeSpec*>(field->GetType());
-        PrimitiveType            pt       = primType->GetType();
-        if (PrimitiveType::STRING == pt || PrimitiveType::DATE == pt || PrimitiveType::GUID == pt)
-        {
-            returnByValue = false;
-        }
-    }
-
-    if (returnByValue)
-    {
-        output_ << cppType << " " << getterName << "() const";
-    }
-    else
-    {
-        output_ << "const " << cppType << "& " << getterName << "() const";
-    }
-
-    // Inline implementation with expression (will be completed in Step 11)
-    output_ << "\n";
-    WriteIndent(1);
-    output_ << "{\n";
-    WriteIndent(2);
-    output_ << "return ";
-
-    // Convert expression to C++ (Step 11)
-    if (nullptr != field->GetInitializer())
-    {
-        output_ << ExpressionToCpp(field->GetInitializer());
-    }
-    else
-    {
-        output_ << "/* TODO: expression */";
-    }
-
-    output_ << ";\n";
-    WriteIndent(1);
-    output_ << "}\n\n";
+    // NOTE: This method is currently unused - computed fields use DynamicValue wrappers instead
+    // Kept for potential future use or backwards compatibility
+    UNREFERENCED_PARAMETER(field);
 }
 
 std::string CppCodeGenerator::ExpressionToCpp(
-    const Expression* expr, const std::string& objectPrefix, const std::string& fieldToReplace, const std::string& replacementValue) const
+    const Expression* expr, const std::string& objectPrefix, const std::string& fieldToReplace, const std::string& replacementValue,
+    const ClassDeclaration* contextClass) const
 {
     if (nullptr == expr)
     {
@@ -595,8 +529,8 @@ std::string CppCodeGenerator::ExpressionToCpp(
     // Handle binary expressions (arithmetic, comparison, logical)
     if (const BinaryExpression* binExpr = dynamic_cast<const BinaryExpression*>(expr))
     {
-        std::string left  = ExpressionToCpp(binExpr->GetLeft(), objectPrefix, fieldToReplace, replacementValue);
-        std::string right = ExpressionToCpp(binExpr->GetRight(), objectPrefix, fieldToReplace, replacementValue);
+        std::string left  = ExpressionToCpp(binExpr->GetLeft(), objectPrefix, fieldToReplace, replacementValue, contextClass);
+        std::string right = ExpressionToCpp(binExpr->GetRight(), objectPrefix, fieldToReplace, replacementValue, contextClass);
         std::string op;
 
         switch (binExpr->GetOperator())
@@ -651,7 +585,7 @@ std::string CppCodeGenerator::ExpressionToCpp(
     // Handle unary expressions (negation, logical not)
     if (const UnaryExpression* unaryExpr = dynamic_cast<const UnaryExpression*>(expr))
     {
-        std::string operand = ExpressionToCpp(unaryExpr->GetOperand(), objectPrefix, fieldToReplace, replacementValue);
+        std::string operand = ExpressionToCpp(unaryExpr->GetOperand(), objectPrefix, fieldToReplace, replacementValue, contextClass);
         std::string op;
 
         switch (unaryExpr->GetOperator())
@@ -682,15 +616,36 @@ std::string CppCodeGenerator::ExpressionToCpp(
         }
 
         // Field references become member variable access with underscore postfix
-        // Wrapped fields need .value_ accessor
+        // Check if this field is computed (needs implicit conversion, no .value_)
+        // or regular (needs .value_ accessor)
+        bool isComputed = false;
+        if (nullptr != contextClass && nullptr != analyzer_)
+        {
+            // Check if field exists and is computed in the current class or base classes
+            const Field* field = analyzer_->FindFieldInClass(contextClass, fieldName);
+            if (nullptr != field)
+            {
+                isComputed = field->IsComputed();
+            }
+        }
+
         // Add object prefix if provided (for static functions)
-        return objectPrefix + fieldName + "_.value_";
+        if (isComputed)
+        {
+            // Computed fields use implicit conversion - no .value_ suffix
+            return objectPrefix + fieldName + "_";
+        }
+        else
+        {
+            // Regular wrapped fields need .value_ accessor
+            return objectPrefix + fieldName + "_.value_";
+        }
     }
 
     // Handle member access (object.field)
     if (const MemberAccessExpression* memberAccess = dynamic_cast<const MemberAccessExpression*>(expr))
     {
-        std::string object = ExpressionToCpp(memberAccess->GetObject(), objectPrefix, fieldToReplace, replacementValue);
+        std::string object = ExpressionToCpp(memberAccess->GetObject(), objectPrefix, fieldToReplace, replacementValue, contextClass);
         std::string member = memberAccess->GetMemberName();
 
         // Convert member access to getter call
@@ -713,7 +668,7 @@ std::string CppCodeGenerator::ExpressionToCpp(
     // Handle parenthesized expressions
     if (const ParenthesizedExpression* parenExpr = dynamic_cast<const ParenthesizedExpression*>(expr))
     {
-        return "(" + ExpressionToCpp(parenExpr->GetExpression(), objectPrefix, fieldToReplace, replacementValue) + ")";
+        return "(" + ExpressionToCpp(parenExpr->GetExpression(), objectPrefix, fieldToReplace, replacementValue, contextClass) + ")";
     }
 
     // Unknown expression type
@@ -780,7 +735,7 @@ void CppCodeGenerator::GenerateInvariantMethods(const ClassDeclaration* classDec
 
         if (nullptr != invariant->GetExpression())
         {
-            output_ << ExpressionToCpp(invariant->GetExpression());
+            output_ << ExpressionToCpp(invariant->GetExpression(), "", "", "", classDecl);
         }
         else
         {
@@ -894,7 +849,7 @@ void CppCodeGenerator::GenerateFieldChecker(const Field* field, const ClassDecla
         // Include the invariant condition expression
         if (nullptr != invariant->GetExpression())
         {
-            std::string exprStr = ExpressionToCpp(invariant->GetExpression());
+            std::string exprStr = ExpressionToCpp(invariant->GetExpression(), "", "", "", classDecl);
             // Escape quotes in the expression string
             for (char c : exprStr)
             {
@@ -1049,13 +1004,25 @@ void CppCodeGenerator::GenerateConstructorImplementation(const ClassDeclaration*
     // Generate initialization list for wrapped fields
     for (const auto& field : fields)
     {
-        // Skip computed fields (no storage)
+        // Computed fields get initialized with lambda
         if (field->IsComputed())
         {
+            output_ << ",\n";
+            WriteIndent(2);
+            output_ << "  " << field->GetName() << "_(*this, [](const " << className << "& parent) { return ";
+            if (nullptr != field->GetInitializer())
+            {
+                output_ << ExpressionToCpp(field->GetInitializer(), "parent.", "", "", classDecl);
+            }
+            else
+            {
+                output_ << "/* TODO: expression */";
+            }
+            output_ << "; })";
             continue;
         }
 
-        // Skip array fields (they don't use wrappers)
+        // Skip array fields (they don't use wrappers, default constructed)
         const CardinalityModifier* cardMod = field->GetCardinalityModifier();
         bool                       isArray = (nullptr != cardMod) && cardMod->IsArray();
         if (isArray)
@@ -1063,6 +1030,7 @@ void CppCodeGenerator::GenerateConstructorImplementation(const ClassDeclaration*
             continue;
         }
 
+        // Regular wrapped fields just need parent reference
         output_ << ",\n";
         WriteIndent(2);
         output_ << "  " << field->GetName() << "_(*this)";
@@ -1143,7 +1111,7 @@ void CppCodeGenerator::GenerateCheckerFunction(const Field* field, const Invaria
     if (nullptr != invariant->GetExpression())
     {
         // Pass fieldName to replace with newValue in the expression
-        output_ << ExpressionToCpp(invariant->GetExpression(), "object.", fieldName, "newValue");
+        output_ << ExpressionToCpp(invariant->GetExpression(), "object.", fieldName, "newValue", classDecl);
     }
     else
     {

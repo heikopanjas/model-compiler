@@ -119,9 +119,11 @@ private:
     /// \param objectPrefix Optional prefix for field references (e.g., "obj." for static functions)
     /// \param fieldToReplace Optional field name to replace with a different value
     /// \param replacementValue Optional value to use instead of field reference
+    /// \param contextClass Optional class context to check if fields are computed
     /// \return C++ code string
     std::string ExpressionToCpp(
-        const Expression* expr, const std::string& objectPrefix = "", const std::string& fieldToReplace = "", const std::string& replacementValue = "") const;
+        const Expression* expr, const std::string& objectPrefix = "", const std::string& fieldToReplace = "", const std::string& replacementValue = "",
+        const ClassDeclaration* contextClass = nullptr) const;
 
     /// \brief Generate invariant validation methods
     /// \param classDecl The class declaration
