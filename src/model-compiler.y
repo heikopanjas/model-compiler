@@ -66,7 +66,7 @@ std::vector<std::string> g_source_lines;
 }
 
 /* Token declarations */
-%token CLASS INHERITS ENUM FEATURE INVARIANT OPTIONAL UNIQUE NAMESPACE
+%token CLASS INHERITS ENUM FEATURE ALIAS INVARIANT OPTIONAL UNIQUE NAMESPACE
 %token STRING_TYPE INT_TYPE REAL_TYPE BOOL_TYPE TIMESTAMP_TYPE TIMESPAN_TYPE DATE_TYPE GUID_TYPE
 %token LBRACE RBRACE LBRACKET RBRACKET LPAREN RPAREN
 %token SEMICOLON COLON COMMA EQUALS DOT DOTDOT ASTERISK
@@ -340,6 +340,25 @@ field:
             std::unique_ptr<bbfm::Expression>(expr)
         );
         free($2);
+    }
+    | ALIAS field_name EQUALS field_name SEMICOLON
+    {
+        // Alias field: alias startTime = timestamp;
+        // We mark this by using a FieldReference expression as initializer and setting isAlias flag
+        auto* targetExpr = new bbfm::FieldReference($4);
+        auto modifiers = std::vector<std::unique_ptr<bbfm::Modifier>>();
+        modifiers.push_back(std::make_unique<bbfm::CardinalityModifier>(1, 1));
+
+        $$ = new bbfm::Field(
+            nullptr, // Type will be inferred from target field
+            $2,
+            std::move(modifiers),
+            false,
+            std::unique_ptr<bbfm::Expression>(targetExpr),
+            true  // isAlias = true
+        );
+        free($2);
+        free($4);
     }
     ;
 

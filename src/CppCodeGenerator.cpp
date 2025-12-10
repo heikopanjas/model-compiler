@@ -129,6 +129,88 @@ std::string CppCodeGenerator::MapType(const TypeSpec* typeSpec) const
     }
 }
 
+const ClassDeclaration* CppCodeGenerator::FindClassDeclaringField(const ClassDeclaration* classDecl, const std::string& fieldName) const
+{
+    if (nullptr == classDecl)
+    {
+        return nullptr;
+    }
+
+    // Check if this class declares the field
+    for (const auto& field : classDecl->GetFields())
+    {
+        if (field->GetName() == fieldName)
+        {
+            return classDecl;
+        }
+    }
+
+    // Check base class
+    if (classDecl->HasExplicitBase())
+    {
+        const auto& symbolTable = analyzer_->GetSymbolTable();
+        auto        it          = symbolTable.find(classDecl->GetBaseType());
+        if (it != symbolTable.end() && nullptr != it->second.classDecl)
+        {
+            return FindClassDeclaringField(it->second.classDecl, fieldName);
+        }
+    }
+
+    return nullptr;
+}
+
+std::string CppCodeGenerator::GetFieldWrapperType(const Field* field, const ClassDeclaration* classDecl) const
+{
+    if (nullptr == field || field->IsComputed() || field->IsAlias())
+    {
+        return "void";
+    }
+
+    std::string cppType   = MapType(field->GetType());
+    std::string className = ApplyClassPrefix(classDecl->GetName());
+
+    // Get cardinality
+    const CardinalityModifier* cardMod    = field->GetCardinalityModifier();
+    bool                       isOptional = (nullptr != cardMod) && cardMod->IsOptional();
+
+    // Check if field has invariants
+    std::vector<const Invariant*> fieldInvariants = GetInvariantsForField(field->GetName(), classDecl);
+    bool                          hasInvariants   = !fieldInvariants.empty();
+
+    // Build template parameters
+    std::string templateParams = cppType + ", " + className;
+
+    // Add checker functions if there are invariants
+    if (hasInvariants)
+    {
+        for (const Invariant* inv : fieldInvariants)
+        {
+            templateParams += ", &" + className + "::Check" + inv->GetName() + "_" + field->GetName();
+        }
+    }
+
+    // Choose wrapper based on invariants and optionality
+    std::string wrapperType;
+    if (hasInvariants && isOptional)
+    {
+        wrapperType = "bbfm::runtime::OptionalBoundedValue";
+    }
+    else if (hasInvariants && !isOptional)
+    {
+        wrapperType = "bbfm::runtime::BoundedValue";
+    }
+    else if (!hasInvariants && isOptional)
+    {
+        wrapperType = "bbfm::runtime::OptionalUnboundedValue";
+    }
+    else
+    {
+        wrapperType = "bbfm::runtime::UnboundedValue";
+    }
+
+    return wrapperType + "<" + templateParams + ">";
+}
+
 std::string CppCodeGenerator::GenerateIncludeGuardName(const std::string& filename) const
 {
     // Convert filename to include guard format
@@ -336,6 +418,36 @@ void CppCodeGenerator::GenerateClassFields(const ClassDeclaration* classDecl)
 
     for (const auto& field : fields)
     {
+        // Handle alias fields separately with AliasValue wrapper
+        if (field->IsAlias())
+        {
+            // Get the target field name from the FieldReference expression
+            const Expression*     expr     = field->GetInitializer();
+            const FieldReference* fieldRef = dynamic_cast<const FieldReference*>(expr);
+            if (nullptr != fieldRef)
+            {
+                std::string targetFieldName = fieldRef->GetFieldName();
+                std::string fieldName       = field->GetName();
+
+                // Find the target field to determine its wrapper type
+                const Field* targetField = analyzer_->FindFieldInClass(classDecl, targetFieldName);
+                if (nullptr != targetField)
+                {
+                    // Find which class actually declares this field (could be base class)
+                    const ClassDeclaration* targetFieldClass = FindClassDeclaringField(classDecl, targetFieldName);
+                    if (nullptr != targetFieldClass)
+                    {
+                        std::string targetWrapperType = GetFieldWrapperType(targetField, targetFieldClass);
+
+                        // Use AliasValue wrapper that forwards to target field
+                        WriteIndent(1);
+                        output_ << "bbfm::runtime::AliasValue<" << targetWrapperType << "> " << fieldName << "_;\n";
+                    }
+                }
+            }
+            continue;
+        }
+
         // Handle computed fields separately with DynamicValue wrapper
         if (field->IsComputed())
         {
@@ -621,18 +733,18 @@ std::string CppCodeGenerator::ExpressionToCpp(
         bool isComputed = false;
         if (nullptr != contextClass && nullptr != analyzer_)
         {
-            // Check if field exists and is computed in the current class or base classes
+            // Check if field exists and is computed or alias in the current class or base classes
             const Field* field = analyzer_->FindFieldInClass(contextClass, fieldName);
             if (nullptr != field)
             {
-                isComputed = field->IsComputed();
+                isComputed = field->IsComputed() || field->IsAlias();
             }
         }
 
         // Add object prefix if provided (for static functions)
         if (isComputed)
         {
-            // Computed fields use implicit conversion - no .value_ suffix
+            // Computed fields and alias fields use implicit conversion - no .value_ suffix
             return objectPrefix + fieldName + "_";
         }
         else
@@ -998,18 +1110,51 @@ void CppCodeGenerator::GenerateConstructorImplementation(const ClassDeclaration*
     output_ << "/// \\brief Constructor - initializes all fields with parent reference\n";
     WriteIndent(1);
     output_ << className << "()\n";
-    WriteIndent(2);
-    output_ << ": bbfm::runtime::Fabric()";
 
     // Generate initialization list for wrapped fields
+    bool firstInit = true;
     for (const auto& field : fields)
     {
+        // Alias fields get initialized with reference to target field
+        if (field->IsAlias())
+        {
+            const Expression*     expr     = field->GetInitializer();
+            const FieldReference* fieldRef = dynamic_cast<const FieldReference*>(expr);
+            if (nullptr != fieldRef)
+            {
+                std::string targetFieldName = fieldRef->GetFieldName();
+                if (firstInit)
+                {
+                    WriteIndent(2);
+                    output_ << ": " << field->GetName() << "_(" << targetFieldName << "_)";
+                    firstInit = false;
+                }
+                else
+                {
+                    output_ << ",\n";
+                    WriteIndent(2);
+                    output_ << "  " << field->GetName() << "_(" << targetFieldName << "_)";
+                }
+            }
+            continue;
+        }
+
         // Computed fields get initialized with lambda
         if (field->IsComputed())
         {
-            output_ << ",\n";
-            WriteIndent(2);
-            output_ << "  " << field->GetName() << "_(*this, [](const " << className << "& parent) { return ";
+            if (firstInit)
+            {
+                WriteIndent(2);
+                output_ << ": " << field->GetName() << "_(*this, [](const " << className << "& parent) { return ";
+                firstInit = false;
+            }
+            else
+            {
+                output_ << ",\n";
+                WriteIndent(2);
+                output_ << "  " << field->GetName() << "_(*this, [](const " << className << "& parent) { return ";
+            }
+
             if (nullptr != field->GetInitializer())
             {
                 output_ << ExpressionToCpp(field->GetInitializer(), "parent.", "", "", classDecl);
@@ -1031,9 +1176,18 @@ void CppCodeGenerator::GenerateConstructorImplementation(const ClassDeclaration*
         }
 
         // Regular wrapped fields just need parent reference
-        output_ << ",\n";
-        WriteIndent(2);
-        output_ << "  " << field->GetName() << "_(*this)";
+        if (firstInit)
+        {
+            WriteIndent(2);
+            output_ << ": " << field->GetName() << "_(*this)";
+            firstInit = false;
+        }
+        else
+        {
+            output_ << ",\n";
+            WriteIndent(2);
+            output_ << "  " << field->GetName() << "_(*this)";
+        }
     }
 
     output_ << "\n";
@@ -1056,8 +1210,8 @@ void CppCodeGenerator::GenerateStaticCheckerFunctions(const ClassDeclaration* cl
     // Generate checker functions for each field that has invariants
     for (const auto& field : fields)
     {
-        // Skip computed fields
-        if (field->IsComputed())
+        // Skip computed fields and alias fields
+        if (field->IsComputed() || field->IsAlias())
         {
             continue;
         }

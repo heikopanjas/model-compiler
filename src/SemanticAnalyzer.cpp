@@ -169,9 +169,15 @@ bool SemanticAnalyzer::ValidateClassDeclaration(const ClassDeclaration* classDec
     // Validate field types
     for (const auto& field : classDecl->GetFields())
     {
+        // Skip alias fields - they don't have explicit types
+        if (field->IsAlias())
+        {
+            continue;
+        }
+
         const TypeSpec* typeSpec = field->GetType();
 
-        if (typeSpec->IsUserDefined())
+        if (nullptr != typeSpec && typeSpec->IsUserDefined())
         {
             const UserDefinedTypeSpec* userType = static_cast<const UserDefinedTypeSpec*>(typeSpec);
             const std::string&         typeName = userType->GetTypeName();
@@ -460,16 +466,63 @@ bool SemanticAnalyzer::ValidateComputedFeatures(const ClassDeclaration* classDec
         availableFields.insert(field->GetName());
     }
 
-    // Validate each computed feature
+    // Validate each computed feature and alias
     for (const auto& field : classDecl->GetFields())
     {
-        if (field->IsComputed())
+        if (field->IsAlias())
+        {
+            if (!ValidateAliasField(field.get(), classDecl, availableFields))
+            {
+                success = false;
+            }
+        }
+        else if (field->IsComputed())
         {
             if (!ValidateComputedFeatureExpression(field.get(), classDecl, availableFields))
             {
                 success = false;
             }
         }
+    }
+
+    return success;
+}
+
+bool SemanticAnalyzer::ValidateAliasField(const Field* field, const ClassDeclaration* classDecl, const std::set<std::string>& availableFields)
+{
+    bool              success = true;
+    const Expression* expr    = field->GetInitializer();
+
+    if (nullptr == expr)
+    {
+        ReportError("Alias '" + field->GetName() + "' in class '" + classDecl->GetName() + "' has no target field specified");
+        return false;
+    }
+
+    // Alias target must be a simple FieldReference, not a complex expression
+    const FieldReference* fieldRef = dynamic_cast<const FieldReference*>(expr);
+    if (nullptr == fieldRef)
+    {
+        ReportError("Alias '" + field->GetName() + "' in class '" + classDecl->GetName() + "' must reference a simple field, not a complex expression");
+        return false;
+    }
+
+    // Validate that the target field exists
+    const std::string& targetFieldName = fieldRef->GetFieldName();
+    if (0 == availableFields.count(targetFieldName))
+    {
+        ReportError("Alias '" + field->GetName() + "' in class '" + classDecl->GetName() + "' references undefined field '" + targetFieldName + "'");
+        return false;
+    }
+
+    // Find the target field to validate it's not another alias (prevent alias chains)
+    const Field* targetField = FindFieldInClass(classDecl, targetFieldName);
+    if (nullptr != targetField && targetField->IsAlias())
+    {
+        ReportError(
+            "Alias '" + field->GetName() + "' in class '" + classDecl->GetName() + "' cannot reference another alias '" + targetFieldName +
+            "' - alias chaining is not allowed");
+        success = false;
     }
 
     return success;
@@ -729,15 +782,28 @@ const TypeSymbol* SemanticAnalyzer::GetFieldType(const ClassDeclaration* classDe
     {
         if (field->GetName() == fieldName)
         {
+            // Handle alias fields - get type from target field
+            if (field->IsAlias())
+            {
+                const Expression*     expr     = field->GetInitializer();
+                const FieldReference* fieldRef = dynamic_cast<const FieldReference*>(expr);
+                if (nullptr != fieldRef)
+                {
+                    // Recursively get the type of the target field
+                    return GetFieldType(classDecl, fieldRef->GetFieldName());
+                }
+                return nullptr;
+            }
+
             const TypeSpec* typeSpec = field->GetType();
 
-            if (typeSpec->IsPrimitive())
+            if (nullptr != typeSpec && typeSpec->IsPrimitive())
             {
                 const PrimitiveTypeSpec* primType = static_cast<const PrimitiveTypeSpec*>(typeSpec);
                 const std::string        typeName = PrimitiveTypeSpec::TypeToString(primType->GetType());
                 return LookupType(typeName);
             }
-            else if (typeSpec->IsUserDefined())
+            else if (nullptr != typeSpec && typeSpec->IsUserDefined())
             {
                 const UserDefinedTypeSpec* userType = static_cast<const UserDefinedTypeSpec*>(typeSpec);
                 return LookupType(userType->GetTypeName());

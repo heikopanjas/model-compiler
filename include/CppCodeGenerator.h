@@ -59,6 +59,18 @@ private:
     /// \return C++ type string with namespace prefix
     std::string MapType(const TypeSpec* typeSpec) const;
 
+    /// \brief Find which class declares a specific field (including base classes)
+    /// \param classDecl The class to start searching from
+    /// \param fieldName The field name to find
+    /// \return The class that declares the field or nullptr
+    const ClassDeclaration* FindClassDeclaringField(const ClassDeclaration* classDecl, const std::string& fieldName) const;
+
+    /// \brief Get the full wrapper type for a field (e.g., BoundedValue<int, Class, ...>)
+    /// \param field The field
+    /// \param classDecl The containing class
+    /// \return Full wrapper type string
+    std::string GetFieldWrapperType(const Field* field, const ClassDeclaration* classDecl) const;
+
     /// \brief Generate include guard name from filename
     /// \param filename The output filename
     /// \return Include guard macro name

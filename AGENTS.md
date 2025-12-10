@@ -1,6 +1,6 @@
 # Project Instructions for AI Coding Agents
 
-**Last updated:** 2025-12-10 (very late night)
+**Last updated:** 2025-12-10 (deep night - alias feature complete)
 
 <!-- {mission} -->
 
@@ -1148,6 +1148,19 @@ After making ANY code changes:
 ---
 
 ## Recent Updates & Decisions
+
+### 2025-12-10 (Deep Night)
+
+- **Alias Feature Implementation**: Added full support for field aliases using `alias` keyword
+- **Syntax**: `alias aliasName = targetFieldName;` creates read-write alias to another field
+- **AliasValue Wrapper**: Created template that forwards reads/writes to target field wrapper
+- **Invariant Propagation**: Writing to alias triggers target field's invariant validation
+- **Semantic Validation**: Aliases must reference simple fields (not expressions), no alias chains
+- **Code Generation**: Generates `AliasValue<TargetWrapperType>` with correct template parameters
+- **Type Inference**: GetFieldType recursively resolves alias target types for type checking
+- **Defensive Checks**: Added null checks for alias fields throughout semantic analyzer
+- **Use Case**: Enables creating convenient names for inherited fields (e.g., `alias startTime = timestamp`)
+- **Reasoning**: Provides read-write access to inherited fields with full invariant validation, solving the problem where computed properties couldn't be written to
 
 ### 2025-12-10 (Very Late Night)
 

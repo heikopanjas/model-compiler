@@ -155,6 +155,13 @@ private:
     /// \return True if all computed features are valid, false otherwise
     bool ValidateComputedFeatures(const ClassDeclaration* classDecl);
 
+    /// \brief Validate an alias field
+    /// \param field The alias field
+    /// \param classDecl The containing class
+    /// \param availableFields Set of available field names
+    /// \return True if alias is valid
+    bool ValidateAliasField(const Field* field, const ClassDeclaration* classDecl, const std::set<std::string>& availableFields);
+
     /// \brief Validate a single computed feature expression
     /// \param field The field with computed feature
     /// \param classDecl The containing class

@@ -44,6 +44,7 @@ WHITESPACE  [ \t\r]+
 "inherits"      { return INHERITS; }
 "enum"          { return ENUM; }
 "feature"       { return FEATURE; }
+"alias"         { return ALIAS; }
 "invariant"     { return INVARIANT; }
 "optional"      { return OPTIONAL; }
 "unique"        { return UNIQUE; }

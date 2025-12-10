@@ -520,11 +520,12 @@ public:
     /// \param name The field's name
     /// \param modifiers Vector of field modifiers
     /// \param isStatic Whether the field is static
-    /// \param initializer Optional initializer expression for computed features
+    /// \param initializer Optional initializer expression for computed features or alias target
+    /// \param isAlias Whether the field is an alias (true) or computed/regular field (false)
     Field(
         std::unique_ptr<TypeSpec> type, const std::string& name, std::vector<std::unique_ptr<Modifier>> modifiers, const bool isStatic = false,
-        std::unique_ptr<Expression> initializer = nullptr) :
-        type_(std::move(type)), name_(name), modifiers_(std::move(modifiers)), isStatic_(isStatic), initializer_(std::move(initializer))
+        std::unique_ptr<Expression> initializer = nullptr, const bool isAlias = false) :
+        type_(std::move(type)), name_(name), modifiers_(std::move(modifiers)), isStatic_(isStatic), initializer_(std::move(initializer)), isAlias_(isAlias)
     {
     }
 
@@ -548,6 +549,10 @@ public:
     /// \return True if field has an initializer
     bool IsComputed() const;
 
+    /// \brief Check if field is an alias (references another field)
+    /// \return True if field is an alias
+    bool IsAlias() const;
+
     /// \brief Get the initializer expression
     /// \return Pointer to the initializer expression or nullptr
     const Expression* GetInitializer() const;
@@ -568,6 +573,7 @@ private:
     std::vector<std::unique_ptr<Modifier>> modifiers_;
     bool                                   isStatic_;
     std::unique_ptr<Expression>            initializer_;
+    bool                                   isAlias_;
 };
 
 // ============================================================================
@@ -700,8 +706,7 @@ public:
     /// \brief Construct an AST from namespace and declarations
     /// \param sourceNamespace The namespace declared in source (empty if none)
     /// \param declarations Vector of top-level declarations
-    explicit AST(const std::string& sourceNamespace,
-                 std::vector<std::unique_ptr<Declaration>> declarations);
+    explicit AST(const std::string& sourceNamespace, std::vector<std::unique_ptr<Declaration>> declarations);
 
     /// \brief Get the source namespace
     /// \return The namespace string (empty if none)
@@ -714,7 +719,7 @@ public:
     void Dump(int indent = 0, const std::string& nsPrefix = "") const override;
 
 private:
-    std::string sourceNamespace_;
+    std::string                               sourceNamespace_;
     std::vector<std::unique_ptr<Declaration>> declarations_;
 };
 } // namespace bbfm

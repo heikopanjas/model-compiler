@@ -188,7 +188,12 @@ bool Field::IsStatic() const
 
 bool Field::IsComputed() const
 {
-    return nullptr != initializer_;
+    return nullptr != initializer_ && !isAlias_;
+}
+
+bool Field::IsAlias() const
+{
+    return isAlias_;
 }
 
 const Expression* Field::GetInitializer() const
@@ -227,8 +232,32 @@ void Field::Dump(const int indent, const std::string& nsPrefix) const
     {
         std::cout << "static ";
     }
+
+    // Indicate if this is an alias
+    if (isAlias_)
+    {
+        std::cout << "alias " << name_ << " = ";
+        if (nullptr != initializer_)
+        {
+            std::cout << initializer_->ToString();
+        }
+        else
+        {
+            std::cout << "(null)";
+        }
+        std::cout << ";\n";
+        return;
+    }
+
     std::cout << "feature " << name_ << ": ";
-    type_->Dump(0, nsPrefix);
+    if (nullptr != type_)
+    {
+        type_->Dump(0, nsPrefix);
+    }
+    else
+    {
+        std::cout << "(type not specified)";
+    }
 
     // Print modifiers
     for (const auto& mod : modifiers_)
