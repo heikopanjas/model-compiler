@@ -420,7 +420,7 @@ void CppCodeGenerator::GenerateClassFields(const ClassDeclaration* classDecl)
     // 1. Regular fields first (non-alias, non-computed)
     // 2. Computed fields second (may reference regular fields)
     // 3. Alias fields last (reference other fields - must be initialized after targets)
-    
+
     // Pass 1: Generate regular fields (non-alias, non-computed)
     for (const auto& field : fields)
     {
