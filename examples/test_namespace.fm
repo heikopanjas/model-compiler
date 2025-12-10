@@ -1,0 +1,13 @@
+// Test file for namespace feature
+namespace models;
+
+enum Status {
+    ACTIVE,
+    INACTIVE
+}
+
+class TestClass {
+    feature name: String;
+    feature status: Status;
+}
+

@@ -1,0 +1,19 @@
+# ninja log v7
+1	26	1765389505369841860	lexer.cpp	977090e71ead78e6
+1	26	1765389505369841860	/Users/heiko/RandD/_me/model-compiler/_build/lexer.cpp	977090e71ead78e6
+0	70	1765389505413733584	parser.cpp	499b77b5d7717927
+0	70	1765389505413733584	parser.h	499b77b5d7717927
+0	70	1765389505413733584	/Users/heiko/RandD/_me/model-compiler/_build/parser.cpp	499b77b5d7717927
+0	70	1765389505413733584	/Users/heiko/RandD/_me/model-compiler/_build/parser.h	499b77b5d7717927
+71	419	1765389505415208736	CMakeFiles/model-compiler.dir/src/CodeGenerator.cpp.o	1aeb1a9c9650487f
+70	465	1765389505415089859	CMakeFiles/model-compiler.dir/src/Console.cpp.o	a4624cdba277051e
+71	476	1765389505415554201	CMakeFiles/model-compiler.dir/lexer.cpp.o	816795171dfe0aa1
+70	527	1765389505414852146	CMakeFiles/model-compiler.dir/src/AST.cpp.o	7ba67e0b028a4794
+70	580	1765389505414723269	CMakeFiles/model-compiler.dir/src/Driver.cpp.o	47651e34c792aa54
+71	618	1765389505415437532	CMakeFiles/model-compiler.dir/parser.cpp.o	a3a9d752e7fe7d9b
+70	639	1765389505414978857	CMakeFiles/model-compiler.dir/src/SemanticAnalyzer.cpp.o	b0fb8413e384308f
+70	1168	1765389505414466806	CMakeFiles/model-compiler.dir/src/main.cpp.o	6c5d46ccb169ac9
+3	428	1765389539719280985	CMakeFiles/model-compiler.dir/src/CppCodeGenerator.cpp.o	2d6e1d812bdbdaf8
+428	468	1765389540144019216	model-compiler	68cd58eef82d1095
+3	475	1765389610431494490	CMakeFiles/model-compiler.dir/src/CppCodeGenerator.cpp.o	2d6e1d812bdbdaf8
+475	521	1765389610903902723	model-compiler	68cd58eef82d1095

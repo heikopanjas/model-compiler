@@ -4,7 +4,26 @@
 #include <iostream>
 
 namespace bbfm {
-SemanticAnalyzer::SemanticAnalyzer(const AST* ast) : ast_(ast), hasErrors_(false) {}
+SemanticAnalyzer::SemanticAnalyzer(const AST* ast, const std::vector<std::string>& namespaces)
+    : ast_(ast), namespaces_(namespaces), hasErrors_(false)
+{
+}
+
+std::string SemanticAnalyzer::FormatNamespacePrefix() const
+{
+    if (namespaces_.empty())
+    {
+        return "";
+    }
+
+    std::string prefix;
+    for (const auto& ns : namespaces_)
+    {
+        prefix += ns + "::";
+    }
+
+    return prefix;
+}
 
 bool SemanticAnalyzer::Analyze()
 {
@@ -993,7 +1012,7 @@ void SemanticAnalyzer::DumpSymbolTable() const
         {
             if (TypeSymbol::Kind::PRIMITIVE == entry.second.kind)
             {
-                std::cout << "  " << entry.second.name << "\n";
+                std::cout << "  intrinsic::" << entry.second.name << "\n";
             }
         }
         std::cout << "\n";
@@ -1004,11 +1023,12 @@ void SemanticAnalyzer::DumpSymbolTable() const
     {
         std::cout << "Enumerations:\n";
         std::cout << "-------------\n";
+        std::string nsPrefix = FormatNamespacePrefix();
         for (const auto& entry : symbolTable_)
         {
             if (TypeSymbol::Kind::ENUM == entry.second.kind)
             {
-                std::cout << "  enum " << entry.second.name << " {\n";
+                std::cout << "  enum " << nsPrefix << entry.second.name << " {\n";
                 const auto& values = entry.second.enumDecl->GetValues();
                 for (size_t i = 0; i < values.size(); ++i)
                 {
@@ -1029,17 +1049,18 @@ void SemanticAnalyzer::DumpSymbolTable() const
     {
         std::cout << "Classes:\n";
         std::cout << "--------\n";
+        std::string nsPrefix = FormatNamespacePrefix();
         for (const auto& entry : symbolTable_)
         {
             if (TypeSymbol::Kind::CLASS == entry.second.kind)
             {
-                std::cout << "  class " << entry.second.name;
+                std::cout << "  class " << nsPrefix << entry.second.name;
 
                 // Show inheritance
                 const std::string& baseType = entry.second.classDecl->GetBaseType();
                 if (false == baseType.empty())
                 {
-                    std::cout << " inherits " << baseType;
+                    std::cout << " inherits " << nsPrefix << baseType;
                 }
                 std::cout << " {\n";
 
@@ -1069,12 +1090,12 @@ void SemanticAnalyzer::DumpSymbolTable() const
                         if (typeSpec->IsPrimitive())
                         {
                             const PrimitiveTypeSpec* primType = dynamic_cast<const PrimitiveTypeSpec*>(typeSpec);
-                            std::cout << PrimitiveTypeSpec::TypeToString(primType->GetType());
+                            std::cout << "intrinsic::" << PrimitiveTypeSpec::TypeToString(primType->GetType());
                         }
                         else
                         {
                             const UserDefinedTypeSpec* userType = dynamic_cast<const UserDefinedTypeSpec*>(typeSpec);
-                            std::cout << userType->GetTypeName();
+                            std::cout << nsPrefix << userType->GetTypeName();
                         }
 
                         // Show modifiers

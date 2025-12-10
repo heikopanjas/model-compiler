@@ -14,8 +14,9 @@
 - Single inheritance support with cycle detection
 - Computed features with expression system (arithmetic, logical, member access)
 - Invariant constraints for domain validation
+- Namespace support for code organization (command-line and source file)
 - Multi-phase compilation: parsing, semantic analysis, code generation
-- Currently targets Swift (additional languages planned)
+- Currently targets C++ (additional languages planned)
 
 ## Technology Stack
 
@@ -25,7 +26,7 @@
 - **CLI Library:** cxxopts 3.3.1 (command-line argument parsing)
 - **Version Control:** Git
 - **License:** MIT
-- **Target Code Generation:** Swift (Phase 2 - in development)
+- **Target Code Generation:** C++ (Phase 2 - in development)
 
 <!-- {principles} -->
 
@@ -92,7 +93,7 @@ When initializing a session or analyzing the workspace, refer to instruction fil
 - **Compilation Phases**:
   - Phase 0: Lexical analysis and parsing (AST construction) - Complete ✅
   - Phase 1: Semantic analysis (symbol table, type checking) - Complete ✅
-  - Phase 2: Code generation (Swift output) - In Progress 🚧
+  - Phase 2: Code generation (C++ output) - Complete ✅
 - **Smart Pointers**: Use `std::unique_ptr` for AST nodes and owned resources
 - **Expression System**: Support arithmetic, comparison, logical operators, member access
 - **Testing**: Test with example `.fm` files in `examples/` directory
@@ -1120,11 +1121,43 @@ After making ANY code changes:
 
 ## Recent Updates & Decisions
 
+### 2025-12-10 (Night)
+
+- **Phase 2 Implementation Complete**: Full C++ code generation now functional
+- **Abstract Code Generator**: Created base class architecture for multi-language support
+- **CppCodeGenerator**: Concrete C++ implementation with all features
+- **Runtime Types**: Created stub implementations for String, Date, Guid in bbfm::runtime namespace
+- **Fabric Base Class**: Universal metadata fields (typeId, id, cardinality, etc.) provided via inheritance
+- **Complete Feature Set**: Enums, classes, inheritance, computed features, invariant validation, getters
+- **Command-line Options**: Added --output option for specifying output file path
+- **Type Mappings**: String/Date/Guid map to bbfm::runtime types, others to standard C++
+- **Code Quality**: Proper include guards, alignment pragmas, const correctness, Doxygen comments
+- **Reasoning**: Complete code generation enables end-to-end compilation from BBFM models to C++ headers
+
+### 2025-12-10 (Evening)
+
+- **Namespace Support Implementation**: Added full namespace support to the language
+- **Language Features**: Added `namespace` keyword for source file namespace declarations
+- **Command-line Option**: `--target-namespace` option for specifying target namespace
+- **Namespace Combination**: Source and target namespaces combine as nested namespaces in generated code
+- **Lexer/Parser Updates**: Extended grammar to support `namespace identifier;` syntax
+- **AST Changes**: Added `sourceNamespace_` field to AST class with getter method
+- **Driver Enhancement**: Added `GetCombinedNamespaces()` method to combine CLI and source namespaces
+- **Documentation**: Updated README.md with namespace section and examples
+- **Reasoning**: Namespaces provide code organization and prevent naming conflicts in generated C++ code
+
+### 2025-12-10 (Later)
+
+- **Target Language Change**: Changed target language from Swift to C++
+- **Updated Documentation**: All mentions of Swift replaced with C++ throughout project
+- **Type Mappings**: Updated type mappings table to show C++ types (std::string, int64_t, double, etc.)
+- **Reasoning**: C++ is a better fit as the target language for this C++-based compiler project
+
 ### 2025-12-10
 
 - **Session Initialization**: Analyzed workspace and updated AGENTS.md with project-specific information
 - **Mission Statement**: Documented BBFM Model Compiler purpose and key features
-- **Technology Stack**: Updated with actual technologies (C++23, CMake, Flex/Bison, cxxopts, Swift target)
+- **Technology Stack**: Updated with actual technologies (C++23, CMake, Flex/Bison, cxxopts, C++ target)
 - **Development Guidelines**: Added project-specific guidelines (namespace, include guards, compilation phases)
 - **Testing Approach**: Documented integration testing workflow with example files
 - **Documentation Requirements**: Specified Doxygen format and documentation locations

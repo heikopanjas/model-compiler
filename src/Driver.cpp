@@ -1,6 +1,7 @@
 #include "Driver.h"
 #include "AST.h"
 #include "Console.h"
+#include "CppCodeGenerator.h"
 #include "SemanticAnalyzer.h"
 #include <cstdio>
 #include <fstream>
@@ -26,13 +27,37 @@ extern std::unique_ptr<bbfm::AST> g_ast;
 extern std::string              g_current_filename;
 extern std::vector<std::string> g_source_lines;
 
+namespace {
+/// \brief Combine target and source namespaces
+/// \param targetNamespace The namespace from command-line option
+/// \param sourceNamespace The namespace from source file
+/// \return Vector of namespace names (outer to inner)
+std::vector<std::string> CombineNamespaces(const std::string& targetNamespace,
+                                            const std::string& sourceNamespace)
+{
+    std::vector<std::string> namespaces;
+
+    if (false == targetNamespace.empty())
+    {
+        namespaces.push_back(targetNamespace);
+    }
+
+    if (false == sourceNamespace.empty())
+    {
+        namespaces.push_back(sourceNamespace);
+    }
+
+    return namespaces;
+}
+} // anonymous namespace
+
 namespace bbfm {
 // ============================================================================
 // Driver Implementation
 // ============================================================================
 
-Driver::Driver(std::vector<std::string> sourceFiles, const std::string& classPrefix) :
-    sourceFiles_(std::move(sourceFiles)), classPrefix_(classPrefix), hasErrors_(false)
+Driver::Driver(std::vector<std::string> sourceFiles, const std::string& targetClassPrefix, const std::string& targetNamespace) :
+    sourceFiles_(std::move(sourceFiles)), targetClassPrefix_(targetClassPrefix), targetNamespace_(targetNamespace), hasErrors_(false)
 {
 }
 
@@ -122,7 +147,9 @@ std::unique_ptr<SemanticAnalyzer> Driver::Phase1(const AST* ast)
 
     Console::ReportStatus("Phase 1 (Semantic Analysis) started...");
 
-    auto analyzer = std::make_unique<SemanticAnalyzer>(ast);
+    // Pass combined namespaces to semantic analyzer
+    std::vector<std::string> combinedNamespaces = GetCombinedNamespaces(ast);
+    auto analyzer = std::make_unique<SemanticAnalyzer>(ast, combinedNamespaces);
 
     if (!analyzer->Analyze())
     {
@@ -135,13 +162,66 @@ std::unique_ptr<SemanticAnalyzer> Driver::Phase1(const AST* ast)
     return analyzer;
 }
 
+bool Driver::Phase2(const AST* ast, const SemanticAnalyzer* analyzer, const std::string& outputPath)
+{
+    if (nullptr == ast)
+    {
+        Console::ReportError("Error: Cannot generate code from null AST");
+        hasErrors_ = true;
+        return false;
+    }
+
+    if (nullptr == analyzer)
+    {
+        Console::ReportError("Error: Cannot generate code without semantic analyzer");
+        hasErrors_ = true;
+        return false;
+    }
+
+    if (outputPath.empty())
+    {
+        Console::ReportError("Error: Output path cannot be empty");
+        hasErrors_ = true;
+        return false;
+    }
+
+    Console::ReportStatus("Phase 2 (Code Generation) started...");
+
+    // Get combined namespaces
+    std::vector<std::string> combinedNamespaces = GetCombinedNamespaces(ast);
+
+    // Create C++ code generator
+    CppCodeGenerator generator(ast, analyzer, combinedNamespaces, targetClassPrefix_);
+
+    // Generate code
+    if (!generator.Generate(outputPath))
+    {
+        Console::ReportError("Phase 2 (Code Generation) failed.");
+        hasErrors_ = true;
+        return false;
+    }
+
+    Console::ReportStatus("Phase 2 (Code Generation) completed successfully!");
+    return true;
+}
+
 bool Driver::HasErrors() const
 {
     return hasErrors_;
 }
 
-const std::string& Driver::GetClassPrefix() const
+const std::string& Driver::GetTargetClassPrefix() const
 {
-    return classPrefix_;
+    return targetClassPrefix_;
+}
+
+const std::string& Driver::GetTargetNamespace() const
+{
+    return targetNamespace_;
+}
+
+std::vector<std::string> Driver::GetCombinedNamespaces(const AST* ast) const
+{
+    return CombineNamespaces(targetNamespace_, ast->GetSourceNamespace());
 }
 } // namespace bbfm

@@ -47,6 +47,7 @@ WHITESPACE  [ \t\r]+
 "invariant"     { return INVARIANT; }
 "optional"      { return OPTIONAL; }
 "unique"        { return UNIQUE; }
+"namespace"     { return NAMESPACE; }
 "String"        { return STRING_TYPE; }
 "Int"           { return INT_TYPE; }
 "Real"          { return REAL_TYPE; }

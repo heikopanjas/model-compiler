@@ -8,6 +8,8 @@
 //   - Timestamp modificationDate
 //   - String comment
 
+namespace model;
+
 enum MediaType {
     AUDIO,
     VIDEO
@@ -36,7 +38,7 @@ class Podcast {
     feature title: String;
     feature description: String;
     feature author: String [optional];     // Optional field using optional modifier
-    feature rssUrl: String [1,unique];     // Mandatory + unique
+    feature feedUrl: String [1,unique];     // Mandatory + unique
     feature episodes: Episode [0..*];      // One-to-many (may be empty)
 }
 

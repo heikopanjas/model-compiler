@@ -40,7 +40,8 @@ public:
 
     /// \brief Dump the AST node to stdout for debugging
     /// \param indent Indentation level for pretty printing
-    virtual void Dump(int indent = 0) const = 0;
+    /// \param nsPrefix Namespace prefix to prepend to user-defined types
+    virtual void Dump(int indent = 0, const std::string& nsPrefix = "") const = 0;
 
 protected:
     /// \brief Print indentation for pretty printing
@@ -96,7 +97,7 @@ public:
 
     bool IsUserDefined() const override;
 
-    void Dump(int indent = 0) const override;
+    void Dump(int indent = 0, const std::string& nsPrefix = "") const override;
 
     /// \brief Convert primitive type to string representation
     /// \param type The primitive type to convert
@@ -123,7 +124,7 @@ public:
 
     bool IsUserDefined() const override;
 
-    void Dump(int indent = 0) const override;
+    void Dump(int indent = 0, const std::string& nsPrefix = "") const override;
 
 private:
     std::string typeName_;
@@ -191,7 +192,7 @@ public:
     /// \return True if maximum cardinality is unbounded or greater than 1
     bool IsArray() const;
 
-    void Dump(int indent = 0) const override;
+    void Dump(int indent = 0, const std::string& nsPrefix = "") const override;
 
 private:
     int minCardinality_;
@@ -205,7 +206,7 @@ public:
     /// \brief Construct a unique modifier
     UniqueModifier() : Modifier(ModifierType::UNIQUE) {}
 
-    void Dump(int indent = 0) const override;
+    void Dump(int indent = 0, const std::string& nsPrefix = "") const override;
 };
 
 // ============================================================================
@@ -275,7 +276,7 @@ public:
 
     Type        GetResultType() const override;
     std::string ToString() const override;
-    void        Dump(int indent = 0) const override;
+    void        Dump(int indent = 0, const std::string& nsPrefix = "") const override;
 
     /// \brief Get the left operand
     /// \return Pointer to left expression
@@ -318,7 +319,7 @@ public:
 
     Type        GetResultType() const override;
     std::string ToString() const override;
-    void        Dump(int indent = 0) const override;
+    void        Dump(int indent = 0, const std::string& nsPrefix = "") const override;
 
     /// \brief Get the operand
     /// \return Pointer to operand expression
@@ -348,7 +349,7 @@ public:
 
     Type        GetResultType() const override;
     std::string ToString() const override;
-    void        Dump(int indent = 0) const override;
+    void        Dump(int indent = 0, const std::string& nsPrefix = "") const override;
 
     /// \brief Get the field name
     /// \return The field name
@@ -369,7 +370,7 @@ public:
 
     Type        GetResultType() const override;
     std::string ToString() const override;
-    void        Dump(int indent = 0) const override;
+    void        Dump(int indent = 0, const std::string& nsPrefix = "") const override;
 
     /// \brief Get the object expression
     /// \return The object expression
@@ -406,7 +407,7 @@ public:
 
     Type        GetResultType() const override;
     std::string ToString() const override;
-    void        Dump(int indent = 0) const override;
+    void        Dump(int indent = 0, const std::string& nsPrefix = "") const override;
 
     /// \brief Get the integer value (if type is INT)
     /// \return The integer value
@@ -443,7 +444,7 @@ public:
 
     Type        GetResultType() const override;
     std::string ToString() const override;
-    void        Dump(int indent = 0) const override;
+    void        Dump(int indent = 0, const std::string& nsPrefix = "") const override;
 
     /// \brief Get the function name
     /// \return The function name
@@ -468,7 +469,7 @@ public:
 
     Type        GetResultType() const override;
     std::string ToString() const override;
-    void        Dump(int indent = 0) const override;
+    void        Dump(int indent = 0, const std::string& nsPrefix = "") const override;
 
     /// \brief Get the inner expression
     /// \return Pointer to the inner expression
@@ -499,7 +500,7 @@ public:
     /// \return The boolean expression
     const Expression* GetExpression() const;
 
-    void Dump(int indent = 0) const override;
+    void Dump(int indent = 0, const std::string& nsPrefix = "") const override;
 
 private:
     std::string                 name_;
@@ -559,7 +560,7 @@ public:
     /// \return True if field has unique modifier
     bool HasUniqueConstraint() const;
 
-    void Dump(int indent = 0) const override;
+    void Dump(int indent = 0, const std::string& nsPrefix = "") const override;
 
 private:
     std::unique_ptr<TypeSpec>              type_;
@@ -590,7 +591,7 @@ public:
     /// \return Vector of enum value names
     const std::vector<std::string>& GetValues() const;
 
-    void Dump(int indent = 0) const override;
+    void Dump(int indent = 0, const std::string& nsPrefix = "") const override;
 
 private:
     std::string              name_;
@@ -637,7 +638,7 @@ public:
     /// \return Vector of invariant declarations
     const std::vector<std::unique_ptr<Invariant>>& GetInvariants() const;
 
-    void Dump(int indent = 0) const override;
+    void Dump(int indent = 0, const std::string& nsPrefix = "") const override;
 
 private:
     std::string                             name_;
@@ -681,7 +682,7 @@ public:
     /// \return Pointer to class declaration or nullptr
     const ClassDeclaration* AsClass() const;
 
-    void Dump(int indent = 0) const override;
+    void Dump(int indent = 0, const std::string& nsPrefix = "") const override;
 
 private:
     Kind                     kind_;
@@ -692,21 +693,28 @@ private:
 // AST (Root Node)
 // ============================================================================
 
-/// \brief Represents a complete P3 program (root AST node)
+/// \brief Represents a complete BBFM program (root AST node)
 class AST : public ASTNode
 {
 public:
-    /// \brief Construct an AST from declarations
+    /// \brief Construct an AST from namespace and declarations
+    /// \param sourceNamespace The namespace declared in source (empty if none)
     /// \param declarations Vector of top-level declarations
-    explicit AST(std::vector<std::unique_ptr<Declaration>> declarations) : declarations_(std::move(declarations)) {}
+    explicit AST(const std::string& sourceNamespace,
+                 std::vector<std::unique_ptr<Declaration>> declarations);
+
+    /// \brief Get the source namespace
+    /// \return The namespace string (empty if none)
+    const std::string& GetSourceNamespace() const;
 
     /// \brief Get all declarations in the AST
     /// \return Vector of declarations
     const std::vector<std::unique_ptr<Declaration>>& GetDeclarations() const;
 
-    void Dump(int indent = 0) const override;
+    void Dump(int indent = 0, const std::string& nsPrefix = "") const override;
 
 private:
+    std::string sourceNamespace_;
     std::vector<std::unique_ptr<Declaration>> declarations_;
 };
 } // namespace bbfm

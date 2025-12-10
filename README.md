@@ -4,13 +4,13 @@ A Domain-Specific Language (DSL) compiler for defining podcast object models and
 
 **License:** MIT  
 **Language:** C++23 (minimum C++17)  
-**Current Version:** Phase 0 & 1 complete, Phase 2 (code generation) in development
+**Current Version:** Phase 0, 1 & 2 complete (full C++ code generation)
 
 ## Overview
 
 The BBFM modeling language enables you to define data types, relationships, and constraints for podcast domains using an expressive, type-safe syntax. The compiler generates:
 
-- **Swift classes** with proper inheritance hierarchies
+- **C++ classes** with proper inheritance hierarchies
 
 Future targets include additional programming languages.
 
@@ -90,6 +90,44 @@ So an `AudioAsset` instance has: universal metadata (6 fields) + Asset fields (u
 - One-to-one relationships
 - One-to-many relationships (using arrays)
 - Many-to-many relationships
+
+### Namespaces
+
+Namespaces organize generated code and prevent naming conflicts:
+
+- **Source namespace**: Declare at top of file: `namespace models;`
+- **Command-line namespace**: Use `--target-namespace myapp`
+- **Combined**: Both options create nested namespaces in generated code
+
+**Examples:**
+
+```bbfm
+// Source file with namespace
+namespace models;
+
+class Podcast {
+    feature title: String;
+}
+```
+
+**Generated C++ (with --target-namespace myapp):**
+
+```cpp
+namespace myapp {
+namespace models {
+    class Podcast {
+        // ...
+    };
+}
+}
+```
+
+**Rules:**
+
+- Only one namespace declaration per file
+- Must appear before all other declarations
+- Flat namespace names only (no nesting in source)
+- Empty namespace is valid (no wrapper)
 
 ### Field Modifiers
 
@@ -374,8 +412,14 @@ ninja clean
 ## Usage
 
 ```bash
-# Basic compilation
+# Basic compilation (generates C++ header)
 ./_build/model-compiler <source_file.fm>
+
+# Specify output file
+./_build/model-compiler <source_file.fm> -o output.h
+
+# With namespace and class prefix
+./_build/model-compiler --target-namespace myapp --target-class-prefix FM <source_file.fm>
 
 # Dump AST (syntax tree) for debugging
 ./_build/model-compiler --dump-syntax-tree <source_file.fm>
@@ -390,8 +434,14 @@ ninja clean
 Examples:
 
 ```bash
-# Compile a file
+# Generate C++ header (creates examples/podcast.h)
 ./_build/model-compiler examples/podcast.fm
+
+# Generate with custom output path
+./_build/model-compiler examples/podcast.fm -o generated/podcast.h
+
+# Generate with namespace
+./_build/model-compiler --target-namespace myapp examples/podcast.fm
 
 # View syntax tree
 ./_build/model-compiler --dump-syntax-tree examples/podcast.fm
@@ -565,24 +615,29 @@ The compiler implements a multi-phase compilation process:
    - Field uniqueness validation (including inherited fields)
    - Invariant validation (expression AST traversal, field reference checking)
    - Expression type inference and validation
-3. **Phase 2: Code Generation** 🚧 - Planned:
-   - Swift class definitions with inheritance
-   - Invariant validation code generation
+3. **Phase 2: Code Generation** ✅ - Generates C++ header files:
+   - C++ class definitions with inheritance from Fabric base class
+   - Enum class declarations
+   - Getter methods for all fields
+   - Computed feature inline implementations
+   - Invariant validation methods
+   - Universal metadata via Fabric inheritance
+   - Namespace wrapping and class prefixes
 
 ## Type Mappings
 
-The compiler will map BBFM primitive types to target language types. Planned Swift mappings:
+The compiler will map BBFM primitive types to target language types. Planned C++ mappings:
 
-| BBFM Type | Swift |
-|-----------|-------|
-| String | String |
-| Int | Int64 |
-| Real | Double |
-| Bool | Bool |
-| Timestamp | Double |
-| Timespan | Double |
-| Date | String (ISO 8601) |
-| Guid | String (UUID) |
+| BBFM Type | C++ |
+|-----------|-----|
+| String | std::string |
+| Int | int64_t |
+| Real | double |
+| Bool | bool |
+| Timestamp | double |
+| Timespan | double |
+| Date | std::string (ISO 8601) |
+| Guid | std::string (UUID) |
 
 ## Current Status
 
@@ -633,12 +688,26 @@ The compiler will map BBFM primitive types to target language types. Planned Swi
     - Cardinality validation (must be `[1]`)
   - Comprehensive error reporting
 
-**🚧 Planned:**
+**✅ Phase 2 (Code Generation) - Complete:**
 
-- **Phase 2 (Code Generation)**:
-  - Swift code generation (class definitions, inheritance hierarchies)
-  - Invariant validation code generation
-  - Additional target languages
+- C++ header file generation with:
+  - Class declarations inheriting from `bbfm::runtime::Fabric` base class
+  - Enum class declarations
+  - Public getter methods (const-correct)
+  - Computed feature methods (inline implementation)
+  - Invariant validation methods (`Validate()` and individual checks)
+  - Universal metadata fields via Fabric inheritance
+  - Namespace wrapping (nested namespace syntax)
+  - Optional class/enum prefixes
+  - Arrays (`std::vector<T>`) and optional fields (`std::optional<T>`)
+  - Proper inheritance hierarchy (no field duplication)
+
+**🚧 Future Enhancements:**
+
+- Additional target languages (Swift, Python, etc.)
+- Implementation files (.cpp) generation
+- Constructor implementations
+- Serialization support
 
 ## Language Specification
 
@@ -649,6 +718,7 @@ The compiler will map BBFM primitive types to target language types. Planned Swi
 - `inherits` - Specify inheritance relationship
 - `feature` - Declare a class field/attribute
 - `invariant` - Declare a boolean constraint
+- `namespace` - Declare source file namespace
 - `optional` - Optional field modifier (equivalent to `[0..1]`)
 - `unique` - Unique constraint modifier
 
@@ -707,9 +777,9 @@ MIT License - see LICENSE file for details.
 
 ## Project Status
 
-**Current Phase:** Phase 2 (Code Generation) - In Development
+**Current Phase:** Complete - All 3 Phases Implemented
 
-The compiler currently completes:
+The compiler completes:
 - ✅ Phase 0: Lexical analysis and parsing
 - ✅ Phase 1: Semantic analysis with full type checking
-- 🚧 Phase 2: Swift code generation (planned)
+- ✅ Phase 2: C++ code generation with full feature support

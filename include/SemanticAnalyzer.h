@@ -54,7 +54,8 @@ class SemanticAnalyzer
 public:
     /// \brief Construct a semantic analyzer
     /// \param ast Pointer to the AST to analyze
-    explicit SemanticAnalyzer(const AST* ast);
+    /// \param namespaces Vector of namespace names (outer to inner)
+    explicit SemanticAnalyzer(const AST* ast, const std::vector<std::string>& namespaces = {});
 
     /// \brief Destructor
     virtual ~SemanticAnalyzer() = default;
@@ -77,7 +78,12 @@ public:
 private:
     const AST*                        ast_;
     std::map<std::string, TypeSymbol> symbolTable_;
+    std::vector<std::string>          namespaces_;
     bool                              hasErrors_;
+
+    /// \brief Format namespace prefix for symbol names
+    /// \return Namespace prefix string (e.g., "ns1::ns2::" or "" if no namespaces)
+    std::string FormatNamespacePrefix() const;
 
     /// \brief Register primitive types in symbol table
     void RegisterPrimitiveTypes();

@@ -62,10 +62,11 @@ std::vector<std::string> g_source_lines;
     void *fieldList;
     void *invariantList;
     void *modifierList;
+    void *namespaceDecl;
 }
 
 /* Token declarations */
-%token CLASS INHERITS ENUM FEATURE INVARIANT OPTIONAL UNIQUE
+%token CLASS INHERITS ENUM FEATURE INVARIANT OPTIONAL UNIQUE NAMESPACE
 %token STRING_TYPE INT_TYPE REAL_TYPE BOOL_TYPE TIMESTAMP_TYPE TIMESPAN_TYPE DATE_TYPE GUID_TYPE
 %token LBRACE RBRACE LBRACKET RBRACKET LPAREN RPAREN
 %token SEMICOLON COLON COMMA EQUALS DOT DOTDOT ASTERISK
@@ -79,6 +80,7 @@ std::vector<std::string> g_source_lines;
 %token <string> BOOL_LITERAL
 
 %type <ast> program
+%type <namespaceDecl> namespace_declaration
 %type <declarationList> declaration_list
 %type <declaration> declaration
 %type <enumDecl> enum_declaration
@@ -112,17 +114,35 @@ std::vector<std::string> g_source_lines;
 program:
     /* empty */
     {
-        auto* ast = new bbfm::AST(std::vector<std::unique_ptr<bbfm::Declaration>>());
+        auto* ast = new bbfm::AST("", std::vector<std::unique_ptr<bbfm::Declaration>>());
+        $$ = ast;
+        g_ast = std::unique_ptr<bbfm::AST>(ast);
+    }
+    | namespace_declaration declaration_list
+    {
+        auto* ns = static_cast<std::string*>($1);
+        auto* list = static_cast<std::vector<std::unique_ptr<bbfm::Declaration>>*>($2);
+        auto* ast = new bbfm::AST(*ns, std::move(*list));
+        delete ns;
+        delete list;
         $$ = ast;
         g_ast = std::unique_ptr<bbfm::AST>(ast);
     }
     | declaration_list
     {
         auto* list = static_cast<std::vector<std::unique_ptr<bbfm::Declaration>>*>($1);
-        auto* ast = new bbfm::AST(std::move(*list));
+        auto* ast = new bbfm::AST("", std::move(*list));
         delete list;
         $$ = ast;
         g_ast = std::unique_ptr<bbfm::AST>(ast);
+    }
+    ;
+
+namespace_declaration:
+    NAMESPACE IDENTIFIER SEMICOLON
+    {
+        $$ = new std::string($2);
+        free($2);
     }
     ;
 

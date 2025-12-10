@@ -60,10 +60,11 @@ const char* PrimitiveTypeSpec::TypeToString(const PrimitiveType type)
     }
 }
 
-void PrimitiveTypeSpec::Dump(const int indent) const
+void PrimitiveTypeSpec::Dump(const int indent, const std::string& nsPrefix) const
 {
     UNREFERENCED_PARAMETER(indent);
-    std::cout << TypeToString(type_);
+    UNREFERENCED_PARAMETER(nsPrefix);
+    std::cout << "intrinsic::" << TypeToString(type_);
 }
 
 // ============================================================================
@@ -85,10 +86,10 @@ bool UserDefinedTypeSpec::IsUserDefined() const
     return true;
 }
 
-void UserDefinedTypeSpec::Dump(const int indent) const
+void UserDefinedTypeSpec::Dump(const int indent, const std::string& nsPrefix) const
 {
     UNREFERENCED_PARAMETER(indent);
-    std::cout << typeName_;
+    std::cout << nsPrefix << typeName_;
 }
 
 // ============================================================================
@@ -134,9 +135,10 @@ bool CardinalityModifier::IsArray() const
     return -1 == maxCardinality_ || maxCardinality_ > 1;
 }
 
-void CardinalityModifier::Dump(const int indent) const
+void CardinalityModifier::Dump(const int indent, const std::string& nsPrefix) const
 {
     UNREFERENCED_PARAMETER(indent);
+    UNREFERENCED_PARAMETER(nsPrefix);
     std::cout << "[" << minCardinality_;
     if (maxCardinality_ == -1)
     {
@@ -153,9 +155,10 @@ void CardinalityModifier::Dump(const int indent) const
 // UniqueModifier Implementation
 // ============================================================================
 
-void UniqueModifier::Dump(const int indent) const
+void UniqueModifier::Dump(const int indent, const std::string& nsPrefix) const
 {
     UNREFERENCED_PARAMETER(indent);
+    UNREFERENCED_PARAMETER(nsPrefix);
     std::cout << "[unique]";
 }
 
@@ -217,7 +220,7 @@ bool Field::HasUniqueConstraint() const
     return false;
 }
 
-void Field::Dump(const int indent) const
+void Field::Dump(const int indent, const std::string& nsPrefix) const
 {
     PrintIndent(indent);
     if (isStatic_)
@@ -225,13 +228,13 @@ void Field::Dump(const int indent) const
         std::cout << "static ";
     }
     std::cout << "feature " << name_ << ": ";
-    type_->Dump(0);
+    type_->Dump(0, nsPrefix);
 
     // Print modifiers
     for (const auto& mod : modifiers_)
     {
         std::cout << " ";
-        mod->Dump(0);
+        mod->Dump(0, nsPrefix);
     }
 
     // Print initializer if present
@@ -259,8 +262,9 @@ const Expression* Invariant::GetExpression() const
     return expression_.get();
 }
 
-void Invariant::Dump(const int indent) const
+void Invariant::Dump(const int indent, const std::string& nsPrefix) const
 {
+    UNREFERENCED_PARAMETER(nsPrefix);
     PrintIndent(indent);
     std::cout << "invariant " << name_ << ": ";
     if (nullptr != expression_)
@@ -284,10 +288,10 @@ const std::vector<std::string>& EnumDeclaration::GetValues() const
     return values_;
 }
 
-void EnumDeclaration::Dump(const int indent) const
+void EnumDeclaration::Dump(const int indent, const std::string& nsPrefix) const
 {
     PrintIndent(indent);
-    std::cout << "enum " << name_ << " {\n";
+    std::cout << "enum " << nsPrefix << name_ << " {\n";
 
     for (size_t i = 0; i < values_.size(); ++i)
     {
@@ -333,26 +337,26 @@ const std::vector<std::unique_ptr<Invariant>>& ClassDeclaration::GetInvariants()
     return invariants_;
 }
 
-void ClassDeclaration::Dump(const int indent) const
+void ClassDeclaration::Dump(const int indent, const std::string& nsPrefix) const
 {
     PrintIndent(indent);
-    std::cout << "class " << name_;
+    std::cout << "class " << nsPrefix << name_;
 
     if (false == baseType_.empty())
     {
-        std::cout << " inherits " << baseType_;
+        std::cout << " inherits " << nsPrefix << baseType_;
     }
 
     std::cout << " {\n";
 
     for (const auto& field : fields_)
     {
-        field->Dump(indent + 1);
+        field->Dump(indent + 1, nsPrefix);
     }
 
     for (const auto& invariant : invariants_)
     {
-        invariant->Dump(indent + 1);
+        invariant->Dump(indent + 1, nsPrefix);
     }
 
     PrintIndent(indent);
@@ -378,9 +382,9 @@ const ClassDeclaration* Declaration::AsClass() const
     return Kind::CLASS == kind_ ? static_cast<const ClassDeclaration*>(declaration_.get()) : nullptr;
 }
 
-void Declaration::Dump(const int indent) const
+void Declaration::Dump(const int indent, const std::string& nsPrefix) const
 {
-    declaration_->Dump(indent);
+    declaration_->Dump(indent, nsPrefix);
 }
 
 // ============================================================================
@@ -447,8 +451,9 @@ std::string BinaryExpression::ToString() const
     return "(" + left_->ToString() + " " + std::string(OpToString(op_)) + " " + right_->ToString() + ")";
 }
 
-void BinaryExpression::Dump(const int indent) const
+void BinaryExpression::Dump(const int indent, const std::string& nsPrefix) const
 {
+    UNREFERENCED_PARAMETER(nsPrefix);
     PrintIndent(indent);
     std::cout << "BinaryExpression [" << OpToString(op_) << "]\n";
     left_->Dump(indent + 1);
@@ -528,8 +533,9 @@ std::string UnaryExpression::ToString() const
     return std::string(OpToString(op_)) + operand_->ToString();
 }
 
-void UnaryExpression::Dump(const int indent) const
+void UnaryExpression::Dump(const int indent, const std::string& nsPrefix) const
 {
+    UNREFERENCED_PARAMETER(nsPrefix);
     PrintIndent(indent);
     std::cout << "UnaryExpression [" << OpToString(op_) << "]\n";
     operand_->Dump(indent + 1);
@@ -572,8 +578,9 @@ std::string FieldReference::ToString() const
     return fieldName_;
 }
 
-void FieldReference::Dump(const int indent) const
+void FieldReference::Dump(const int indent, const std::string& nsPrefix) const
 {
+    UNREFERENCED_PARAMETER(nsPrefix);
     PrintIndent(indent);
     std::cout << "FieldReference: " << fieldName_ << "\n";
 }
@@ -600,8 +607,9 @@ std::string MemberAccessExpression::ToString() const
     return object_->ToString() + "." + memberName_;
 }
 
-void MemberAccessExpression::Dump(const int indent) const
+void MemberAccessExpression::Dump(const int indent, const std::string& nsPrefix) const
 {
+    UNREFERENCED_PARAMETER(nsPrefix);
     PrintIndent(indent);
     std::cout << "MemberAccess: ." << memberName_ << "\n";
     object_->Dump(indent + 2);
@@ -648,8 +656,9 @@ std::string LiteralExpression::ToString() const
     }
 }
 
-void LiteralExpression::Dump(const int indent) const
+void LiteralExpression::Dump(const int indent, const std::string& nsPrefix) const
 {
+    UNREFERENCED_PARAMETER(nsPrefix);
     PrintIndent(indent);
     std::cout << "Literal: " << ToString() << "\n";
 }
@@ -701,8 +710,9 @@ std::string FunctionCall::ToString() const
     return result;
 }
 
-void FunctionCall::Dump(const int indent) const
+void FunctionCall::Dump(const int indent, const std::string& nsPrefix) const
 {
+    UNREFERENCED_PARAMETER(nsPrefix);
     PrintIndent(indent);
     std::cout << "FunctionCall: " << functionName_ << "\n";
     for (const auto& arg : arguments_)
@@ -734,8 +744,9 @@ std::string ParenthesizedExpression::ToString() const
     return "(" + expr_->ToString() + ")";
 }
 
-void ParenthesizedExpression::Dump(const int indent) const
+void ParenthesizedExpression::Dump(const int indent, const std::string& nsPrefix) const
 {
+    UNREFERENCED_PARAMETER(nsPrefix);
     PrintIndent(indent);
     std::cout << "ParenthesizedExpression\n";
     expr_->Dump(indent + 1);
@@ -750,19 +761,38 @@ const Expression* ParenthesizedExpression::GetExpression() const
 // AST Implementation
 // ============================================================================
 
+AST::AST(const std::string& sourceNamespace,
+         std::vector<std::unique_ptr<Declaration>> declarations)
+    : sourceNamespace_(sourceNamespace), declarations_(std::move(declarations))
+{
+}
+
+const std::string& AST::GetSourceNamespace() const
+{
+    return sourceNamespace_;
+}
+
 const std::vector<std::unique_ptr<Declaration>>& AST::GetDeclarations() const
 {
     return declarations_;
 }
 
-void AST::Dump(const int indent) const
+void AST::Dump(const int indent, const std::string& nsPrefix) const
 {
     PrintIndent(indent);
-    std::cout << "=== BBFM Program AST ===\n\n";
+    std::cout << "=== BBFM Program AST ===\n";
+
+    if (false == sourceNamespace_.empty())
+    {
+        PrintIndent(indent);
+        std::cout << "Namespace: " << sourceNamespace_ << "\n";
+    }
+
+    std::cout << "\n";
 
     for (const auto& decl : declarations_)
     {
-        decl->Dump(indent);
+        decl->Dump(indent, nsPrefix);
         std::cout << "\n";
     }
 
