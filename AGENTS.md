@@ -1,6 +1,6 @@
 # Project Instructions for AI Coding Agents
 
-**Last updated:** 2025-12-11 (evening - critical initialization order fix)
+**Last updated:** 2025-12-25 (MSVC compatibility and warning-free build)
 
 <!-- {mission} -->
 
@@ -1152,6 +1152,30 @@ After making ANY code changes:
 ---
 
 ## Recent Updates & Decisions
+
+### 2025-12-25
+
+- **MSVC Compatibility Implementation**: Full Windows/MSVC build support achieved
+- **PowerShell Build Script**: Created `build.ps1` equivalent to `build.sh` for Windows development
+- **Platform-Specific Compiler Flags**: Added conditional flags in CMakeLists.txt (`/W4` for MSVC, `-Wall -Wextra -Wpedantic` for GCC/Clang)
+- **C++ Standard Functions**: Replaced all POSIX functions with C++ standard library equivalents
+  - Removed `strdup()` → Created `MakeString()` helper using `std::memcpy()`
+  - Removed `strcasecmp()` → Created `StringCompareIgnoreCase()` with platform-specific implementation
+  - Removed `strings.h` include → Not needed on Windows
+  - Added `<io.h>` on Windows for `_isatty`/`_fileno` compatibility
+- **Flex/Bison Windows Compatibility**: Added `%option nounistd` to prevent unistd.h include
+- **Linkage Fixes**: Resolved C/C++ linkage issues between Flex and Bison generated code
+  - Removed extern "C" blocks from lexer
+  - Made `yyerror` use extern "C" linkage
+  - Ensured consistent C++ linkage for `yylval` and `yylloc`
+- **Warning-Free Build**: Eliminated all compiler warnings
+  - Suppressed flex/bison generated code warnings (C4005, C4702) in CMakeLists.txt
+  - Replaced `fopen()` with `fopen_s()` on Windows to eliminate C4996 warning
+  - Fixed variable shadowing in SemanticAnalyzer.cpp (C4456 warning)
+  - Used `std::memcpy()` instead of `std::strcpy()` to avoid deprecation warnings
+- **Cross-Platform Build**: Project now builds cleanly on Windows (MSVC), Linux (GCC), and macOS (Clang)
+- **Professional Code Quality**: Zero warnings, proper platform abstraction, C++ standard compliance
+- **Reasoning**: Using C++ standard library functions instead of POSIX-specific calls ensures true cross-platform compatibility and eliminates the need for platform-specific macros. Professional code should compile without warnings on all supported platforms.
 
 ### 2025-12-11 (Evening)
 

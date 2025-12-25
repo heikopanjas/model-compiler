@@ -1,17 +1,25 @@
 %{
-#ifdef __cplusplus
-extern "C" {
-#endif
 #include "parser.h"
-#ifdef __cplusplus
-}
-#endif
 
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
-#include <strings.h>
 #include <iostream>
+
+#ifdef _WIN32
+#include <io.h>  // For _isatty on Windows
+#define isatty _isatty
+#define fileno _fileno
+#endif
+
+// Helper function to create heap-allocated C string from C++ string
+// This is needed because Bison %union only supports POD types
+static char* MakeString(const std::string& str)
+{
+    char* result = new char[str.length() + 1];
+    std::memcpy(result, str.c_str(), str.length() + 1);
+    return result;
+}
 
 /* Column tracking */
 int yycolumn = 1;
@@ -19,17 +27,13 @@ int yycolumn = 1;
 #define YY_USER_ACTION yylloc.first_line = yylloc.last_line = yylineno; \
     yylloc.first_column = yycolumn; yylloc.last_column = yycolumn + yyleng - 1; \
     yycolumn += yyleng;
-
-/* Define yylex with C linkage */
-#ifdef __cplusplus
-#define YY_DECL extern "C" int yylex (void)
-#endif
 %}
 
 %option noyywrap
 %option yylineno
 %option nounput
 %option noinput
+%option nounistd
 
 DIGIT       [0-9]
 LETTER      [a-zA-Z]
@@ -57,18 +61,18 @@ WHITESPACE  [ \t\r]+
 "Timespan"      { return TIMESPAN_TYPE; }
 "Date"          { return DATE_TYPE; }
 "Guid"          { return GUID_TYPE; }
-"true"          { yylval.string = strdup("true"); return BOOL_LITERAL; }
-"false"         { yylval.string = strdup("false"); return BOOL_LITERAL; }
+"true"          { yylval.string = MakeString("true"); return BOOL_LITERAL; }
+"false"         { yylval.string = MakeString("false"); return BOOL_LITERAL; }
 
 {ID}            {
-    yylval.string = strdup(yytext);
+    yylval.string = MakeString(yytext);
     return IDENTIFIER;
 }
-{REAL}          { yylval.string = strdup(yytext); return REAL_LITERAL; }
+{REAL}          { yylval.string = MakeString(yytext); return REAL_LITERAL; }
 {INTEGER}       { yylval.integer = atoi(yytext); return INTEGER_LITERAL; }
 \"([^\"\\]|\\.)*\"  {
     // String literal with escape sequences
-    yylval.string = strdup(yytext);
+    yylval.string = MakeString(yytext);
     return STRING_LITERAL;
 }
 

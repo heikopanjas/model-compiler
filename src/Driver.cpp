@@ -9,12 +9,10 @@
 #include <string>
 #include <vector>
 
-// External C functions from Flex/Bison
-extern "C" {
-    extern FILE* yyin;
-}
-
-extern int yyparse(void);
+// External variables from Flex/Bison
+// Note: These have C++ linkage because they're declared without extern "C" in generated code
+extern FILE* yyin;
+extern int   yyparse(void);
 
 // Global AST variable used for communication between parser and driver.
 // This must be global because yyparse() has signature int yyparse(void)
@@ -32,8 +30,7 @@ namespace {
 /// \param targetNamespace The namespace from command-line option
 /// \param sourceNamespace The namespace from source file
 /// \return Vector of namespace names (outer to inner)
-std::vector<std::string> CombineNamespaces(const std::string& targetNamespace,
-                                            const std::string& sourceNamespace)
+std::vector<std::string> CombineNamespaces(const std::string& targetNamespace, const std::string& sourceNamespace)
 {
     std::vector<std::string> namespaces;
 
@@ -98,8 +95,13 @@ std::unique_ptr<AST> Driver::Phase0()
     }
 
     // Open the source file for parsing
+#ifdef _WIN32
+    errno_t err = fopen_s(&yyin, filename.c_str(), "r");
+    if (0 != err || nullptr == yyin)
+#else
     yyin = fopen(filename.c_str(), "r");
     if (nullptr == yyin)
+#endif
     {
         Console::ReportError("Error: Could not open file '" + filename + "'");
         hasErrors_ = true;
@@ -149,7 +151,7 @@ std::unique_ptr<SemanticAnalyzer> Driver::Phase1(const AST* ast)
 
     // Pass combined namespaces to semantic analyzer
     std::vector<std::string> combinedNamespaces = GetCombinedNamespaces(ast);
-    auto analyzer = std::make_unique<SemanticAnalyzer>(ast, combinedNamespaces);
+    auto                     analyzer           = std::make_unique<SemanticAnalyzer>(ast, combinedNamespaces);
 
     if (!analyzer->Analyze())
     {

@@ -56,12 +56,21 @@ add_executable(model-compiler
     ${FLEX_Lexer_OUTPUTS}
 )
 
-# Compiler flags
-target_compile_options(model-compiler PRIVATE
-    -Wall
-    -Wextra
-    -Wpedantic
-)
+# Compiler flags - different for MSVC vs GCC/Clang
+if (MSVC)
+    target_compile_options(model-compiler PRIVATE
+        /W4
+        # Suppress warnings from flex/bison generated code
+        /wd4005  # Macro redefinition (stdint.h INT*_MIN/MAX in flex output)
+        /wd4702  # Unreachable code in bison-generated parser
+    )
+else()
+    target_compile_options(model-compiler PRIVATE
+        -Wall
+        -Wextra
+        -Wpedantic
+    )
+endif()
 
 # Link cxxopts as static library
 target_link_libraries(model-compiler PRIVATE cxxopts::cxxopts)

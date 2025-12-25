@@ -571,8 +571,8 @@ bool SemanticAnalyzer::ValidateComputedFeatureExpression(const Field* field, con
         const Field* referencedField = FindFieldInClass(classDecl, refField);
         if (nullptr != referencedField)
         {
-            const CardinalityModifier* cardinality = referencedField->GetCardinalityModifier();
-            if (nullptr != cardinality && cardinality->IsOptional())
+            const CardinalityModifier* refCardinality = referencedField->GetCardinalityModifier();
+            if (nullptr != refCardinality && refCardinality->IsOptional())
             {
                 ReportError(
                     "Computed feature '" + field->GetName() + "' in class '" + classDecl->GetName() + "' references optional field '" + refField +

@@ -10,16 +10,30 @@
 #include "AST.h"
 #include "Console.h"
 
-#ifdef __cplusplus
-extern "C" {
+// Helper function to create heap-allocated C string from std::string
+// This is needed because Bison %union only supports POD types
+static char* MakeString(const std::string& str)
+{
+    char* result = new char[str.length() + 1];
+    std::memcpy(result, str.c_str(), str.length() + 1);
+    return result;
+}
+
+// Case-insensitive string comparison (cross-platform)
+static int StringCompareIgnoreCase(const char* a, const char* b)
+{
+#ifdef _WIN32
+    return _stricmp(a, b);
+#else
+    return strcasecmp(a, b);
 #endif
+}
+
+// External functions from Flex
 extern int yylex(void);
 extern int yylineno;
 extern FILE *yyin;
-void yyerror(const char *s);
-#ifdef __cplusplus
-}
-#endif
+extern "C" void yyerror(const char *s);
 
 // Global AST root
 std::unique_ptr<bbfm::AST> g_ast;
@@ -31,13 +45,17 @@ std::string g_current_filename;
 std::vector<std::string> g_source_lines;
 %}
 
+%define api.prefix {yy}
+%define api.pure false
+
 %locations
 
 %code requires {
-    #ifdef __cplusplus
-    #define YYPARSE_DECL extern "C" int yyparse (void)
-    #endif
+    // No special declarations needed
 }
+
+// Remove the provides block that was forcing C linkage
+
 
 // NOTE: This union uses void* (raw pointers) instead of smart pointers
 // because Bison's %union only supports POD (Plain Old Data) types.
@@ -95,7 +113,6 @@ std::vector<std::string> g_source_lines;
 %type <modifier> modifier
 %type <string> field_name
 %type <string> attribute_name
-%type <string> literal_value
 %type <expression> expression primary_expression
 
 /* Operator precedence (lowest to highest) */
@@ -239,23 +256,16 @@ invariant_list:
     }
     ;
 
-literal_value:
-    INTEGER_LITERAL { $$ = strdup(std::to_string($1).c_str()); }
-    | REAL_LITERAL  { $$ = $1; }
-    | STRING_LITERAL { $$ = $1; }
-    | BOOL_LITERAL  { $$ = $1; }
-    ;
-
 attribute_name:
     IDENTIFIER      { $$ = $1; }
-    | STRING_TYPE   { $$ = strdup("string"); }
-    | INT_TYPE      { $$ = strdup("int"); }
-    | REAL_TYPE     { $$ = strdup("real"); }
-    | BOOL_TYPE     { $$ = strdup("bool"); }
-    | TIMESTAMP_TYPE { $$ = strdup("timestamp"); }
-    | TIMESPAN_TYPE { $$ = strdup("timespan"); }
-    | DATE_TYPE     { $$ = strdup("date"); }
-    | GUID_TYPE     { $$ = strdup("guid"); }
+    | STRING_TYPE   { $$ = MakeString("string"); }
+    | INT_TYPE      { $$ = MakeString("int"); }
+    | REAL_TYPE     { $$ = MakeString("real"); }
+    | BOOL_TYPE     { $$ = MakeString("bool"); }
+    | TIMESTAMP_TYPE { $$ = MakeString("timestamp"); }
+    | TIMESPAN_TYPE { $$ = MakeString("timespan"); }
+    | DATE_TYPE     { $$ = MakeString("date"); }
+    | GUID_TYPE     { $$ = MakeString("guid"); }
     ;
 
 invariant:
@@ -269,14 +279,14 @@ invariant:
 
 field_name:
     IDENTIFIER      { $$ = $1; }
-    | STRING_TYPE   { $$ = strdup("string"); }
-    | INT_TYPE      { $$ = strdup("int"); }
-    | REAL_TYPE     { $$ = strdup("real"); }
-    | BOOL_TYPE     { $$ = strdup("bool"); }
-    | TIMESTAMP_TYPE { $$ = strdup("timestamp"); }
-    | TIMESPAN_TYPE { $$ = strdup("timespan"); }
-    | DATE_TYPE     { $$ = strdup("date"); }
-    | GUID_TYPE     { $$ = strdup("guid"); }
+    | STRING_TYPE   { $$ = MakeString("string"); }
+    | INT_TYPE      { $$ = MakeString("int"); }
+    | REAL_TYPE     { $$ = MakeString("real"); }
+    | BOOL_TYPE     { $$ = MakeString("bool"); }
+    | TIMESTAMP_TYPE { $$ = MakeString("timestamp"); }
+    | TIMESPAN_TYPE { $$ = MakeString("timespan"); }
+    | DATE_TYPE     { $$ = MakeString("date"); }
+    | GUID_TYPE     { $$ = MakeString("guid"); }
     ;
 
 field:
@@ -528,7 +538,7 @@ primary_expression:
     }
     | BOOL_LITERAL
     {
-        bool val = (0 == strcasecmp($1, "true"));
+        bool val = (0 == StringCompareIgnoreCase($1, "true"));
         $$ = new bbfm::LiteralExpression(val);
         free($1);
     }
@@ -546,7 +556,7 @@ primary_expression:
 extern "C" {
 #endif
 
-void yyerror(const char *s) {
+extern "C" void yyerror(const char *s) {
     std::ostringstream errorMsg;
     errorMsg << g_current_filename << ":" << yylloc.first_line
              << ":" << yylloc.first_column
