@@ -461,19 +461,22 @@ ninja clean
 ## Usage
 
 ```bash
-# Basic compilation (generates C++ header)
+# Validation only (no code generation, checks syntax and semantics)
 ./_build/model-compiler <source_file.fm>
 
-# Specify output file
-./_build/model-compiler <source_file.fm> -o output.h
+# Generate C++ header
+./_build/model-compiler --lang c++ <source_file.fm>
 
-# With namespace and class prefix
-./_build/model-compiler --target-namespace myapp --target-class-prefix FM <source_file.fm>
+# Generate with custom output file
+./_build/model-compiler --lang c++ <source_file.fm> -o output.h
 
-# Dump AST (syntax tree) for debugging
+# Generate with namespace and class prefix
+./_build/model-compiler --lang c++ --target-namespace myapp --target-class-prefix FM <source_file.fm>
+
+# Validation with AST dump (no code generation)
 ./_build/model-compiler --dump-syntax-tree <source_file.fm>
 
-# Dump symbol table after semantic analysis
+# Validation with symbol table dump (no code generation)
 ./_build/model-compiler --dump-symbol-table <source_file.fm>
 
 # Show help
@@ -483,19 +486,22 @@ ninja clean
 Examples:
 
 ```bash
-# Generate C++ header (creates examples/podcast.h)
+# Validate file (syntax and semantic checking only)
 ./_build/model-compiler examples/podcast.fm
 
+# Generate C++ header (creates examples/podcast.h)
+./_build/model-compiler --lang c++ examples/podcast.fm
+
 # Generate with custom output path
-./_build/model-compiler examples/podcast.fm -o generated/podcast.h
+./_build/model-compiler --lang c++ examples/podcast.fm -o generated/podcast.h
 
 # Generate with namespace
-./_build/model-compiler --target-namespace myapp examples/podcast.fm
+./_build/model-compiler --lang c++ --target-namespace myapp examples/podcast.fm
 
-# View syntax tree
+# View syntax tree (validation only, no code generation)
 ./_build/model-compiler --dump-syntax-tree examples/podcast.fm
 
-# View symbol table
+# View symbol table (validation only, no code generation)
 ./_build/model-compiler --dump-symbol-table examples/podcast.fm
 ```
 

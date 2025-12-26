@@ -14,10 +14,14 @@ int main(int argc, char* argv[])
 
         options.add_options()("h,help", "Print usage information")("v,version", "Print version information")(
             "dump-syntax-tree", "Dump the Abstract Syntax Tree after lexical analysis")("dump-symbol-table", "Dump the Symbol Table after semantic analysis")(
-            "o,output", "Output file path (default: input filename with .h extension)",
-            cxxopts::value<std::string>()->default_value(""))(
-            "target-class-prefix", "Prefix to add to generated class and enum names",
-            cxxopts::value<std::string>()->default_value(""))(
+            "lang",
+            "Target language for code generation (optional, currently only 'c++' is supported). If not specified, only syntax and semantic validation is " "per"
+                                                                                                                                                           "for"
+                                                                                                                                                           "med"
+                                                                                                                                                           ".",
+            cxxopts::value<std::string>())(
+            "o,output", "Output file path (default: input filename with .h extension)", cxxopts::value<std::string>()->default_value(""))(
+            "target-class-prefix", "Prefix to add to generated class and enum names", cxxopts::value<std::string>()->default_value(""))(
             "target-namespace", "Target namespace for generated code",
             cxxopts::value<std::string>()->default_value(""))("input", "Input source file(s)", cxxopts::value<std::vector<std::string>>());
 
@@ -52,6 +56,21 @@ int main(int argc, char* argv[])
         // Collect source files from command line
         std::vector<std::string> sourceFiles = result["input"].as<std::vector<std::string>>();
 
+        // Check if code generation is requested
+        bool        generateCode = (result.count("lang") > 0);
+        std::string targetLanguage;
+
+        if (generateCode)
+        {
+            // Validate language option
+            targetLanguage = result["lang"].as<std::string>();
+            if ("c++" != targetLanguage)
+            {
+                bbfm::Console::ReportError("Error: Unsupported language '" + targetLanguage + "'. Currently only 'c++' is supported.");
+                return 1;
+            }
+        }
+
         // Get target class prefix option
         std::string targetClassPrefix = result["target-class-prefix"].as<std::string>();
 
@@ -60,6 +79,16 @@ int main(int argc, char* argv[])
 
         // Create driver with source files
         bbfm::Driver driver(sourceFiles, targetClassPrefix, targetNamespace);
+
+        // Report target language if code generation is requested
+        if (generateCode)
+        {
+            bbfm::Console::ReportStatus("Target language: " + targetLanguage);
+        }
+        else
+        {
+            bbfm::Console::ReportStatus("Validation mode: Syntax and semantic checking only (no code generation)");
+        }
 
         // Report target class prefix if set
         if (false == targetClassPrefix.empty())
@@ -87,7 +116,7 @@ int main(int argc, char* argv[])
 
             // Get combined namespaces and format as prefix
             std::vector<std::string> namespaces = driver.GetCombinedNamespaces(ast.get());
-            std::string nsPrefix;
+            std::string              nsPrefix;
             for (const auto& ns : namespaces)
             {
                 nsPrefix += ns + "::";
@@ -110,33 +139,41 @@ int main(int argc, char* argv[])
             analyzer->DumpSymbolTable();
         }
 
-        // Phase 2: Code generation
-        std::string outputPath = result["output"].as<std::string>();
-
-        // If no output path specified, derive from input filename
-        if (outputPath.empty())
+        // Phase 2: Code generation (only if --lang was specified)
+        if (generateCode)
         {
-            const std::string& inputFile = sourceFiles[0];
+            std::string outputPath = result["output"].as<std::string>();
 
-            // Replace .fm extension with .h
-            size_t lastDot = inputFile.find_last_of('.');
-            if (std::string::npos != lastDot)
+            // If no output path specified, derive from input filename
+            if (outputPath.empty())
             {
-                outputPath = inputFile.substr(0, lastDot) + ".h";
+                const std::string& inputFile = sourceFiles[0];
+
+                // Replace .fm extension with .h
+                size_t lastDot = inputFile.find_last_of('.');
+                if (std::string::npos != lastDot)
+                {
+                    outputPath = inputFile.substr(0, lastDot) + ".h";
+                }
+                else
+                {
+                    outputPath = inputFile + ".h";
+                }
             }
-            else
+
+            // Generate code
+            if (!driver.Phase2(ast.get(), analyzer.get(), outputPath))
             {
-                outputPath = inputFile + ".h";
+                return 1;
             }
+
+            bbfm::Console::ReportStatus("\nCompilation completed successfully!");
+        }
+        else
+        {
+            bbfm::Console::ReportStatus("\nValidation completed successfully!");
         }
 
-        // Generate C++ code
-        if (!driver.Phase2(ast.get(), analyzer.get(), outputPath))
-        {
-            return 1;
-        }
-
-        bbfm::Console::ReportStatus("\nCompilation completed successfully!");
         return 0;
     }
     catch (const cxxopts::exceptions::exception& e)

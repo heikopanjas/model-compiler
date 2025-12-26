@@ -1,6 +1,6 @@
 # Project Instructions for AI Coding Agents
 
-**Last updated:** 2025-12-26 (Unix/Windows isatty compatibility fix)
+**Last updated:** 2025-12-26 (Added --lang option for code generator selection)
 
 <!-- {mission} -->
 
@@ -1153,7 +1153,20 @@ After making ANY code changes:
 
 ## Recent Updates & Decisions
 
-### 2025-12-26
+### 2025-12-26 (Evening)
+
+- **Added --lang Option for Code Generator Selection**: Implemented optional command-line option to select target language
+- **Command-line Option**: `--lang <language>` (optional, no default value)
+- **Validation Mode**: When --lang is omitted, compiler performs only syntax and semantic validation (Phases 0 and 1)
+- **Code Generation Mode**: When --lang is specified, compiler performs full compilation including code generation (Phases 0, 1, and 2)
+- **Language Validation**: Only 'c++' is currently supported; unsupported languages are rejected with clear error message
+- **Status Reporting**: Displays "Validation mode" or "Target language: c++" depending on whether --lang is specified
+- **Completion Messages**: "Validation completed successfully!" vs "Compilation completed successfully!"
+- **Documentation**: Updated README.md with examples of both validation-only and code generation modes
+- **Use Case**: Enables quick error checking without committing to code generation
+- **Reasoning**: Two-phase workflow allows users to validate input files before generating output, improving development efficiency and preventing unnecessary file generation during error checking
+
+### 2025-12-26 (Morning)
 
 - **Unix/Windows isatty Compatibility Fix**: Fixed compilation error on Unix systems
 - **Problem**: Windows compatibility changes added `%option nounistd` to lexer, which prevented automatic inclusion of `<unistd.h>` on Unix
