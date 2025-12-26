@@ -1,6 +1,6 @@
 # Project Instructions for AI Coding Agents
 
-**Last updated:** 2025-12-25 (MSVC compatibility and warning-free build)
+**Last updated:** 2025-12-26 (Unix/Windows isatty compatibility fix)
 
 <!-- {mission} -->
 
@@ -1152,6 +1152,18 @@ After making ANY code changes:
 ---
 
 ## Recent Updates & Decisions
+
+### 2025-12-26
+
+- **Unix/Windows isatty Compatibility Fix**: Fixed compilation error on Unix systems
+- **Problem**: Windows compatibility changes added `%option nounistd` to lexer, which prevented automatic inclusion of `<unistd.h>` on Unix
+- **Impact**: `isatty` and `fileno` functions became undeclared on Unix/macOS builds
+- **Solution**: Added explicit `#include <unistd.h>` for non-Windows platforms in lexer
+- **Implementation**: Updated `model-compiler.l` with platform-specific includes:
+  - Windows: `#include <io.h>` with `_isatty`/`_fileno` macros
+  - Unix/macOS: `#include <unistd.h>` for standard `isatty`/`fileno` functions
+- **Verification**: Build tested successfully on macOS, maintains Windows compatibility
+- **Reasoning**: Ensures cross-platform compilation after Windows-specific changes while maintaining clean separation of platform-specific code
 
 ### 2025-12-25
 

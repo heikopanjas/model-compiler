@@ -7,9 +7,11 @@
 #include <iostream>
 
 #ifdef _WIN32
-#include <io.h>  // For _isatty on Windows
+#include <io.h>  // For _isatty and _fileno on Windows
 #define isatty _isatty
 #define fileno _fileno
+#else
+#include <unistd.h>  // For isatty and fileno on Unix
 #endif
 
 // Helper function to create heap-allocated C string from C++ string
