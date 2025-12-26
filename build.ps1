@@ -13,12 +13,11 @@ if (-not (Test-Path $BUILD_DIR)) {
 
 # Configure with CMake and Ninja
 Write-Host "Configuring with CMake..."
-Set-Location $BUILD_DIR
-cmake -G Ninja ..
+cmake -G Ninja -B $BUILD_DIR
 
 # Build
-Write-Host "Building with Ninja..."
-ninja
+Write-Host "Building with CMake..."
+cmake --build $BUILD_DIR
 
 Write-Host ""
 Write-Host "Build complete! Executable: $BUILD_DIR/model-compiler.exe"

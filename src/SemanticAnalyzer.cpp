@@ -1188,17 +1188,48 @@ void SemanticAnalyzer::DumpSymbolTable() const
                         bool isLocal = (0 != localFieldSet.count(field));
                         std::cout << "      " << (isLocal ? "Self::" : "Base::") << field->GetName() << ": ";
 
-                        // Get type name based on TypeSpec type
-                        const TypeSpec* typeSpec = field->GetType();
-                        if (typeSpec->IsPrimitive())
+                        // Handle alias fields specially
+                        if (field->IsAlias())
                         {
-                            const PrimitiveTypeSpec* primType = dynamic_cast<const PrimitiveTypeSpec*>(typeSpec);
-                            std::cout << "<builtin>::" << PrimitiveTypeSpec::TypeToString(primType->GetType());
+                            // For aliases, resolve the target field's type
+                            const TypeSymbol* targetType = GetFieldType(entry.second.classDecl, field->GetName());
+                            if (nullptr != targetType)
+                            {
+                                if (TypeSymbol::Kind::PRIMITIVE == targetType->kind)
+                                {
+                                    std::cout << "<builtin>::" << targetType->name;
+                                }
+                                else
+                                {
+                                    std::cout << nsPrefix << targetType->name;
+                                }
+                            }
+                            else
+                            {
+                                std::cout << "<unresolved>";
+                            }
                         }
                         else
                         {
-                            const UserDefinedTypeSpec* userType = dynamic_cast<const UserDefinedTypeSpec*>(typeSpec);
-                            std::cout << nsPrefix << userType->GetTypeName();
+                            // Get type name based on TypeSpec type
+                            const TypeSpec* typeSpec = field->GetType();
+                            if (nullptr != typeSpec)
+                            {
+                                if (typeSpec->IsPrimitive())
+                                {
+                                    const PrimitiveTypeSpec* primType = dynamic_cast<const PrimitiveTypeSpec*>(typeSpec);
+                                    std::cout << "<builtin>::" << PrimitiveTypeSpec::TypeToString(primType->GetType());
+                                }
+                                else
+                                {
+                                    const UserDefinedTypeSpec* userType = dynamic_cast<const UserDefinedTypeSpec*>(typeSpec);
+                                    std::cout << nsPrefix << userType->GetTypeName();
+                                }
+                            }
+                            else
+                            {
+                                std::cout << "<null type>";
+                            }
                         }
 
                         // Show modifiers
@@ -1233,6 +1264,20 @@ void SemanticAnalyzer::DumpSymbolTable() const
                             {
                                 std::string annotatedExpr = AnnotateExpressionWithOrigin(initializer, entry.second.classDecl, localFieldSet);
                                 std::cout << " = " << annotatedExpr;
+                            }
+                        }
+
+                        // Show alias target
+                        if (field->IsAlias())
+                        {
+                            const Expression* initializer = field->GetInitializer();
+                            if (nullptr != initializer)
+                            {
+                                const FieldReference* fieldRef = dynamic_cast<const FieldReference*>(initializer);
+                                if (nullptr != fieldRef)
+                                {
+                                    std::cout << " (alias -> " << fieldRef->GetFieldName() << ")";
+                                }
                             }
                         }
 

@@ -15,12 +15,11 @@ fi
 
 # Configure with CMake and Ninja
 echo "Configuring with CMake..."
-cd "$BUILD_DIR"
-cmake -G Ninja ..
+cmake -G Ninja -B "$BUILD_DIR"
 
 # Build
-echo "Building with Ninja..."
-ninja
+echo "Building with CMake..."
+cmake --build "$BUILD_DIR"
 
 echo ""
 echo "Build complete! Executable: $BUILD_DIR/model-compiler"
