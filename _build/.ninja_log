@@ -1,0 +1,23 @@
+# ninja log v6
+250	1709	7937234419929066	CMakeFiles/model-compiler.dir/parser.cpp.obj	9bf22040a9c367ad
+16	75	7937234418114343	lexer.cpp	65ea4923a0f97003
+8	222	7937234419592609	parser.cpp	581c96c58506446a
+16	75	7937234418114343	Z:/_me/model-compiler/_build/lexer.cpp	65ea4923a0f97003
+8	222	7937234419592609	parser.h	581c96c58506446a
+230	1533	7937234419752030	CMakeFiles/model-compiler.dir/src/AST.cpp.obj	642890606be00d00
+8	222	7937234419592609	Z:/_me/model-compiler/_build/parser.cpp	581c96c58506446a
+8	222	7937234419592609	Z:/_me/model-compiler/_build/parser.h	581c96c58506446a
+242	1159	7937234419856661	CMakeFiles/model-compiler.dir/src/CodeGenerator.cpp.obj	f844a4fc9058ecf
+28	1368	7937234417673531	CMakeFiles/guid-test.dir/include/runtime/Guid.cpp.obj	33b7211cc54594ae
+254	1387	7937234419987046	CMakeFiles/model-compiler.dir/lexer.cpp.obj	de19dc69ce52f29d
+237	1414	7937234419774430	CMakeFiles/model-compiler.dir/src/Console.cpp.obj	8644a0def9876d44
+6	1586	7944059032399220	CMakeFiles/guid-test.dir/tests/runtime/GuidTest.cpp.obj	eaebae214498f103
+226	1623	7937234419647879	CMakeFiles/model-compiler.dir/src/Driver.cpp.obj	d41f1eb9b489682
+234	1706	7937234419774430	CMakeFiles/model-compiler.dir/src/SemanticAnalyzer.cpp.obj	b7bb766515b8dc4b
+1586	1773	7944059048194810	guid-test.exe	c1d8d5945fa11539
+246	2041	7937234419908977	CMakeFiles/model-compiler.dir/src/CppCodeGenerator.cpp.obj	5e5db80f467481a5
+222	2735	7937234419647879	CMakeFiles/model-compiler.dir/src/main.cpp.obj	749dc104d855e1e1
+2735	3018	7937234444731206	model-compiler.exe	e4ad9a7a439aad7e
+10	1017	7944061665496746	build.ninja	bb0e26b32d8cc5a5
+9	902	7944061666055667	CMakeFiles/guid-test.dir/tests/runtime/GuidTest.cpp.obj	eaebae214498f103
+903	1030	7944061675026058	guid-test.exe	c1d8d5945fa11539

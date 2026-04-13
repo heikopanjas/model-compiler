@@ -43,6 +43,26 @@ include_directories(
     ${CMAKE_BINARY_DIR}
 )
 
+# --- Runtime platform dependencies --------------------------------------------
+# The runtime (include/runtime/) requires platform-specific UUID libraries.
+# This INTERFACE target carries the correct link dependencies so that any
+# target compiling Guid.cpp can simply link against bbfm_runtime.
+add_library(bbfm_runtime INTERFACE)
+target_include_directories(bbfm_runtime INTERFACE ${CMAKE_SOURCE_DIR}/include)
+
+if (WIN32)
+    # ole32.lib is auto-linked via #pragma comment(lib) in Guid.cpp
+elseif (APPLE)
+    find_library(COREFOUNDATION_LIBRARY CoreFoundation REQUIRED)
+    target_link_libraries(bbfm_runtime INTERFACE ${COREFOUNDATION_LIBRARY})
+else()
+    # Linux - require libuuid (uuid-dev / libuuid-devel)
+    find_package(PkgConfig REQUIRED)
+    pkg_check_modules(UUID REQUIRED uuid)
+    target_include_directories(bbfm_runtime INTERFACE ${UUID_INCLUDE_DIRS})
+    target_link_libraries(bbfm_runtime INTERFACE ${UUID_LIBRARIES})
+endif()
+
 # Compiler executable
 add_executable(model-compiler
     src/main.cpp
@@ -82,3 +102,64 @@ endif()
 
 # Install target
 install(TARGETS model-compiler DESTINATION bin)
+
+# --- Tests --------------------------------------------------------------------
+enable_testing()
+
+# Helper to register a test that must exit 0
+function(add_fm_test name file)
+    add_test(NAME ${name}
+             COMMAND model-compiler ${CMAKE_SOURCE_DIR}/examples/${file})
+endfunction()
+
+# Helper to register a test that must exit non-zero (error expected)
+function(add_fm_error_test name file)
+    add_test(NAME ${name}
+             COMMAND model-compiler ${CMAKE_SOURCE_DIR}/examples/${file})
+    set_tests_properties(${name} PROPERTIES WILL_FAIL TRUE)
+endfunction()
+
+# Positive tests -- compiler must succeed (exit 0)
+add_fm_test(podcast                       podcast.fm)
+add_fm_test(comprehensive                 comprehensive_test.fm)
+add_fm_test(computed_simple               test_computed_simple.fm)
+add_fm_test(computed_member_access        test_computed_member_access.fm)
+add_fm_test(computed_inheritance          test_computed_inheritance.fm)
+add_fm_test(expressions                   test_expressions.fm)
+add_fm_test(namespace                     test_namespace.fm)
+add_fm_test(type_promotion_ok             test_type_promotion_ok.fm)
+# error_test_suite.fm is a documentation/index file (all cases are block-commented);
+# it compiles to an empty input so it belongs with the positive tests.
+add_fm_test(error_suite_doc               error_test_suite.fm)
+
+# Negative tests -- compiler must detect the error (exit non-zero)
+add_fm_error_test(error_bad_invariant              test_bad_invariant.fm)
+add_fm_error_test(error_circular_inheritance       test_circular_inheritance.fm)
+add_fm_error_test(error_computed_invalid_member    test_computed_error_invalid_member.fm)
+add_fm_error_test(error_computed_member_primitive  test_computed_error_member_on_primitive.fm)
+add_fm_error_test(error_computed_undefined_field   test_computed_error_undefined_field.fm)
+add_fm_error_test(error_computed_optional          test_computed_optional_error.fm)
+add_fm_error_test(error_duplicate_field            test_duplicate_field.fm)
+add_fm_error_test(error_column_reporting           test_error_column.fm)
+add_fm_error_test(error_missing_semicolon          test_missing_semicolon.fm)
+add_fm_error_test(error_type_int_real              test_type_error_int_real.fm)
+add_fm_error_test(error_type_member_access         test_type_error_member_access.fm)
+add_fm_error_test(error_undefined_type             test_undefined_type.fm)
+add_fm_error_test(error_wrong_case                 test_wrong_case.fm)
+
+# --- Runtime unit tests -------------------------------------------------------
+
+add_executable(guid-test
+    tests/runtime/GuidTest.cpp
+    include/runtime/Guid.cpp
+)
+
+target_link_libraries(guid-test PRIVATE bbfm_runtime)
+
+if (MSVC)
+    target_compile_options(guid-test PRIVATE /W4)
+else()
+    target_compile_options(guid-test PRIVATE -Wall -Wextra -Wpedantic)
+endif()
+
+add_test(NAME runtime_guid COMMAND guid-test)

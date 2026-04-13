@@ -1,33 +1,20 @@
 # Project Instructions for AI Coding Agents
 
-**Last updated:** 2025-12-26 (Added --lang option for code generator selection)
+**Last updated:** 2026-02-18
 
 <!-- {mission} -->
 
 ## Mission Statement
 
-**Model Compiler (BBFM)** is a Domain-Specific Language compiler for the Big Bad Feed Machine (BBFM) project. It compiles podcast object models defined in a UML-inspired modeling syntax into target programming languages. The compiler provides a type-safe, expressive language for defining data structures, relationships, constraints (invariants), and computed features, which are then translated into production-ready source code.
-
-**Key Features:**
-
-- UML-inspired DSL for podcast domain modeling
-- Type-safe modeling with primitives, enumerations, and user-defined types
-- Single inheritance support with cycle detection
-- Computed features with expression system (arithmetic, logical, member access)
-- Invariant constraints for domain validation
-- Namespace support for code organization (command-line and source file)
-- Multi-phase compilation: parsing, semantic analysis, code generation
-- Currently targets C++ (additional languages planned)
+[Describe your project here - what it does, its purpose, and key features]
 
 ## Technology Stack
 
-- **Language:** C++23 (minimum C++17 for broader compiler support)
-- **Build System:** CMake 3.20+ with Ninja
-- **Parser/Lexer:** Flex 2.6+ (lexical analysis), Bison 3.8+ (parsing)
-- **CLI Library:** cxxopts 3.3.1 (command-line argument parsing)
+- **Language:** [e.g., Python, TypeScript, JavaScript]
+- **Framework:** [e.g., React, Next.js, Django, FastAPI]
 - **Version Control:** Git
-- **License:** MIT
-- **Target Code Generation:** C++ (Phase 2 - Complete ✅)
+- **Package Manager:** [e.g., npm, pip, poetry, yarn]
+- **License:** [e.g., MIT, Apache 2.0]
 
 <!-- {principles} -->
 
@@ -85,23 +72,11 @@ When initializing a session or analyzing the workspace, refer to instruction fil
 
 ### Development Guidelines
 
-**Project-Specific Guidelines for BBFM Model Compiler:**
+[Add project-specific development guidelines]
 
-- **Namespace**: All code must be in the `bbfm` namespace
-- **Include Guard Format**: Use `__BBFM_CLASS_NAME_H_INCL__` format (e.g., `__BBFM_DRIVER_H_INCL__`)
-- **AST Design**: Use visitor pattern for AST traversal when implementing new phases
-- **Error Reporting**: Use file:line:column format with visual source context pointers
-- **Compilation Phases**:
-  - Phase 0: Lexical analysis and parsing (AST construction) - Complete ✅
-  - Phase 1: Semantic analysis (symbol table, type checking) - Complete ✅
-  - Phase 2: Code generation (C++ output) - Complete ✅
-- **Smart Pointers**: Use `std::unique_ptr` for AST nodes and owned resources
-- **Expression System**: Support arithmetic, comparison, logical operators, member access
-- **Testing**: Test with example `.fm` files in `examples/` directory
-- **Checker Function Naming**: Use `Require_<field>_<invariant>` pattern (e.g., `Require_timestamp_validTimestamp`)
-  - Semantics: "Require" emphasizes that invariant must hold (not just "checking")
-  - Field-first: More natural to read ("requiring timestamp to satisfy validTimestamp")
-  - Bound at compile-time as template parameters in `BoundedValue<T, ParentT, ...Checkers>`
+- [Guideline 1]
+- [Guideline 2]
+- [Guideline 3]
 
 ### Security & Safety
 
@@ -113,29 +88,21 @@ When initializing a session or analyzing the workspace, refer to instruction fil
 
 ### Testing
 
-**Testing Approach for Model Compiler:**
+[Describe your testing approach]
 
-- **Integration tests**: Example `.fm` files in `examples/` directory
-- **Test files**: Files prefixed with `test_` for specific scenarios
-- **Error test suite**: `error_test_suite.fm` for error handling validation
-- **Comprehensive test**: `comprehensive_test.fm` for full language feature coverage
-- **Testing workflow**:
-  - Compile example files: `./_build/model-compiler examples/file.fm`
-  - Dump AST: `./_build/model-compiler --dump-syntax-tree examples/file.fm`
-  - Dump symbol table: `./_build/model-compiler --dump-symbol-table examples/file.fm`
-- **Testing framework**: Manual integration testing (unit test framework TBD)
+- Unit tests: [location and conventions]
+- Integration tests: [location and conventions]
+- Test coverage requirements: [if any]
+- Testing framework: [e.g., Jest, pytest, JUnit]
 
 ### Documentation
 
-**Documentation Requirements for Model Compiler:**
+[Describe your documentation requirements]
 
-- **Code comments**: Use Doxygen format (`///`, `\brief`, `\param`, `\return`) for all public APIs
-- **API documentation**: Header files in `include/` directory contain full Doxygen documentation
-- **README updates**: Update when adding language features, compilation phases, or usage examples
-- **Language specification**: Document new keywords, types, or syntax in README.md
-- **Example files**: Add commented `.fm` examples in `examples/` directory for new features
-- **AST documentation**: Document new AST node types with their purpose and structure
-- **Changelog**: Track major changes in Recent Updates & Decisions section of AGENTS.md
+- Code comments: [when and how]
+- API documentation: [format and location]
+- README updates: [when required]
+- Changelog: [if maintained]
 
 <!-- {languages} -->
 
@@ -1180,140 +1147,14 @@ After making ANY code changes:
 
 ### 2025-12-25
 
-- **MSVC Compatibility Implementation**: Full Windows/MSVC build support achieved
-- **PowerShell Build Script**: Created `build.ps1` equivalent to `build.sh` for Windows development
-- **Platform-Specific Compiler Flags**: Added conditional flags in CMakeLists.txt (`/W4` for MSVC, `-Wall -Wextra -Wpedantic` for GCC/Clang)
-- **C++ Standard Functions**: Replaced all POSIX functions with C++ standard library equivalents
-  - Removed `strdup()` → Created `MakeString()` helper using `std::memcpy()`
-  - Removed `strcasecmp()` → Created `StringCompareIgnoreCase()` with platform-specific implementation
-  - Removed `strings.h` include → Not needed on Windows
-  - Added `<io.h>` on Windows for `_isatty`/`_fileno` compatibility
-- **Flex/Bison Windows Compatibility**: Added `%option nounistd` to prevent unistd.h include
-- **Linkage Fixes**: Resolved C/C++ linkage issues between Flex and Bison generated code
-  - Removed extern "C" blocks from lexer
-  - Made `yyerror` use extern "C" linkage
-  - Ensured consistent C++ linkage for `yylval` and `yylloc`
-- **Warning-Free Build**: Eliminated all compiler warnings
-  - Suppressed flex/bison generated code warnings (C4005, C4702) in CMakeLists.txt
-  - Replaced `fopen()` with `fopen_s()` on Windows to eliminate C4996 warning
-  - Fixed variable shadowing in SemanticAnalyzer.cpp (C4456 warning)
-  - Used `std::memcpy()` instead of `std::strcpy()` to avoid deprecation warnings
-- **Cross-Platform Build**: Project now builds cleanly on Windows (MSVC), Linux (GCC), and macOS (Clang)
-- **Professional Code Quality**: Zero warnings, proper platform abstraction, C++ standard compliance
-- **Reasoning**: Using C++ standard library functions instead of POSIX-specific calls ensures true cross-platform compatibility and eliminates the need for platform-specific macros. Professional code should compile without warnings on all supported platforms.
-
-### 2025-12-11 (Evening)
-
-- **Critical C++ Initialization Order Fix**: Fixed undefined behavior in alias field generation
-- **Problem**: Alias fields were generated before regular fields, causing dangling references
-- **Root Cause**: C++ initializes members in declaration order, not initializer list order
-- **Impact**: AliasValue wrappers held references to unconstructed target fields
-- **Solution**: Three-pass field generation in GenerateClassFields()
-  - Pass 1: Regular fields (non-alias, non-computed)
-  - Pass 2: Computed fields (may reference regular fields)
-  - Pass 3: Alias fields (must come after targets)
-- **Verification**: Tested with podcast.fm Region class (alias startTime references timestamp)
-- **Documentation**: Updated README.md with alias field examples and wrapper types
-- **Reasoning**: Ensures all target fields exist before alias field construction, preventing undefined behavior
-
-### 2025-12-11 (Morning)
-
-- **Checker Function Naming Refactor**: Changed invariant checker function naming convention for clarity
-- **Old Pattern**: `Check` + invariantName + `_` + fieldName (e.g., `CheckvalidTimestamp_timestamp`)
-- **New Pattern**: `Require_` + fieldName + `_` + invariantName (e.g., `Require_timestamp_validTimestamp`)
-- **Semantics**: "Require" better expresses that invariant must hold (not just passive checking)
-- **Readability**: Field-first order is more natural ("requiring timestamp to satisfy validTimestamp")
-- **Implementation**: Updated CppCodeGenerator.cpp in three locations (lines 188, 500, 1257)
-- **Template Parameters**: Checkers bound at compile-time via non-type template parameters in BoundedValue
-- **Zero Overhead**: Function pointer approach maintains compile-time binding (rejected std::function for performance)
-- **Reasoning**: Cleaner generated code while preserving zero-runtime-overhead design for invariant validation
-
-### 2025-12-10 (Deep Night)
-
-- **Alias Feature Implementation**: Added full support for field aliases using `alias` keyword
-- **Syntax**: `alias aliasName = targetFieldName;` creates read-write alias to another field
-- **AliasValue Wrapper**: Created template that forwards reads/writes to target field wrapper
-- **Invariant Propagation**: Writing to alias triggers target field's invariant validation
-- **Semantic Validation**: Aliases must reference simple fields (not expressions), no alias chains
-- **Code Generation**: Generates `AliasValue<TargetWrapperType>` with correct template parameters
-- **Type Inference**: GetFieldType recursively resolves alias target types for type checking
-- **Defensive Checks**: Added null checks for alias fields throughout semantic analyzer
-- **Use Case**: Enables creating convenient names for inherited fields (e.g., `alias startTime = timestamp`)
-- **Reasoning**: Provides read-write access to inherited fields with full invariant validation, solving the problem where computed properties couldn't be written to
-
-### 2025-12-10 (Very Late Night)
-
-- **DynamicValue Wrapper**: Implemented `DynamicValue<T, ParentT>` wrapper for computed properties
-- **Consistent Field Approach**: Computed properties now stored as fields with lambda initialization
-- **Constructor Lambdas**: Computed fields initialized with `[](const Parent& parent) { return expr; }` lambdas
-- **Expression Context**: Updated `ExpressionToCpp` to distinguish computed vs regular fields
-- **Implicit Conversion**: Computed fields use implicit conversion, regular fields use `.value_` accessor
-- **Optional Field Restriction**: Added semantic validation to prohibit optional fields in computed expressions
-- **Validation Rule**: Computed features cannot reference optional fields (may not have value at computation time)
-- **FindFieldInClass**: Added public method to SemanticAnalyzer for field lookup with inheritance
-- **Reasoning**: DynamicValue provides consistent field-based interface for computed properties with on-demand evaluation; optional field restriction prevents undefined behavior
-
-### 2025-12-10 (Late Night)
-
-- **Invariant Checker Refactoring**: Improved separation of concerns in validation architecture
-- **Checker Functions**: Now return `bool` instead of `void`, no side effects
-- **Parameter Naming**: Changed `obj` to `object` (no abbreviations)
-- **Const Correctness**: Checker functions use `const ClassName& object` parameter
-- **Exception Handling**: Moved from checker functions to BoundedValue wrapper classes
-- **Modification Date**: Moved UpdateModificationDate() to wrapper assignment operators
-- **Clean Design**: Checker functions are now pure validation predicates
-- **Reasoning**: Better separation of concerns - validation logic separate from error handling and state updates
-
-### 2025-12-10 (Night)
-
-- **Phase 2 Implementation Complete**: Full C++ code generation now functional
-- **Abstract Code Generator**: Created base class architecture for multi-language support
-- **CppCodeGenerator**: Concrete C++ implementation with all features
-- **Runtime Types**: Created stub implementations for String, Date, Guid in bbfm::runtime namespace
-- **Fabric Base Class**: Universal metadata fields (typeId, id, cardinality, etc.) provided via inheritance
-- **Complete Feature Set**: Enums, classes, inheritance, computed features, invariant validation, getters
-- **Command-line Options**: Added --output option for specifying output file path
-- **Type Mappings**: String/Date/Guid map to bbfm::runtime types, others to standard C++
-- **Code Quality**: Proper include guards, alignment pragmas, const correctness, Doxygen comments
-- **Reasoning**: Complete code generation enables end-to-end compilation from BBFM models to C++ headers
-
-### 2025-12-10 (Evening)
-
-- **Namespace Support Implementation**: Added full namespace support to the language
-- **Language Features**: Added `namespace` keyword for source file namespace declarations
-- **Command-line Option**: `--target-namespace` option for specifying target namespace
-- **Namespace Combination**: Source and target namespaces combine as nested namespaces in generated code
-- **Lexer/Parser Updates**: Extended grammar to support `namespace identifier;` syntax
-- **AST Changes**: Added `sourceNamespace_` field to AST class with getter method
-- **Driver Enhancement**: Added `GetCombinedNamespaces()` method to combine CLI and source namespaces
-- **Documentation**: Updated README.md with namespace section and examples
-- **Reasoning**: Namespaces provide code organization and prevent naming conflicts in generated C++ code
-
-### 2025-12-10 (Later)
-
-- **Target Language Change**: Changed target language from Swift to C++
-- **Updated Documentation**: All mentions of Swift replaced with C++ throughout project
-- **Type Mappings**: Updated type mappings table to show C++ types (std::string, int64_t, double, etc.)
-- **Reasoning**: C++ is a better fit as the target language for this C++-based compiler project
-
-### 2025-12-10
-
-- **Session Initialization**: Analyzed workspace and updated AGENTS.md with project-specific information
-- **Mission Statement**: Documented BBFM Model Compiler purpose and key features
-- **Technology Stack**: Updated with actual technologies (C++23, CMake, Flex/Bison, cxxopts, C++ target)
-- **Development Guidelines**: Added project-specific guidelines (namespace, include guards, compilation phases)
-- **Testing Approach**: Documented integration testing workflow with example files
-- **Documentation Requirements**: Specified Doxygen format and documentation locations
-- **README.md Updates**: Comprehensive updates to improve accuracy and completeness:
-  - Added project header with license, language, and version information
-  - Clarified C++17 minimum requirement (C++23 preferred)
-  - Fixed type mappings table to include Date and Guid with proper descriptions
-  - Updated project structure to accurately reflect examples directory contents
-  - Added comprehensive "Example Files" section documenting all test files
-  - Added "Development" section with code organization, coding standards, and contributing info
-  - Added "Project Status" section showing current phase progress
-  - Fixed build.sh comment (was "P3 Compiler", now "BBFM Model Compiler")
-- **Reasoning**: Initialize AGENTS.md to accurately reflect the Model Compiler project structure and conventions, and ensure README.md is comprehensive, accurate, and helpful for developers
+- Implemented Guid runtime class with PIMPL pattern for platform isolation
+- Platform-native UUID generation: CoCreateGuid (Windows), CFUUIDCreate (macOS), uuid_generate (Linux libuuid)
+- Internal storage: raw uint8_t[16] with lazy cached string formatting
+- Added bbfm_runtime INTERFACE CMake target carrying platform link deps (ole32, CoreFoundation, uuid)
+- Linux libuuid discovered via PkgConfig in CMakeLists.txt
+- Added comprehensive CTest unit tests (tests/runtime/GuidTest.cpp) using plain main() with custom CHECK macros (no external framework)
+- Guid semantics: default-constructed is uninitialized (IsValid=false, IsNil=true); Guid::Nil() is explicit nil (IsValid=true, IsNil=true)
+- Full Rule of Five, comparison operators (==, !=, <), and std::hash specialization
 
 ### 2025-10-05
 
