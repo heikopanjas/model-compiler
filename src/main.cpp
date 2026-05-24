@@ -15,7 +15,7 @@ int main(int argc, char* argv[])
         options.add_options()("h,help", "Print usage information")("v,version", "Print version information")(
             "dump-syntax-tree", "Dump the Abstract Syntax Tree after lexical analysis")("dump-symbol-table", "Dump the Symbol Table after semantic analysis")(
             "lang",
-            "Target language for code generation (optional, currently only 'c++' is supported). If not specified, only syntax and semantic validation is " "per" "for" "med" ".",
+            "Target language for code generation (optional). Supported: 'c++', 'rust' (experimental). If not specified, only syntax and semantic validation is " "per" "for" "med" ".",
             cxxopts::value<std::string>())(
             "o,output", "Output file path (default: input filename with .h extension)", cxxopts::value<std::string>()->default_value(""))(
             "target-class-prefix", "Prefix to add to generated class and enum names", cxxopts::value<std::string>()->default_value(""))(
@@ -61,9 +61,9 @@ int main(int argc, char* argv[])
         {
             // Validate language option
             targetLanguage = result["lang"].as<std::string>();
-            if ("c++" != targetLanguage)
+            if ("c++" != targetLanguage && "rust" != targetLanguage)
             {
-                bbfm::Console::ReportError("Error: Unsupported language '" + targetLanguage + "'. Currently only 'c++' is supported.");
+                bbfm::Console::ReportError("Error: Unsupported language '" + targetLanguage + "'. Supported: 'c++', 'rust' (experimental).");
                 return 1;
             }
         }
@@ -159,7 +159,7 @@ int main(int argc, char* argv[])
             }
 
             // Generate code
-            if (driver.Phase2(ast.get(), analyzer.get(), outputPath) == false)
+            if (driver.Phase2(ast.get(), analyzer.get(), outputPath, targetLanguage) == false)
             {
                 return 1;
             }

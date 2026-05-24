@@ -1,7 +1,9 @@
 #include "Driver.h"
 #include "AST.h"
 #include "Console.h"
+#include "Contracts.h"
 #include "CppCodeGenerator.h"
+#include "RustCodeGenerator.h"
 #include "SemanticAnalyzer.h"
 #include <cstdio>
 #include <fstream>
@@ -164,39 +166,40 @@ std::unique_ptr<SemanticAnalyzer> Driver::Phase1(const AST* ast)
     return analyzer;
 }
 
-bool Driver::Phase2(const AST* ast, const SemanticAnalyzer* analyzer, const std::string& outputPath)
+bool Driver::Phase2(const AST* ast, const SemanticAnalyzer* analyzer, const std::string& outputPath, const std::string& language)
 {
-    if (nullptr == ast)
-    {
-        Console::ReportError("Error: Cannot generate code from null AST");
-        hasErrors_ = true;
-        return false;
-    }
-
-    if (nullptr == analyzer)
-    {
-        Console::ReportError("Error: Cannot generate code without semantic analyzer");
-        hasErrors_ = true;
-        return false;
-    }
-
-    if (outputPath.empty() == true)
-    {
-        Console::ReportError("Error: Output path cannot be empty");
-        hasErrors_ = true;
-        return false;
-    }
+    RequireReturn(nullptr != ast, false);
+    RequireReturn(nullptr != analyzer, false);
+    RequireReturn(outputPath.empty() == false, false);
+    RequireReturn(language.empty() == false, false);
 
     Console::ReportStatus("Phase 2 (Code Generation) started...");
 
     // Get combined namespaces
     const std::vector<std::string> combinedNamespaces = GetCombinedNamespaces(ast);
 
-    // Create C++ code generator
-    CppCodeGenerator generator(ast, analyzer, combinedNamespaces, targetClassPrefix_);
+    // Create code generator based on target language
+    std::unique_ptr<CodeGenerator> generator;
+
+    if ("c++" == language)
+    {
+        generator = std::make_unique<CppCodeGenerator>(ast, analyzer, combinedNamespaces, targetClassPrefix_);
+    }
+    else if ("rust" == language)
+    {
+        // EXPERIMENTAL: Rust code generation is not yet complete
+        Console::ReportStatus("WARNING: Rust code generation is experimental and may produce incomplete output.");
+        generator = std::make_unique<RustCodeGenerator>(ast, analyzer, combinedNamespaces, targetClassPrefix_);
+    }
+    else
+    {
+        Console::ReportError("Error: Unsupported language '" + language + "'");
+        hasErrors_ = true;
+        return false;
+    }
 
     // Generate code
-    if (generator.Generate(outputPath) == false)
+    if (generator->Generate(outputPath) == false)
     {
         Console::ReportError("Phase 2 (Code Generation) failed.");
         hasErrors_ = true;

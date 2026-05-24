@@ -45,12 +45,13 @@ public:
 
     /// \brief Phase 2: Code generation
     ///
-    /// Generates C++ code from the validated AST and symbol table.
+    /// Generates code from the validated AST and symbol table.
     /// \param ast Pointer to the validated AST
     /// \param analyzer Pointer to the semantic analyzer
     /// \param outputPath Path to the output file
+    /// \param language Target language for code generation (e.g. "c++", "rust" [experimental])
     /// \return True if code generation succeeded, false on failure
-    bool Phase2(const AST* ast, const SemanticAnalyzer* analyzer, const std::string& outputPath);
+    bool Phase2(const AST* ast, const SemanticAnalyzer* analyzer, const std::string& outputPath, const std::string& language);
 
     /// \brief Check if compilation has encountered errors
     /// \return True if errors were encountered

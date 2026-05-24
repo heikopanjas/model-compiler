@@ -72,6 +72,7 @@ add_executable(model-compiler
     src/Console.cpp
     src/CodeGenerator.cpp
     src/CppCodeGenerator.cpp
+    src/RustCodeGenerator.cpp
     ${BISON_Parser_OUTPUTS}
     ${FLEX_Lexer_OUTPUTS}
 )
