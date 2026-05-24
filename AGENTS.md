@@ -1,6 +1,6 @@
 # Project Instructions for AI Coding Agents
 
-**Last updated:** 2026-05-24 (Testing and docs moved to skills)
+**Last updated:** 2026-05-24 (CMake build skill expanded)
 
 <!-- {preamble} -->
 
@@ -157,6 +157,12 @@ Automatically bump the project version after every code change and include it in
 
 - **Testing and Documentation Skills Added**: Created reusable `cpp-testing-conventions` and `cpp-documentation-conventions` skills, then replaced the inline `AGENTS.md` Testing and Documentation guidance with skill references
 - **Reasoning**: Reduces repeated context in `AGENTS.md` while establishing general-purpose C++ testing and documentation conventions for future use
+
+- **CMake Rebuild Guidance Updated**: Added explicit rebuild instructions to `cmake-build-commands` covering missing, unconfigured, clean, and stale build directories without assuming a project-specific script
+- **Reasoning**: Clarifies that rebuild means clean plus build while keeping the skill generally applicable to CMake projects
+
+- **CMake Build Skill Expanded**: Added guidance for documented build directories, `_build` fallback, presets, single- vs multi-config generators, `ctest --test-dir`, `compile_commands.json`, stale build directories, and cautious formatting/static-analysis workflows
+- **Reasoning**: Makes the general CMake build skill robust across projects without assuming local helper scripts or a `build/` directory
 
 - **Contracts.h**: Added `include/Contracts.h` with two programming-by-contract macros for input parameter validation at function entry
   - `Require(expr)` — for void functions; returns immediately if precondition is false
