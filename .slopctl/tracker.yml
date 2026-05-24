@@ -1,0 +1,70 @@
+.gitignore:
+  original_sha: 8d34f5de6bece386131110afff2b7e046c3d1ebef4fe427e4e0cc8e41c2e7d9c
+  template_version: 5
+  installed_date: 2026-05-24T12:41:59.111713+00:00
+  lang: c++
+  agent: all
+  category: integration
+.agents/skills/cpp-coding-conventions/SKILL.md:
+  original_sha: a2d30ed38ea3f5be003eaee186ea2dff8e864e93db9f1b791c824b54fd7acd24
+  template_version: 5
+  installed_date: 2026-05-24T12:41:59.114010+00:00
+  lang: c++
+  agent: all
+  category: skill
+.editorconfig:
+  original_sha: a755fd5d8c5746c2b154269d98238e4b3f9347ce75b02ec5e7a59da9c6fa4303
+  template_version: 5
+  installed_date: 2026-05-24T12:41:59.112978+00:00
+  lang: c++
+  agent: all
+  category: language
+.clang-format:
+  original_sha: a7e2ca6bead68e878b98ccd079a7f92037e737e8e2e1c0cd73fcadf845eea6d3
+  template_version: 5
+  installed_date: 2026-05-24T12:41:59.112586+00:00
+  lang: c++
+  agent: all
+  category: language
+.cursor/commands/init-session.md:
+  original_sha: 21f4305fa05b0a465480784c61b7236343f613cd364236c3e9ca23e81d57ea53
+  template_version: 5
+  installed_date: 2026-05-24T12:41:59.113627+00:00
+  lang: none
+  agent: cursor
+  category: agent
+AGENTS.md:
+  original_sha: 3d50523c03fb43d94071e7b64f7c2255e29ae5f48cee72a692f4d5a2e3741d05
+  template_version: 5
+  installed_date: 2026-05-24T12:41:59.110821+00:00
+  lang: c++
+  agent: all
+  category: main
+.gitattributes:
+  original_sha: b06645d6d1fca42aa742230b5ea0875ba8b996198073db1872402a9ca7ac6356
+  template_version: 5
+  installed_date: 2026-05-24T12:41:59.113423+00:00
+  lang: none
+  agent: all
+  category: integration
+.agents/skills/cmake-build-commands/SKILL.md:
+  original_sha: a89c694d9cf4db3f29b46a807636a43c1b6b219c06e38266da1e623e0b22bd05
+  template_version: 5
+  installed_date: 2026-05-24T12:41:59.113861+00:00
+  lang: c++
+  agent: all
+  category: skill
+.agents/skills/git-workflow/SKILL.md:
+  original_sha: e725af4da5ee10630112f6bab5177dae1622346c43f5dc71cefc38495fa95c20
+  template_version: 5
+  installed_date: 2026-05-24T12:41:59.114150+00:00
+  lang: none
+  agent: all
+  category: skill
+.agents/skills/semantic-versioning/SKILL.md:
+  original_sha: def35d0dbd880443f63d53f0081368bd7daa9c768f39e728862216f4de716413
+  template_version: 5
+  installed_date: 2026-05-24T12:41:59.114299+00:00
+  lang: none
+  agent: all
+  category: skill

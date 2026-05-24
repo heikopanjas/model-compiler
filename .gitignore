@@ -1,8 +1,15 @@
-# Ignore build artifacts and local settings
-_build/
-
-# Agent local settings (personal, not shared)
-.claude/settings.local.json
+CMakeLists.txt.user
+CMakeCache.txt
+CMakeFiles
+CMakeScripts
+Testing
+Makefile
+cmake_install.cmake
+install_manifest.txt
+compile_commands.json
+CTestTestfile.cmake
+_deps
+CMakeUserPresets.json
 
 # CLion
 #  JetBrains specific template is maintained in a separate JetBrains.gitignore that can
