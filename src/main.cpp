@@ -12,15 +12,18 @@ int main(int argc, char* argv[])
         // Setup command line options
         cxxopts::Options options("model-compiler", "BBFM Model Compiler - Compiles .fm source files to C++");
 
-        options.add_options()("h,help", "Print usage information")("v,version", "Print version information")(
-            "dump-syntax-tree", "Dump the Abstract Syntax Tree after lexical analysis")("dump-symbol-table", "Dump the Symbol Table after semantic analysis")(
-            "lang",
-            "Target language for code generation (optional). Supported: 'c++', 'rust' (experimental). If not specified, only syntax and semantic validation is " "per" "for" "med" ".",
-            cxxopts::value<std::string>())(
-            "o,output", "Output file path (default: input filename with .h extension)", cxxopts::value<std::string>()->default_value(""))(
-            "target-class-prefix", "Prefix to add to generated class and enum names", cxxopts::value<std::string>()->default_value(""))(
-            "target-namespace", "Target namespace for generated code",
-            cxxopts::value<std::string>()->default_value(""))("input", "Input source file(s)", cxxopts::value<std::vector<std::string>>());
+        options
+            .add_options()("h,help", "Print usage information")("v,version", "Print version information")(
+                "dump-syntax-tree",
+                "Dump the Abstract Syntax Tree after lexical analysis")("dump-symbol-table", "Dump the Symbol Table after semantic analysis")(
+                "lang",
+                "Target language for code generation (optional). Supported: 'c++', 'rust' (experimental). If not specified, only syntax and semantic "
+                "validation is " "per" "for" "med" ".",
+                cxxopts::value<std::string>())(
+                "o,output", "Output file path (default: input filename with .h extension)", cxxopts::value<std::string>()->default_value(""))(
+                "target-class-prefix", "Prefix to add to generated class and enum names", cxxopts::value<std::string>()->default_value(""))(
+                "target-namespace", "Target namespace for generated code",
+                cxxopts::value<std::string>()->default_value(""))("input", "Input source file(s)", cxxopts::value<std::vector<std::string>>());
 
         options.parse_positional({"input"});
         options.positional_help("<source_file>");
