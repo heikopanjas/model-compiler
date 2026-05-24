@@ -4,47 +4,350 @@ A Domain-Specific Language (DSL) compiler for defining podcast object models and
 
 **License:** MIT  
 **Language:** C++23 (minimum C++17)  
-**Current Version:** Phase 0, 1 & 2 complete (full C++ code generation)
+**Version:** v0.1.0 — Phases 0–2 complete (C++ code generation; Rust experimental)
 
 ## Overview
 
 The BBFM modeling language enables you to define data types, relationships, and constraints for podcast domains using an expressive, type-safe syntax. The compiler generates:
 
-- **C++ classes** with proper inheritance hierarchies
+- **C++ header files** with class hierarchies, field wrappers, invariants, and computed features
+- **Rust source files** (experimental) via `--lang rust`
 
-Future targets include additional programming languages.
+Additional target languages are planned. See [The FM Language](#the-fm-language) for the full language reference.
 
-## Language Features
+## The FM Language
 
-### Type System
+The **FM language** (`.fm` files) is the BBFM modeling DSL. It provides a UML-inspired, declarative syntax for describing domain object models: types, fields, relationships, constraints, and derived values. The compiler validates FM source and generates target-language code.
 
-- **Universal Metadata**: All types automatically have these metadata fields (never declared by users):
-  - `typeId` (Guid) - Unique identifier for the type itself (same for all instances of a type)
-  - `id` (Guid) - Unique identifier for the instance (unique per instance)
-  - `cardinality` (Int) - Cardinality of the type instance
-  - `creationDate` (Timestamp) - When instance was created
-  - `modificationDate` (Timestamp) - When instance was last modified
-  - `comment` (String) - User comment/notes
-- **User-Defined Types**: Define custom types using the `class` keyword
-- **Inheritance**: Support for single inheritance with the `inherits` keyword
-- **Primitive Types**: String, Int, Real, Bool, Timestamp, Timespan, Date, Guid
-- **Enumerations**: Define enums for categorical values
-- **Computed Features**: Fields derived from expressions (read-only)
-- **Alias Fields**: Read-write references to other fields
-- **Case-Sensitive**: Keywords are lowercase and case-sensitive; type names are PascalCase and case-sensitive
+### Design Philosophy
+
+The language is inspired by UML class diagrams but deliberately simplified. It focuses on **data modeling** without visibility modifiers, abstract types, interfaces, or stereotypes. Keywords are lowercase and case-sensitive; user-defined type names use PascalCase and are case-sensitive.
+
+### Source File Structure
+
+An FM source file consists of an optional namespace declaration followed by zero or more top-level declarations:
+
+```bbfm
+[ namespace NamespaceName ; ]
+{ enum_declaration | class_declaration }*
+```
+
+Each file is compiled independently (multi-file compilation is not yet supported). All referenced types must be defined in the same file.
+
+### Lexical Elements
+
+**Comments**
+
+```bbfm
+// Single-line comment
+
+/*
+   Multi-line comment
+*/
+```
+
+**Identifiers**
+
+- Start with a letter, followed by letters, digits, or `_`
+- Used for type names, field names, enum values, and namespace names
+- Field names may match primitive type names (e.g. `feature string: String;`) — the parser disambiguates by context
+
+**Literals**
+
+| Literal | Examples |
+|---------|----------|
+| Integer | `0`, `42`, `1000` |
+| Real | `3.14`, `1.8`, `-273.15`, `1.5e10` |
+| String | `"hello"`, `"ISO 8601 date"` |
+| Boolean | `true`, `false` |
+
+**Keywords** (reserved, lowercase)
+
+`class`, `enum`, `inherits`, `feature`, `invariant`, `alias`, `namespace`, `optional`, `unique`
+
+**Primitive types** (PascalCase)
+
+`String`, `Int`, `Real`, `Bool`, `Timestamp`, `Timespan`, `Date`, `Guid`
+
+| Type | Description |
+|------|-------------|
+| `String` | Text strings |
+| `Int` | Integer numbers |
+| `Real` | Floating-point numbers |
+| `Bool` | Boolean values |
+| `Timestamp` | Point in time (seconds since epoch) |
+| `Timespan` | Duration (seconds) |
+| `Date` | Calendar date |
+| `Guid` | Globally unique identifier |
+
+### Namespaces
+
+Namespaces organize generated code and prevent naming conflicts.
+
+```bbfm
+namespace models;
+
+class Podcast {
+    feature title: String;
+}
+```
+
+| Rule | Description |
+|------|-------------|
+| Placement | Must appear before all other declarations |
+| Count | At most one namespace declaration per file |
+| Form | Flat names only (no `a.b.c` nesting in source) |
+| CLI nesting | Combine with `--target-namespace myapp` for nested output namespaces |
+
+Generated C++ with `--target-namespace myapp`:
+
+```cpp
+namespace myapp {
+namespace models {
+    class Podcast { /* ... */ };
+}
+}
+```
+
+### Enumerations
+
+Enums define categorical values referenced by field types:
+
+```bbfm
+enum MediaType {
+    AUDIO,
+    VIDEO
+}
+
+enum Status {
+    DRAFT,
+    PUBLISHED,
+    ARCHIVED
+}
+```
+
+Enum value names are identifiers separated by commas.
+
+### Classes and Inheritance
+
+Classes define structured types with fields, computed features, aliases, and invariants:
+
+```bbfm
+class Asset {
+    feature url: String;
+    feature title: String;
+}
+
+class AudioAsset inherits Asset {
+    feature format: String;
+    feature fileSize: Int;
+
+    invariant maxFileSize: fileSize <= 500000000;
+}
+```
+
+| Rule | Description |
+|------|-------------|
+| Inheritance | Single inheritance only (`inherits BaseType`) |
+| Base type | Must reference a previously declared class |
+| Cycles | Circular inheritance is rejected |
+| Body | Fields, computed features, aliases, and invariants appear inside `{ }` |
+
+### Features (Fields)
+
+Fields are declared with the `feature` keyword:
+
+```bbfm
+feature fieldName: TypeName [ modifiers ] [ = expression ] ;
+```
+
+| Form | Meaning |
+|------|---------|
+| `feature name: Type;` | Mandatory single-valued field (default `[1]`) |
+| `feature name: Type [modifiers];` | Field with explicit cardinality or constraints |
+| `feature name: Type = expr;` | Computed feature (derived, read-only) |
+
+Type references may be primitive types, enum names, or user-defined class names.
+
+#### Cardinality and Constraints
+
+Modifiers appear in square brackets. Multiple modifiers are comma-separated.
+
+| Modifier | Meaning |
+|----------|---------|
+| *(none)* | Equivalent to `[1]` — exactly one value, required |
+| `[1]` | Mandatory single value |
+| `[0..1]` or `[optional]` | Zero or one value |
+| `[1..*]` | Array with at least one element |
+| `[0..*]` | Array that may be empty |
+| `[unique]` | Unique constraint (combine with cardinality) |
+
+```bbfm
+feature title: String;                      // [1] by default
+feature author: String [optional];          // [0..1]
+feature rssUrl: String [1,unique];          // mandatory + unique
+feature episodes: Episode [0..*];           // zero or more
+feature tags: Tag [1..*];                   // one or more
+feature optionalUnique: String [optional,unique];
+```
+
+#### Modeling Relationships
+
+FM models associations through typed fields and cardinality — there is no separate relationship keyword:
+
+| Pattern | FM syntax | Generated shape |
+|---------|-----------|-----------------|
+| One-to-one | `feature child: Child;` | Single field |
+| One-to-one optional | `feature child: Child [optional];` | Optional field |
+| One-to-many | `feature items: Item [0..*];` or `[1..*]` | Collection |
+| Many-to-many | Two inverse `[0..*]` fields, one on each class | Two collections |
+
+### Computed Features
+
+Computed features derive their value from an expression. They are read-only and evaluated on access in generated code.
+
+```bbfm
+class Rectangle {
+    feature width: Int;
+    feature height: Int;
+
+    feature area: Int = width * height;
+    feature perimeter: Int = (width + height) * 2;
+}
+```
+
+Member access traverses nested objects:
+
+```bbfm
+class Rectangle inherits Shape {
+    feature topLeft: Point;
+    feature bottomRight: Point;
+
+    feature computedWidth: Int = bottomRight.x - topLeft.x;
+    feature computedHeight: Int = bottomRight.y - topLeft.y;
+    feature computedArea: Int = computedWidth * computedHeight;
+
+    invariant areaMatchesFields: computedArea == width * height;
+}
+```
+
+| Rule | Description |
+|------|-------------|
+| Cardinality | Must be `[1]` — not optional, not an array |
+| Type | Expression result must match declared type (with promotion rules below) |
+| Promotion | `Int → Real` widening allowed; `Real → Int` rejected |
+| References | Must reference defined fields (including inherited) |
+| Optional fields | Cannot be referenced in computed expressions |
+| Chaining | May reference other computed features in the same class |
+
+```bbfm
+class Example {
+    feature intValue: Int;
+    feature realValue: Real;
+
+    feature asReal: Real = intValue * 2;        // OK: Int → Real
+    feature asInt: Int = intValue + 5;          // OK: exact match
+    // feature bad: Int = realValue * 2.0;      // Error: Real → Int
+}
+```
+
+### Alias Fields
+
+Aliases provide an alternate name for an existing field, typically to give semantic meaning to inherited members:
+
+```bbfm
+class Event {
+    feature timestamp: Timestamp;
+
+    invariant validTimestamp: timestamp >= 0;
+}
+
+class ScheduledEvent inherits Event {
+    feature title: String;
+
+    alias startTime = timestamp;
+}
+```
+
+| Rule | Description |
+|------|-------------|
+| Syntax | `alias aliasName = targetFieldName;` |
+| Target | Must be a simple field name in scope (including inherited) |
+| Semantics | Read-write forwarding; writes validate target field invariants |
+| Restrictions | Cannot target computed features or other aliases |
+
+### Invariants
+
+Invariants declare boolean constraints on class state. Generated code validates them when relevant fields are written.
+
+```bbfm
+invariant name: expression ;
+```
+
+```bbfm
+class Rectangle {
+    feature width: Int;
+    feature height: Int;
+    feature maxArea: Int;
+
+    invariant positiveWidth: width > 0;
+    invariant validArea: width * height <= maxArea;
+    invariant validDimensions: width >= 10 && height >= 10;
+}
+
+class Temperature {
+    feature celsius: Real;
+    feature fahrenheit: Real;
+
+    invariant conversion: fahrenheit == celsius * 1.8 + 32.0;
+    invariant aboveAbsoluteZero: celsius >= -273.15;
+}
+```
+
+During semantic analysis the compiler verifies that all referenced fields exist (including inherited fields). In generated C++ output, invariant checkers follow the `Require_<field>_<invariant>` naming pattern.
+
+### Expression Language
+
+Expressions are used in invariants and computed features.
+
+**Operators** (precedence from lowest to highest):
+
+| Precedence | Operators | Description |
+|------------|-----------|-------------|
+| 1 | `||` | Logical OR |
+| 2 | `&&` | Logical AND |
+| 3 | `==` `!=` | Equality |
+| 4 | `<` `>` `<=` `>=` | Comparison |
+| 5 | `+` `-` | Addition, subtraction |
+| 6 | `*` `/` `%` | Multiplication, division, modulo |
+| 7 | `!` `-` | Logical NOT, unary negation |
+| 8 | `.` | Member access |
+
+**Operands**
+
+- **Literals** — integer, real, string, boolean
+- **Field references** — bare names refer to fields visible on the current class (including inherited)
+- **Member access** — `object.field` chains for nested class fields
+- **Parentheses** — `( expression )` for grouping
+
+**Type inference**
+
+- Arithmetic on `Int` operands yields `Int`; mixed with `Real`, `Timestamp`, or `Timespan` yields `Real`
+- Comparisons and logical operators yield `Bool`
+- String `+` concatenates when both operands are `String`
 
 ### Universal Metadata Fields
 
-Every type in the BBFM modeling language automatically has six universal metadata fields. These are part of the type system itself and are never declared in your source code:
+Every class instance automatically carries six metadata fields. These are part of the type system and **must never be declared** in FM source. Generated C++ provides them through inheritance from `bbfm::runtime::Fabric`.
 
-- **`typeId`** (Guid) - A unique identifier for the type itself. All instances of the same type share the same `typeId`. For example, all `Podcast` instances have the same `typeId`, which is different from the `typeId` of `Episode` instances.
-- **`id`** (Guid) - A unique identifier for each instance. Every object has its own unique `id` that distinguishes it from all other instances, even those of the same type.
-- **`cardinality`** (Int) - The cardinality of the type instance. This tracks relationship cardinality information for the instance.
-- **`creationDate`** (Timestamp) - The date and time when an instance was created. Automatically set when an object is instantiated.
-- **`modificationDate`** (Timestamp) - The date and time when an instance was last modified. Updated whenever the object changes.
-- **`comment`** (String) - A user-provided comment or note field for storing arbitrary text associated with the instance.
-
-These fields are automatically available on all types. **You never declare them in your class definitions.** When you create a type like:
+| Field | Type | Purpose |
+|-------|------|---------|
+| `typeId` | Guid | Identifier shared by all instances of a type |
+| `id` | Guid | Identifier unique to each instance |
+| `cardinality` | Int | Relationship cardinality metadata |
+| `creationDate` | Timestamp | Instance creation time |
+| `modificationDate` | Timestamp | Last modification time |
+| `comment` | String | User notes |
 
 ```bbfm
 class Podcast {
@@ -53,22 +356,7 @@ class Podcast {
 }
 ```
 
-The generated code will include the universal metadata fields, so the actual structure is:
-
-```bbfm
-class Podcast {
-    feature typeId: Guid;                 // universal metadata (automatic)
-    feature id: Guid;                     // universal metadata (automatic)
-    feature cardinality: Int;             // universal metadata (automatic)
-    feature creationDate: Timestamp;      // universal metadata (automatic)
-    feature modificationDate: Timestamp;  // universal metadata (automatic)
-    feature comment: String;              // universal metadata (automatic)
-    feature title: String;                // user-defined
-    feature description: String;          // user-defined
-}
-```
-
-User-defined inheritance works as expected. For example:
+The effective instance shape includes universal metadata plus user-defined fields. Subclasses inherit base-class fields; universal metadata is always present on every type.
 
 ```bbfm
 class Asset {
@@ -80,275 +368,27 @@ class AudioAsset inherits Asset {
 }
 ```
 
-Results in:
+An `AudioAsset` instance conceptually contains: universal metadata (6 fields) + `Asset` fields (`url`) + `AudioAsset` fields (`format`).
 
-- All types have universal metadata: `typeId`, `id`, `cardinality`, `creationDate`, `modificationDate`, `comment`
-- `AudioAsset` inherits from `Asset` (gets the `url` field)
+### Semantic Validation
 
-So an `AudioAsset` instance has: universal metadata (6 fields) + Asset fields (url) + AudioAsset fields (format).
+The compiler performs multi-phase validation on every FM file:
 
-### Relationships
+| Check | Description |
+|-------|-------------|
+| Syntax | Grammar, punctuation, keyword casing |
+| Type references | All field types and base types must be defined |
+| Inheritance | No cycles; base must be a class |
+| Field uniqueness | No duplicate names within a class (including inherited) |
+| Invariants | Referenced fields must exist |
+| Computed features | Valid references, member access, type compatibility, cardinality `[1]`, no optional references |
+| Aliases | Valid targets; no alias chaining |
 
-- One-to-one relationships
-- One-to-many relationships (using arrays)
-- Many-to-many relationships
+Errors report `file:line:column` with source context and a caret marker.
 
-### Namespaces
+## Complete Example
 
-Namespaces organize generated code and prevent naming conflicts:
-
-- **Source namespace**: Declare at top of file: `namespace models;`
-- **Command-line namespace**: Use `--target-namespace myapp`
-- **Combined**: Both options create nested namespaces in generated code
-
-**Examples:**
-
-```bbfm
-// Source file with namespace
-namespace models;
-
-class Podcast {
-    feature title: String;
-}
-```
-
-**Generated C++ (with --target-namespace myapp):**
-
-```cpp
-namespace myapp {
-namespace models {
-    class Podcast {
-        // ...
-    };
-}
-}
-```
-
-**Rules:**
-
-- Only one namespace declaration per file
-- Must appear before all other declarations
-- Flat namespace names only (no nesting in source)
-- Empty namespace is valid (no wrapper)
-
-### Field Modifiers
-
-Fields are declared using the `feature` keyword followed by a colon and the type specification. Field cardinality and constraints are specified using square bracket notation:
-
-- `[1]` - Mandatory single value (default if no modifier specified)
-- `[0..1]` - Optional single value
-- `[optional]` - Optional single value (equivalent to `[0..1]`)
-- `[1..*]` - Array with at least one element
-- `[0..*]` - Array that may be empty
-- `[unique]` - Unique constraint
-- Modifiers can be combined: `[optional,unique]`, `[1,unique]`
-
-**Field Declaration Syntax:**
-
-```bbfm
-feature fieldName: TypeName [modifiers];
-```
-
-**Examples:**
-
-```bbfm
-feature title: String;                    // mandatory (default [1])
-feature author: String [optional];        // optional field
-feature rssUrl: String [1,unique];        // mandatory + unique
-feature episodes: Episode [0..*];         // array (may be empty)
-```
-
-**Shorthand Syntax:**
-
-- **Default cardinality**: Fields without modifiers default to `[1]` (mandatory)
-  - `feature title: String;` is equivalent to `feature title: String [1];`
-
-This approach makes the most common field types cleaner and more readable while maintaining full expressiveness when needed.
-
-### Invariants
-
-Invariants are boolean constraints on class attributes that express domain rules and validation requirements using a powerful expression system:
-
-- Declared using the `invariant` keyword
-- Syntax: `invariant name: expression;`
-- **Expression support**:
-  - **Arithmetic operators**: `+`, `-`, `*`, `/`, `%`
-  - **Comparison operators**: `<`, `>`, `<=`, `>=`, `==`, `!=`
-  - **Logical operators**: `&&` (AND), `||` (OR), `!` (NOT)
-  - **Parentheses**: For grouping and precedence control
-  - **Literals**: Integer, real, string, boolean values
-  - **Field references**: Access to class attributes
-  - **Unary operators**: `-` (negation), `!` (logical NOT)
-
-**Examples:**
-
-```bbfm
-class Rectangle {
-    feature width: Int;
-    feature height: Int;
-    feature maxArea: Int;
-
-    // Simple comparison
-    invariant positiveWidth: width > 0;
-
-    // Arithmetic expression
-    invariant validArea: width * height <= maxArea;
-
-    // Complex expression with parentheses
-    invariant aspectRatio: (width + height) * 2 <= 1000;
-
-    // Logical operators
-    invariant validDimensions: width >= 10 && height >= 10;
-}
-
-class Temperature {
-    feature celsius: Real;
-    feature fahrenheit: Real;
-
-    // Arithmetic with real numbers
-    invariant conversion: fahrenheit == celsius * 1.8 + 32.0;
-
-    // Negative numbers
-    invariant aboveAbsoluteZero: celsius >= -273.15;
-}
-
-class AudioAsset inherits Asset {
-    feature fileSize: Int;
-
-    invariant maxFileSize: fileSize <= 500000000;  // Max 500MB
-}
-```
-
-Invariants are validated during semantic analysis to ensure:
-
-- All referenced fields exist (including inherited fields)
-- Type compatibility of expressions
-- Proper syntax and operator usage
-
-The expression system enables declarative constraints that will generate validation code in target languages.
-
-### Computed Features
-
-Computed features are auto-calculated fields whose values are derived from other fields using expressions. They provide a declarative way to define derived attributes without writing imperative code.
-
-- **Syntax**: `feature fieldName: TypeName = expression;`
-- **Expression support**: Full expression system (arithmetic, comparison, logical, field references, member access)
-- **Member access**: Access fields of nested objects using dot notation (`object.field`)
-- **Type safety**: Expression result type must match declared field type
-- **Constraints**: Computed features must have cardinality `[1]` (cannot be arrays or optional)
-
-**Examples:**
-
-```bbfm
-class Rectangle {
-    feature width: Int;
-    feature height: Int;
-
-    // Simple arithmetic
-    feature area: Int = width * height;
-
-    // Complex expression
-    feature perimeter: Int = (width + height) * 2;
-}
-
-class Point {
-    feature x: Int;
-    feature y: Int;
-
-    invariant validX: x >= 0;
-    invariant validY: y >= 0;
-}
-
-class Shape {
-    feature width: Int;
-    feature height: Int;
-
-    invariant positiveWidth: width > 0;
-    invariant positiveHeight: height > 0;
-}
-
-class Rectangle inherits Shape {
-    feature topLeft: Point;
-    feature bottomRight: Point;
-
-    // Member access expressions
-    feature computedWidth: Int = bottomRight.x - topLeft.x;
-    feature computedHeight: Int = bottomRight.y - topLeft.y;
-
-    // Computed features can reference other computed features
-    feature computedArea: Int = computedWidth * computedHeight;
-
-    // Invariants can reference computed features
-    invariant areaMatchesFields: computedArea == width * height;
-}
-```
-
-**Type Checking:**
-
-The compiler performs comprehensive type checking for computed features:
-
-- **Type inference**: Recursively determines expression result types
-- **Type compatibility**: Validates expression type matches declared field type
-- **Type promotion**: Allows safe widening conversions (Int → Real), rejects narrowing (Real → Int)
-- **Member access types**: Tracks types through `object.field` chains
-
-```bbfm
-class Example {
-    feature intValue: Int;
-    feature realValue: Real;
-
-    // ✅ Valid: Int → Real promotion (widening)
-    feature computed1: Real = intValue * 2;
-
-    // ❌ Error: Real → Int would lose precision (narrowing)
-    // feature computed2: Int = realValue * 2.0;
-
-    // ✅ Valid: Exact type match
-    feature computed3: Int = intValue + 5;
-}
-```
-
-The semantic analyzer ensures all field references exist, member access chains are valid, and type conversions are safe before code generation.
-
-### Alias Fields
-
-Alias fields provide read-write access to other fields with a convenient alternative name. They're particularly useful for giving meaningful names to inherited fields:
-
-- **Syntax**: `alias aliasName = targetFieldName;`
-- **Semantics**: Creates a bidirectional reference to another field
-- **Validation**: Writing to an alias triggers the target field's invariant validation
-- **Restrictions**: Can only alias simple fields (not computed features or other aliases)
-
-**Examples:**
-
-```bbfm
-class Event {
-    feature timestamp: Timestamp;
-    
-    invariant validTimestamp: timestamp >= 0;
-}
-
-class ScheduledEvent inherits Event {
-    feature title: String;
-    
-    // Alias provides convenient access to inherited timestamp field
-    alias startTime = timestamp;
-    
-    // Writing to startTime triggers validTimestamp invariant check
-}
-```
-
-**Use Cases:**
-
-- Provide domain-specific names for inherited fields
-- Create semantic aliases that match business terminology
-- Maintain full invariant validation through the alias
-
-### Design Philosophy
-
-The BBFM modeling language is inspired by UML class diagrams but deliberately simplified. It focuses on data modeling without the complexity of visibility modifiers, abstract types, interfaces, or stereotypes. The goal is an expressive yet approachable language for domain modeling.
-
-## Example
+The following podcast domain model combines enums, inheritance, field modifiers, relationships, computed features, invariants, and aliases in a single file. See also `examples/podcast.fm` and `examples/comprehensive_test.fm`.
 
 ```bbfm
 // Define an enumeration
@@ -417,7 +457,9 @@ class NamedTag inherits Tag {
 - C++23-compatible compiler (GCC 11+ or Clang 14+, minimum C++17 support required)
 - Flex 2.6+ (lexical analyzer generator)
 - Bison 3.8+ (parser generator)
-- Ninja (build system)
+- Ninja (build system, recommended)
+
+**Note:** The [cxxopts](https://github.com/jarro2783/cxxopts) CLI library is fetched automatically by CMake via `FetchContent`; no separate install is required.
 
 ### Installing Prerequisites
 
@@ -438,7 +480,11 @@ sudo apt-get install cmake flex bison gcc ninja-build
 **Using the build script (recommended):**
 
 ```bash
+# macOS / Linux
 ./build.sh
+
+# Windows (PowerShell)
+./build.ps1
 ```
 
 **Manual build with CMake:**
@@ -467,6 +513,9 @@ ninja clean
 # Generate C++ header
 ./_build/model-compiler --lang c++ <source_file.fm>
 
+# Generate Rust source (experimental; specify .rs output explicitly)
+./_build/model-compiler --lang rust <source_file.fm> -o output.rs
+
 # Generate with custom output file
 ./_build/model-compiler --lang c++ <source_file.fm> -o output.h
 
@@ -479,9 +528,14 @@ ninja clean
 # Validation with symbol table dump (no code generation)
 ./_build/model-compiler --dump-symbol-table <source_file.fm>
 
-# Show help
+# Show version or help
+./_build/model-compiler --version
 ./_build/model-compiler --help
 ```
+
+When `--lang` is omitted, the compiler runs validation only (Phases 0 and 1). When `--lang` is specified, it also runs Phase 2 code generation. The default output extension is `.h`; use `-o` to set the path explicitly (required for Rust output). Only a single input file is supported per invocation.
+
+Supported `--lang` values: `c++`, `rust` (experimental).
 
 Examples:
 
@@ -497,6 +551,9 @@ Examples:
 
 # Generate with namespace
 ./_build/model-compiler --lang c++ --target-namespace myapp examples/podcast.fm
+
+# Generate Rust (experimental)
+./_build/model-compiler --lang rust examples/test_computed_simple.fm -o examples/test_computed_simple.rs
 
 # View syntax tree (validation only, no code generation)
 ./_build/model-compiler --dump-syntax-tree examples/podcast.fm
@@ -520,15 +577,17 @@ The `examples/` directory contains a comprehensive test suite demonstrating all 
 - `test_computed_member_access.fm` - Computed features with member access (object.field)
 - `test_computed_inheritance.fm` - Computed features in inheritance hierarchies
 - `test_expressions.fm` - Full expression system (arithmetic, logical, comparison)
+- `test_namespace.fm` - Source-file namespace declarations
 - `test_type_promotion_ok.fm` - Valid type promotions (Int → Real)
 
 **Error Validation Tests:**
 
-- `error_test_suite.fm` - Comprehensive error handling test suite
+- `error_test_suite.fm` - Index of error scenarios (cases are block-commented; file validates as empty input)
 - `test_circular_inheritance.fm` - Circular inheritance detection
 - `test_duplicate_field.fm` - Duplicate field detection
 - `test_undefined_type.fm` - Undefined type reference detection
 - `test_type_error_int_real.fm` - Type mismatch errors (Real → Int)
+- `test_type_error_member_access.fm` - Invalid member access in expressions
 - `test_computed_error_*.fm` - Computed feature validation errors
 - `test_bad_invariant.fm` - Invalid invariant expressions
 - `test_missing_semicolon.fm` - Syntax error reporting
@@ -629,34 +688,59 @@ This visualization helps developers understand:
 - What constraints (invariants) apply to each class
 - The complete interface of each type including inherited members
 
+## Testing
+
+The project uses CTest. After building, run the test suite from the build directory:
+
+```bash
+cmake --build _build
+ctest --test-dir _build --output-on-failure
+```
+
+Tests include:
+
+- **`.fm` fixture tests** — positive examples must compile successfully; negative examples must fail with the expected error
+- **`guid-test`** — runtime unit tests for `bbfm::runtime::Guid` (`tests/runtime/GuidTest.cpp`)
+
 ## Project Structure
 
 ```text
 model-compiler/
-├── CMakeLists.txt          # CMake build configuration
-├── build.sh                # Build script
-├── README.md               # This file
-├── AGENTS.md               # AI agent operating instructions
-├── src/                    # Source files
-│   ├── model-compiler.l   # Flex lexer specification
-│   ├── model-compiler.y   # Bison parser specification
-│   ├── Driver.cpp         # Compiler driver implementation
-│   ├── AST.cpp            # AST implementation
-│   ├── SemanticAnalyzer.cpp # Semantic analysis implementation
-│   ├── Console.cpp        # Console output utilities
-│   └── main.cpp           # Main entry point (C++)
-├── include/               # Header files
-│   ├── Common.h           # Common macros and utilities
-│   ├── Driver.h           # Compiler driver interface
-│   ├── AST.h              # AST node definitions
-│   ├── SemanticAnalyzer.h # Semantic analyzer interface
-│   └── Console.h          # Console output interface
-├── examples/              # Example programs and test files
-│   ├── podcast.fm         # Podcast domain model example
-│   ├── comprehensive_test.fm  # Full language feature test
-│   ├── error_test_suite.fm    # Error handling validation
-│   └── test_*.fm          # Feature-specific test files
-└── _build/                # Build artifacts (gitignored)
+├── CMakeLists.txt              # CMake build configuration
+├── build.sh                    # Build script (macOS/Linux)
+├── build.ps1                   # Build script (Windows)
+├── README.md                   # This file
+├── AGENTS.md                   # AI agent operating instructions
+├── src/                        # Compiler source
+│   ├── model-compiler.l        # Flex lexer specification
+│   ├── model-compiler.y        # Bison parser specification
+│   ├── main.cpp                # CLI entry point
+│   ├── Driver.cpp              # Compilation phase orchestration
+│   ├── AST.cpp                 # AST implementation
+│   ├── SemanticAnalyzer.cpp    # Semantic analysis
+│   ├── CodeGenerator.cpp       # Code generator base class
+│   ├── CppCodeGenerator.cpp    # C++ code generation
+│   ├── RustCodeGenerator.cpp   # Rust code generation (experimental)
+│   └── Console.cpp             # Error reporting and output formatting
+├── include/                    # Public headers
+│   ├── AST.h
+│   ├── CodeGenerator.h
+│   ├── Common.h
+│   ├── Console.h
+│   ├── Contracts.h             # Require/RequireReturn precondition macros
+│   ├── CppCodeGenerator.h
+│   ├── Driver.h
+│   ├── RustCodeGenerator.h
+│   ├── SemanticAnalyzer.h
+│   └── runtime/                # Generated-code runtime library
+│       ├── Fabric.h            # Universal metadata base class
+│       ├── Guid.h / Guid.cpp
+│       ├── String.h
+│       ├── Date.h
+│       └── BoundedValue.h      # Field wrapper types
+├── examples/                   # Example and fixture `.fm` files
+├── tests/runtime/              # Runtime unit tests
+└── _build/                     # Build artifacts (gitignored)
 ```
 
 ## Compilation Phases
@@ -673,145 +757,45 @@ The compiler implements a multi-phase compilation process:
    - Field uniqueness validation (including inherited fields)
    - Invariant validation (expression AST traversal, field reference checking)
    - Expression type inference and validation
-3. **Phase 2: Code Generation** ✅ - Generates C++ header files:
-   - C++ class definitions with inheritance from Fabric base class
-   - Enum class declarations
-   - Getter methods for all fields
-   - Computed feature inline implementations
-   - Invariant validation methods
-   - Universal metadata via Fabric inheritance
-   - Namespace wrapping and class prefixes
+3. **Phase 2: Code Generation** ✅ — Generates target-language source when `--lang` is specified:
+   - **C++**: Header files with `Fabric` inheritance, field wrappers, getters, computed features, and invariant checkers
+   - **Rust** (experimental): Source files with structs, enums, and partial validation support
 
 ## Type Mappings
 
-The compiler will map BBFM primitive types to target language types. Planned C++ mappings:
+Current C++ mappings for BBFM primitive types:
 
 | BBFM Type | C++ |
 |-----------|-----|
-| String | std::string |
-| Int | int64_t |
-| Real | double |
-| Bool | bool |
-| Timestamp | double |
-| Timespan | double |
-| Date | std::string (ISO 8601) |
-| Guid | std::string (UUID) |
+| String | `bbfm::runtime::String` |
+| Int | `int64_t` |
+| Real | `double` |
+| Bool | `bool` |
+| Timestamp | `double` |
+| Timespan | `double` |
+| Date | `bbfm::runtime::Date` |
+| Guid | `bbfm::runtime::Guid` |
 
-## Current Status
+Universal metadata fields (`typeId`, `id`, `cardinality`, `creationDate`, `modificationDate`, `comment`) are provided by inheriting from `bbfm::runtime::Fabric`.
 
-**✅ Implemented:**
+## Status
 
-- **Phase 0 (Lexical Analysis & Parsing)**:
-  - Lexical analysis with case-sensitive keywords and types
-  - Syntax analysis supporting full grammar
-  - AST construction with modern C++23 and smart pointers
-  - Expression grammar with operator precedence (arithmetic, comparison, logical)
-  - Enhanced error diagnostics with file:line:column format
-  - Visual error pointers showing source context
+**Completed:**
 
-- **Language Features**:
-  - Enum declarations
-  - Class type declarations with inheritance (`inherits` keyword)
-  - Field declarations with `feature` keyword
-  - Field modifiers (cardinality and constraints)
-  - **Computed features** with initializer expressions:
-    - Syntax: `feature name: Type = expression;`
-    - Member access expressions: `object.field`
-    - Type inference and validation
-    - Type promotion rules (Int → Real safe, Real → Int error)
-  - **Alias fields** for read-write field references:
-    - Syntax: `alias name = targetField;`
-    - Provides convenient access to inherited or other fields
-    - Full invariant validation on writes
-  - **Expression system** with full operator support:
-    - Arithmetic: `+`, `-`, `*`, `/`, `%`
-    - Comparison: `<`, `>`, `<=`, `>=`, `==`, `!=`
-    - Logical: `&&`, `||`, `!`
-    - Parentheses for grouping
-    - Literals: integer, real, string, boolean
-    - Field references and complex nested expressions
-    - Member access: `object.field` for nested properties
-  - Invariant constraints using expression AST
-  - All primitive types (String, Int, Real, Bool, Timestamp, Timespan, Date, Guid)
-  - Optional modifier syntax and shorthand syntax
+- Phase 0: Lexical analysis and parsing with expression grammar and diagnostics
+- Phase 1: Semantic analysis with symbol tables, inheritance checks, invariants, computed features, and aliases
+- Phase 2: C++ code generation with field wrappers, invariant checkers, namespaces, and prefixes
 
-- **Phase 1 (Semantic Analysis)**:
-  - Symbol table construction
-  - Type validation for all type references
-  - Inheritance validation with cycle detection
-  - Field uniqueness validation including inherited fields
-  - Invariant validation using expression AST traversal
-  - Expression field reference validation
-  - **Computed features validation**:
-    - Field reference validation (including inherited fields)
-    - Member access validation (object.field chains)
-    - Type inference for expressions
-    - Type compatibility checking with promotion rules
-    - Cardinality validation (must be `[1]`)
-  - Comprehensive error reporting
+**Experimental:**
 
-**✅ Phase 2 (Code Generation) - Complete:**
+- `--lang rust` — Rust code generation is wired in but incomplete; output may be missing features
 
-- C++ header file generation with:
-  - Class declarations inheriting from `bbfm::runtime::Fabric` base class
-  - Enum class declarations
-  - **Field wrapper types** for type safety and validation:
-    - `BoundedValue<T, ParentT, ...Checkers>` - Fields with invariant constraints
-    - `UnboundedValue<T, ParentT>` - Fields without constraints
-    - `OptionalBoundedValue<T, ParentT, ...Checkers>` - Optional fields with invariants
-    - `OptionalUnboundedValue<T, ParentT>` - Optional fields without constraints
-    - `DynamicValue<T, ParentT>` - Computed features with on-demand evaluation
-    - `AliasValue<WrapperT>` - Alias fields forwarding to target field
-  - **Invariant checker functions**: `Require_<field>_<invariant>` naming pattern
-  - Public getter methods (const-correct)
-  - Computed feature inline implementations
-  - Universal metadata fields via Fabric inheritance
-  - Namespace wrapping (nested namespace syntax)
-  - Optional class/enum prefixes
-  - Arrays (`std::vector<T>`) and optional fields (`std::optional<T>`)
-  - Proper inheritance hierarchy (no field duplication)
+**Planned:**
 
-**🚧 Future Enhancements:**
-
-- Additional target languages (Swift, Python, etc.)
-- Implementation files (.cpp) generation
+- Additional target languages
+- Implementation file (`.cpp`) generation
 - Constructor implementations
 - Serialization support
-
-## Language Specification
-
-### Keywords
-
-- `class` - Define a new type
-- `enum` - Define an enumeration
-- `inherits` - Specify inheritance relationship
-- `feature` - Declare a class field/attribute
-- `invariant` - Declare a boolean constraint
-- `alias` - Create read-write reference to another field
-- `namespace` - Declare source file namespace
-- `optional` - Optional field modifier (equivalent to `[0..1]`)
-- `unique` - Unique constraint modifier
-
-### Primitive Types
-
-- `String` - Text strings
-- `Int` - Integer numbers
-- `Real` - Floating-point numbers
-- `Bool` - Boolean values (true/false)
-- `Timestamp` - Points in time (seconds since epoch)
-- `Timespan` - Durations (in seconds)
-- `Date` - Calendar dates
-- `Guid` - Globally unique identifier (for both type and instance identification)
-
-### Comments
-
-```bbfm
-// Single-line comment
-
-/*
-   Multi-line comment
-*/
-```
 
 ## Development
 
@@ -823,8 +807,12 @@ The compiler is organized into several key components:
 - **Parser** (`model-compiler.y`) - Parses tokens into AST using Bison
 - **AST** (`AST.h/cpp`) - Abstract Syntax Tree node definitions
 - **SemanticAnalyzer** (`SemanticAnalyzer.h/cpp`) - Type checking and validation
+- **CodeGenerator** (`CodeGenerator.h/cpp`) - Abstract code generation interface
+- **CppCodeGenerator** (`CppCodeGenerator.h/cpp`) - C++ header generation
+- **RustCodeGenerator** (`RustCodeGenerator.h/cpp`) - Experimental Rust generation
 - **Driver** (`Driver.h/cpp`) - Orchestrates compilation phases
 - **Console** (`Console.h/cpp`) - Error reporting and output formatting
+- **Runtime** (`include/runtime/`) - Types used by generated C++ code (`Fabric`, `Guid`, field wrappers)
 
 ### Coding Standards
 
@@ -845,13 +833,3 @@ For detailed development guidelines, coding conventions, and architectural decis
 ## License
 
 MIT License - see LICENSE file for details.
-
-## Project Status
-
-**Current Phase:** Complete - All 3 Phases Implemented
-
-The compiler completes:
-
-- ✅ Phase 0: Lexical analysis and parsing
-- ✅ Phase 1: Semantic analysis with full type checking
-- ✅ Phase 2: C++ code generation with full feature support

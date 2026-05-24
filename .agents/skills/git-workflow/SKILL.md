@@ -1,34 +1,38 @@
 ---
 name: git-workflow
-description: Git commit message format using conventional commits, with character limits, commit types, branch workflow, and examples. Load before making a commit or reviewing git history.
+description: Git commit message format using conventional commits, with mandatory bulleted bodies, character limits, commit types, and HEREDOC examples. Load before making a commit or reviewing git history.
 license: MIT
 metadata:
   author: Heiko Panjas
-  version: "1.0"
+  version: "1.1"
 ---
 
 # Git Workflow Conventions
 
-Read this skill before making a commit. It contains the full commit message format,
-character limits, conventional commit types, and examples.
+**This skill is the single source of truth for commit messages and git workflow
+details.** When this skill conflicts with summaries in `AGENTS.md` or other
+project docs, follow this skill.
+
+Read this skill in full before making a commit.
 
 ---
 
 ## Commit Protocol (CRITICAL)
 
-- **NEVER commit automatically** - always wait for explicit confirmation
+- **NEVER commit automatically** — always wait for explicit user confirmation
 
 Whenever asked to commit changes:
 
-- Stage the changes
-- Write a detailed but concise commit message using conventional commits format
-- Commit the changes
+1. Read this skill in full
+2. Stage the changes
+3. Write a commit message that follows every rule below
+4. Commit the changes
 
 This is **CRITICAL**!
 
-## **Commit Message Guidelines - CRITICAL**
+## Commit Message Guidelines (CRITICAL)
 
-Follow these rules to prevent VSCode terminal crashes and ensure clean git history:
+Follow these rules to prevent VSCode terminal crashes and ensure clean git history.
 
 **Message Format (Conventional Commits):**
 
@@ -45,7 +49,7 @@ Follow these rules to prevent VSCode terminal crashes and ensure clean git histo
 - **Subject line**: Maximum 50 characters (strict limit)
 - **Body lines**: Wrap at 72 characters per line
 - **Total message**: Keep under 500 characters total
-- **Blank line**: Always add blank line between subject and body
+- **Blank line**: Always add a blank line between subject and body
 
 **Subject Line Rules:**
 
@@ -55,20 +59,23 @@ Follow these rules to prevent VSCode terminal crashes and ensure clean git histo
 - No period at end of subject line
 - Keep concise and descriptive
 
-**Body Rules (if needed):**
+**Body Rules (required when a body is present):**
 
-- Add blank line after subject before body
+- Add a blank line after the subject before the body
 - Wrap each line at 72 characters maximum
 - Explain what and why, not how
-- Use bullet points (`-`) for all body items with lowercase text after bullet
-- Keep it concise
+- **CRITICAL: every body line must be a bullet** — start each line with `-` followed by lowercase text
+- Use one bullet per distinct change or reason
+- Keep it concise — typically 2 to 4 bullets
+- A subject-only commit (no body) is allowed for trivial one-line fixes
 
 **Special Character Safety:**
 
-- Avoid nested quotes or complex quoting
-- Avoid special shell characters: `$`, `` ` ``, `!`, `\`, `|`, `&`, `;`
+- Avoid nested quotes or complex quoting inside the message text
+- Avoid special shell characters in message text: `$`, `` ` ``, `!`, `\`, `|`, `&`, `;`
 - Use simple punctuation only
 - No emoji or unicode characters
+- Hyphens in bullet markers (`-`) and plain ASCII text are allowed
 
 **Best Practices:**
 
@@ -77,50 +84,89 @@ Follow these rules to prevent VSCode terminal crashes and ensure clean git histo
 - **Test before committing**: Ensure code builds and works
 - **Reference issues**: Use `#123` format in footer if applicable
 
-**Examples:**
+## Examples
 
-Good:
+**Good — body with bullets:**
 
 ```text
 feat(api): add KStringTrim function
 
 - add trimming function to remove whitespace from
   both ends of string
-- supports all encodings
+- support all encodings
 ```
 
-Good (short):
+**Good — docs commit with bullets:**
+
+```text
+docs(readme): add FM language reference
+
+- rewrite README to match current compiler behavior
+- add comprehensive FM language reference section
+- remove duplicated status and language spec content
+```
+
+**Good — subject only (trivial change, no body needed):**
 
 ```text
 fix(build): correct static library output name
 ```
 
-Bad (too long):
+**Bad — prose paragraph instead of bullets:**
+
+```text
+docs(readme): add FM language reference
+
+Rewrite README to fix outdated content and document the full FM
+language syntax, semantics, validation rules, usage, and structure.
+```
+
+**Bad — too long:**
 
 ```text
 feat(api): add a new comprehensive string trimming function that handles all edge cases including UTF-8, UTF-16LE, UTF-16BE, and ANSI encodings with proper boundary checking and memory management
 ```
 
-Bad (special characters):
+**Bad — special characters:**
 
 ```text
 fix: update `KString` with "nested 'quotes'" & $special chars!
 ```
 
-**Invoking git commit safely:**
+## Invoking git commit safely (CRITICAL)
 
-Each `-m` flag creates a **separate paragraph** with a blank line between it and the next. Never use one `-m` per bullet line, or every bullet ends up separated by a blank line.
+Put the **entire message** (subject, blank line, and bulleted body) in one
+commit argument. Do not split bullets across multiple `-m` flags.
 
-Wrong (blank line between every bullet):
+**Preferred — HEREDOC (zsh / bash):**
 
-```text
-git commit -m subject -m bullet-one -m bullet-two -m bullet-three
+```bash
+git commit -m "$(cat <<'EOF'
+docs(readme): add FM language reference
+
+- rewrite README to match current compiler behavior
+- add comprehensive FM language reference section
+- remove duplicated status and language spec content
+EOF
+)"
 ```
 
-Right - put the entire body in a single `-m` with embedded newlines:
+**Alternative — message file:**
 
-- zsh / bash: use ANSI-C quoting `$'...\n...'` so `\n` becomes a real newline
-- PowerShell: use a here-string `@"...newlines..."@` passed as one argument
-- Cross-shell: write the message to a temp file and use `git commit -F <file>`
+```bash
+git commit -F /tmp/commit-msg.txt
+```
 
-The rule: subject in the first `-m`, the **whole** body in the second `-m`. Bullet lists must live inside one body paragraph.
+**Wrong — one `-m` per line (adds blank lines between bullets):**
+
+```bash
+git commit -m "docs(readme): add FM language reference" \
+  -m "- rewrite README to match current compiler behavior" \
+  -m "- add comprehensive FM language reference section"
+```
+
+**Also wrong — multiple `-m` for subject and body paragraphs:**
+
+Each `-m` creates a separate paragraph. If you must use two `-m` flags, put
+the **entire bulleted body** in the second `-m` with embedded newlines. Prefer
+HEREDOC instead.

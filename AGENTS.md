@@ -1,6 +1,6 @@
 # Project Instructions for AI Coding Agents
 
-**Last updated:** 2026-05-24 (CMake build skill expanded)
+**Last updated:** 2026-05-24 (just-in-time skill loading in AGENTS.md)
 
 <!-- {preamble} -->
 
@@ -58,11 +58,17 @@ When initializing a session or analyzing the workspace, refer to instruction fil
 1. `AGENTS.md` (this file - primary instructions and single source of truth)
 2. Agent-specific reference file (if present - points back to AGENTS.md)
 
+**Skills in `.agents/skills/` are authoritative for their domain.** When a skill
+and this file disagree, follow the skill. Load a skill only when starting work
+in that domain — do not preload skills listed elsewhere in this file.
+
 ### Update Protocol (CRITICAL)
 
 **PROACTIVELY update this file (`AGENTS.md`) as we work together.** Whenever you make a decision, choose a technology, establish a convention, or define a standard, you MUST update AGENTS.md immediately in the same response.
 
 **Update ONLY this file (`AGENTS.md`)** when coding standards, conventions, or project decisions evolve. Do not modify agent-specific reference files unless the reference mechanism itself needs changes.
+
+**Put detailed conventions in skills**, not in this file. When a skill-owned rule changes, update the skill file and log the decision here in Recent Updates.
 
 **When to update** (do this automatically, without being asked):
 
@@ -98,39 +104,37 @@ When initializing a session or analyzing the workspace, refer to instruction fil
 
 - Never include API keys, tokens, or credentials in code
 - Always require explicit human confirmation before commits
-- Maintain conventional commit message standards
-- Keep change history transparent through commit messages
 - [Add project-specific security guidelines]
 
 ### Testing
 
-Load the `cpp-testing-conventions` skill before writing, reviewing, or refactoring C++ tests.
+Load `cpp-testing-conventions` before writing, reviewing, or refactoring C++ tests.
 
 ### Documentation
 
-Load the `cpp-documentation-conventions` skill before writing, reviewing, or updating C++ documentation.
+Load `cpp-documentation-conventions` before writing, reviewing, or updating C++ documentation.
 
 <!-- {languages} -->
 
 ## C++ Coding Standards
 
-Load the `cpp-coding-conventions` skill before writing, reviewing, or refactoring C++ code.
+Load `cpp-coding-conventions` before writing, reviewing, or refactoring C++ code.
 
 ## Build Commands
 
-Load the `cmake-build-commands` skill when configuring, building, testing, formatting, or packaging the project.
+Load `cmake-build-commands` when configuring, building, testing, formatting, or packaging the project.
 
 <!-- {integration} -->
 
 ## Semantic Versioning
 
-Automatically bump the project version after every code change and include it in the same commit. Load the `semantic-versioning` skill for the full PATCH/MINOR/MAJOR decision rules.
+Automatically bump the project version after every code change and include it in the same commit. Load `semantic-versioning` when deciding PATCH/MINOR/MAJOR version bumps.
 
 ## Commit Protocol
 
 - **NEVER commit automatically** — always wait for explicit user confirmation
-- Stage changes, write a conventional commits message (max 50-char subject, 72-char body lines), then commit
-- Load the `git-workflow` skill for the full message format, character limits, and examples before committing
+- Whenever the user asks you to commit, read and follow `git-workflow` in full before staging or committing
+- Skill rules override any summary in this file or in slash commands such as `/init-session`
 
 ---
 
@@ -139,6 +143,21 @@ Automatically bump the project version after every code change and include it in
 ## Recent Updates & Decisions
 
 ### 2026-05-24
+
+- **Skill Loading Decentralized**: Removed central skill table from AGENTS.md; restored just-in-time load instructions in each domain section
+- **Reasoning**: Avoids agents preloading all skills during init-session and filling context with unrelated rules
+
+- **Commit Protocol Consolidated**: Moved commit instructions from `/init-session` into AGENTS.md Commit Protocol; init-session now references AGENTS.md
+- **Reasoning**: Keeps commit workflow in one canonical place while preserving skill authority over summaries
+
+- **Skill Loading Made CRITICAL**: Added a skill loading table to `AGENTS.md`; skills in `.agents/skills/` are authoritative over inline summaries in this file
+- **Reasoning**: Prevents agents from following incomplete commit/build/test rules copied into AGENTS.md instead of the full skill files
+
+- **Commit Rules Moved to git-workflow Skill**: Removed commit message format details from `AGENTS.md`; `git-workflow` now owns bullets, limits, examples, and HEREDOC invocation
+- **Reasoning**: Eliminates conflicting instructions that caused prose commit bodies instead of required bullet lists
+
+- **git-workflow Skill Strengthened**: Mandatory bulleted bodies, docs example, bad prose example, HEREDOC as preferred commit invocation, explicit skill authority statement
+- **Reasoning**: Makes the bullet rule impossible to miss and aligns commit workflow with how agents actually run git in Cursor
 
 - **Mission Statement Updated**: Replaced the placeholder mission with the BBFM Model Compiler purpose, DSL scope, validation/code-generation workflow, and current/future target-language direction
 - **Reasoning**: Keeps the primary agent instructions aligned with the actual project described by README.md
