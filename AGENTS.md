@@ -1,6 +1,6 @@
 # Project Instructions for AI Coding Agents
 
-**Last updated:** 2026-02-18
+**Last updated:** 2026-05-24 (Removed VSCode extension; Contracts.h applied broadly)
 
 <!-- {mission} -->
 
@@ -135,23 +135,41 @@ When initializing a session or analyzing the workspace, refer to instruction fil
 - Member functions that don't modify state should be `const`
 - Use `const` references for complex types in parameters
 - Apply `const` to return values when appropriate
+- **Local variables that are not modified after their initial definition must be declared `const`**
 - Examples:
   - ✅ Correct: `void SetTitle(const std::string& title);`
   - ✅ Correct: `std::string GetTitle() const;`
   - ✅ Correct: `const Data& GetData() const;`
+  - ✅ Correct: `const bool generateCode = (result.count("lang") > 0);`
   - ❌ Incorrect: `void SetTitle(std::string title);` (unnecessary copy)
+  - ❌ Incorrect: `bool generateCode = (result.count("lang") > 0);` (not modified, must be const)
 - Const correctness improves maintainability and enables compiler optimization
 
 **Comparison Conventions:**
 
-- **Always place constants on the left side of comparisons** (constant-left style)
-- Use explicit `nullptr` comparisons instead of implicit boolean conversion
-- This prevents accidental assignment when `=` is used instead of `==`
+- **Place constants on the left side of equality comparisons** (`==` and `!=`) only
+- **Exception**: if the variable operand is itself `const`, or is an **rvalue** (e.g. a function return value), put the literal on the right — neither can be accidentally assigned to
+- **For relational comparisons** (`<`, `>`, `<=`, `>=`), place the constant on the right (natural reading order)
+- **All conditions must be explicit** — never rely on implicit conversion to `bool`
+- Constant-left for `==`/`!=` prevents accidental assignment when `=` is used instead of `==`
+- Rules:
+  - Pointers: compare with `nullptr` explicitly
+  - Booleans: compare with `true` or `false` explicitly
+  - Integers/counts: compare with `0` explicitly (`0 !=`, `0 ==`, `count > 0`, `count >= 1`)
+  - Negation (`!expr`): replace with `false == expr` (or `expr == false` if `expr` is const or rvalue)
 - Examples:
-  - ✅ Correct: `if (nullptr == ptr)`, `if (0 == value)`, `if (true == condition)`
-  - ❌ Incorrect: `if (!ptr)`, `if (ptr == nullptr)`, `if (value == 0)`
+  - ✅ Correct: `if (nullptr == ptr)` (ptr is non-const lvalue — literal on left)
+  - ✅ Correct: `if (result.count("x") != 0)` (rvalue — literal on right)
+  - ✅ Correct: `if (generateCode == true)` (generateCode is const — literal on right)
+  - ✅ Correct: `if (lastDot != std::string::npos)` (lastDot is const — literal on right)
+  - ✅ Correct: `if (result.count("option") != 0)` (rvalue — literal on right)
+  - ✅ Correct: `if (result.count("option") > 0)` (relational: constant on right)
+  - ❌ Incorrect: `if (ptr)`, `if (!ptr)`, `if (count)`, `if (flag)`, `if (!ok)`
+  - ❌ Incorrect: `if (true == generateCode)` (generateCode is const — should flip)
+  - ❌ Incorrect: `if (0 != result.count("option"))` (rvalue — literal must be on right)
+  - ❌ Incorrect: `if (0 < result.count("option"))` (relational: constant must be on right)
 - Apply to all comparisons including pointer checks, numeric values, and booleans
-- Benefits: Compiler error if `=` is mistakenly used instead of `==`
+- Benefits: Compiler error if `=` is mistakenly used instead of `==`; intent is always unambiguous
 
 **RAII and Resource Management:**
 
@@ -271,6 +289,10 @@ When initializing a session or analyzing the workspace, refer to instruction fil
 - **Variables and function parameters**: camelCase (e.g., `bufferSize`, `episodeCount`)
 - **Member variables**: camelCase with underscore postfix (e.g., `dataSize_`, `title_`)
 - **Constants**: UPPER_SNAKE_CASE (e.g., `MAX_EPISODE_LENGTH`, `DEFAULT_TIMEOUT`)
+- **Macros**: UPPER_SNAKE_CASE — **exception**: contract macros `Require` and `RequireReturn` in `include/Contracts.h` use PascalCase intentionally, as they read as natural-language assertions at the call site
+  - **CRITICAL**: `Require` and `RequireReturn` may **only** be used at the very top of a function or method, before any other statement — they are input-parameter guards, not general-purpose control flow
+  - **One call per parameter**: use exactly one `Require`/`RequireReturn` call per input parameter — never combine multiple parameter checks with `&&` in a single call
+  - **Context-dependent validity**: what counts as an invalid parameter value depends on what the function does, not just the parameter type — a pointer being null, a string being empty, an index being negative, or a count being zero are all equally invalid if the function cannot meaningfully proceed with that value; apply `Require`/`RequireReturn` to any parameter whose degenerate or out-of-range value is a caller bug in the context of that specific function
 - **Namespaces**: lowercase (e.g., `myproject`, `utils`)
 - **Template parameters**: Single uppercase letter or PascalCase (e.g., `T`, `ValueType`)
 - Remove redundant prefixes from class names (e.g., use `Model` instead of `P3Model`)
@@ -810,7 +832,7 @@ When initializing a session or analyzing the workspace, refer to instruction fil
 
 - [ ] All public APIs have Doxygen documentation
 - [ ] Const correctness applied throughout
-- [ ] Constant-left comparisons used consistently
+- [ ] Comparison conventions followed (constant-left for `==`/`!=` on mutable lvalues; literal on right for `const`/rvalue operands and all relational operators)
 - [ ] Smart pointers used instead of raw pointers
 - [ ] RAII principles applied for resource management
 - [ ] Rule of Zero or Rule of Five followed correctly
@@ -1119,6 +1141,36 @@ After making ANY code changes:
 ---
 
 ## Recent Updates & Decisions
+
+### 2026-05-24
+
+- **Contracts.h**: Added `include/Contracts.h` with two programming-by-contract macros for input parameter validation at function entry
+  - `Require(expr)` — for void functions; returns immediately if precondition is false
+  - `RequireReturn(expr, retval)` — for non-void functions; returns `retval` if precondition is false
+  - **CRITICAL**: both macros may **only** appear at the very top of a function or method, before any other statement — they validate input parameters on entry, not mid-function conditions
+  - **One call per parameter**: use exactly one `Require`/`RequireReturn` call per input parameter — never combine multiple parameter checks with `&&` in a single call
+  - **Context-dependent validity**: validity is determined by what the function does, not by the parameter type — a null pointer, an empty string, a negative index, and a zero count are all equally invalid if the function cannot meaningfully proceed with that value; the same value (e.g. index `-1`) can be valid in one function and a caller bug in another
+  - **Naming exception**: these macros use PascalCase (not UPPER_SNAKE_CASE) so they read as natural-language assertions at the call site
+  - `do { ... } while (false)` wrapper ensures safe use after naked `if` and requires a trailing semicolon
+  - `(expr) == false` follows the project's explicit-condition convention
+
+- **Const Local Variables**: Added rule that local variables not modified after initial definition must be declared `const`
+- **Applied to main.cpp**: `sourceFiles`, `generateCode`, `targetClassPrefix`, `targetNamespace`, `namespaces`, `lastDot` now declared `const`
+- **Reasoning**: Enforces intent at compile time, improves readability (reader immediately knows the variable won't change), and enables compiler optimizations
+- **Refined Comparison Convention**: Constant-left applies only to `==` and `!=`; relational operators (`<`, `>`, `<=`, `>=`) use natural order (constant on right)
+- **Const-operand Exception**: When the variable operand is itself `const` or is an **rvalue** (function return value), the literal goes on the right (neither can be accidentally assigned to)
+- **Applied to main.cpp**: `0 < result.count("lang")` → `result.count("lang") > 0`; `true == generateCode` → `generateCode == true`; `false == targetClassPrefix.empty()` → `targetClassPrefix.empty() == false`; `std::string::npos != lastDot` → `lastDot != std::string::npos`; `0 != result.count(...)` → `result.count(...) != 0` (rvalue)
+- **Contracts.h applied broadly**: Added `Require`/`RequireReturn` guards to all remaining unguarded functions across SemanticAnalyzer.cpp (`ValidateClassDeclaration`, `HasInheritanceCycle`, `ValidateFieldUniqueness`, `ValidateInvariants`, `ValidateComputedFeatures`, `ValidateAliasField`, `ValidateComputedFeatureExpression`, `ValidateMemberAccess`) and RustCodeGenerator.cpp (`GenerateGetter`, `GenerateSetter`, `GenerateComputedGetter`)
+- **Removed VSCode extension**: Deleted `vscode/` directory, `.vscode/settings.json`, `.vscode/extensions.json`, and `[*.fm]` section from `.editorconfig` — the extension was an experiment and is no longer part of the project
+
+### 2026-05-22
+
+- **Session Initialization**: Analyzed workspace on `develop` branch (up to date with `origin/develop`)
+- **Compilation Phases**: Phase 0 (parsing), Phase 1 (semantic analysis), and Phase 2 (C++ code generation) are complete and integrated
+- **CLI**: `--lang c++` enables code generation; omitting `--lang` runs validation-only mode
+- **Build**: CMake 3.20+, C++23, Flex/Bison, cxxopts; build via `./build.sh` → `_build/model-compiler`
+- **Work in Progress (untracked)**: `RustCodeGenerator.h/cpp` and `examples/test_computed_simple.rs` exist locally but are not wired into `CMakeLists.txt`, `Driver.cpp`, or `--lang` validation yet
+- **Reasoning**: Capture current project state at session start so subsequent work builds on accurate context
 
 ### 2025-12-26 (Evening)
 

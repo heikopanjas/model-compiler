@@ -13,7 +13,7 @@ CodeGenerator::CodeGenerator(const AST* ast, const SemanticAnalyzer* analyzer, c
 
 std::string CodeGenerator::FormatNamespacePrefix() const
 {
-    if (namespaces_.empty())
+    if (namespaces_.empty() == true)
     {
         return "";
     }

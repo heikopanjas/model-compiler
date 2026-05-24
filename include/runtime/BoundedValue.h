@@ -127,8 +127,8 @@ public:
         if constexpr (sizeof...(Checkers) > 0)
         {
             // Call all checker functions and ensure all return true
-            bool allValid = (Checkers(parent_, value) && ...);
-            if (!allValid)
+            const bool allValid = (Checkers(parent_, value) && ...);
+            if (allValid == false)
             {
                 throw std::invalid_argument("Invariant validation failed");
             }
@@ -245,8 +245,8 @@ public:
         if constexpr (sizeof...(Checkers) > 0)
         {
             // Call all checker functions and ensure all return true
-            bool allValid = (Checkers(parent_, value) && ...);
-            if (!allValid)
+            const bool allValid = (Checkers(parent_, value) && ...);
+            if (allValid == false)
             {
                 throw std::invalid_argument("Invariant validation failed");
             }

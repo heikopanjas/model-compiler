@@ -140,7 +140,7 @@ void CardinalityModifier::Dump(const int indent, const std::string& nsPrefix) co
     UNREFERENCED_PARAMETER(indent);
     UNREFERENCED_PARAMETER(nsPrefix);
     std::cout << "[" << minCardinality_;
-    if (maxCardinality_ == -1)
+    if (-1 == maxCardinality_)
     {
         std::cout << "..*";
     }
@@ -188,7 +188,7 @@ bool Field::IsStatic() const
 
 bool Field::IsComputed() const
 {
-    return nullptr != initializer_ && !isAlias_;
+    return nullptr != initializer_ && false == isAlias_;
 }
 
 bool Field::IsAlias() const
@@ -451,18 +451,18 @@ Expression::Type BinaryExpression::GetResultType() const
         case Op::MOD:
         {
             // Result type is the "wider" of the two operands
-            Type leftType  = left_->GetResultType();
-            Type rightType = right_->GetResultType();
+            const Type leftType  = left_->GetResultType();
+            const Type rightType = right_->GetResultType();
 
             // If either is REAL, result is REAL
-            if (Type::REAL == leftType || Type::REAL == rightType || Type::TIMESTAMP == leftType || Type::TIMESTAMP == rightType ||
-                Type::TIMESPAN == leftType || Type::TIMESPAN == rightType)
+            if (leftType == Type::REAL || rightType == Type::REAL || leftType == Type::TIMESTAMP || rightType == Type::TIMESTAMP ||
+                leftType == Type::TIMESPAN || rightType == Type::TIMESPAN)
             {
                 return Type::REAL;
             }
 
             // Otherwise, if both are INT, result is INT
-            if (Type::INT == leftType && Type::INT == rightType)
+            if (leftType == Type::INT && rightType == Type::INT)
             {
                 return Type::INT;
             }

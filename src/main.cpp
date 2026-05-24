@@ -15,10 +15,7 @@ int main(int argc, char* argv[])
         options.add_options()("h,help", "Print usage information")("v,version", "Print version information")(
             "dump-syntax-tree", "Dump the Abstract Syntax Tree after lexical analysis")("dump-symbol-table", "Dump the Symbol Table after semantic analysis")(
             "lang",
-            "Target language for code generation (optional, currently only 'c++' is supported). If not specified, only syntax and semantic validation is " "per"
-                                                                                                                                                           "for"
-                                                                                                                                                           "med"
-                                                                                                                                                           ".",
+            "Target language for code generation (optional, currently only 'c++' is supported). If not specified, only syntax and semantic validation is " "per" "for" "med" ".",
             cxxopts::value<std::string>())(
             "o,output", "Output file path (default: input filename with .h extension)", cxxopts::value<std::string>()->default_value(""))(
             "target-class-prefix", "Prefix to add to generated class and enum names", cxxopts::value<std::string>()->default_value(""))(
@@ -32,21 +29,21 @@ int main(int argc, char* argv[])
         auto result = options.parse(argc, argv);
 
         // Handle --help
-        if (result.count("help"))
+        if (result.count("help") != 0)
         {
             std::cout << options.help() << std::endl;
             return 0;
         }
 
         // Handle --version
-        if (result.count("version"))
+        if (result.count("version") != 0)
         {
             std::cout << "BBFM Model Compiler v0.1.0" << std::endl;
             return 0;
         }
 
         // Check for input files
-        if (0 == result.count("input"))
+        if (result.count("input") == 0)
         {
             bbfm::Console::ReportError("Error: No input file specified");
             std::cout << "\n" << options.help() << std::endl;
@@ -54,13 +51,13 @@ int main(int argc, char* argv[])
         }
 
         // Collect source files from command line
-        std::vector<std::string> sourceFiles = result["input"].as<std::vector<std::string>>();
+        const std::vector<std::string> sourceFiles = result["input"].as<std::vector<std::string>>();
 
         // Check if code generation is requested
-        bool        generateCode = (result.count("lang") > 0);
+        const bool  generateCode = (result.count("lang") > 0);
         std::string targetLanguage;
 
-        if (generateCode)
+        if (generateCode == true)
         {
             // Validate language option
             targetLanguage = result["lang"].as<std::string>();
@@ -72,16 +69,16 @@ int main(int argc, char* argv[])
         }
 
         // Get target class prefix option
-        std::string targetClassPrefix = result["target-class-prefix"].as<std::string>();
+        const std::string targetClassPrefix = result["target-class-prefix"].as<std::string>();
 
         // Get target namespace option
-        std::string targetNamespace = result["target-namespace"].as<std::string>();
+        const std::string targetNamespace = result["target-namespace"].as<std::string>();
 
         // Create driver with source files
         bbfm::Driver driver(sourceFiles, targetClassPrefix, targetNamespace);
 
         // Report target language if code generation is requested
-        if (generateCode)
+        if (generateCode == true)
         {
             bbfm::Console::ReportStatus("Target language: " + targetLanguage);
         }
@@ -91,32 +88,32 @@ int main(int argc, char* argv[])
         }
 
         // Report target class prefix if set
-        if (false == targetClassPrefix.empty())
+        if (targetClassPrefix.empty() == false)
         {
             bbfm::Console::ReportStatus("Target class prefix: " + targetClassPrefix);
         }
 
         // Report target namespace if set
-        if (false == targetNamespace.empty())
+        if (targetNamespace.empty() == false)
         {
             bbfm::Console::ReportStatus("Target namespace: " + targetNamespace);
         }
 
         // Phase 0: Lexical analysis and parsing
-        std::unique_ptr<bbfm::AST> ast = driver.Phase0();
+        const std::unique_ptr<bbfm::AST> ast = driver.Phase0();
         if (nullptr == ast)
         {
             return 1;
         }
 
         // Dump the AST if requested
-        if (result.count("dump-syntax-tree"))
+        if (result.count("dump-syntax-tree") != 0)
         {
             std::cout << "\n";
 
             // Get combined namespaces and format as prefix
-            std::vector<std::string> namespaces = driver.GetCombinedNamespaces(ast.get());
-            std::string              nsPrefix;
+            const std::vector<std::string> namespaces = driver.GetCombinedNamespaces(ast.get());
+            std::string                    nsPrefix;
             for (const auto& ns : namespaces)
             {
                 nsPrefix += ns + "::";
@@ -126,32 +123,32 @@ int main(int argc, char* argv[])
         }
 
         // Phase 1: Semantic analysis
-        std::unique_ptr<bbfm::SemanticAnalyzer> analyzer = driver.Phase1(ast.get());
+        const std::unique_ptr<bbfm::SemanticAnalyzer> analyzer = driver.Phase1(ast.get());
         if (nullptr == analyzer)
         {
             return 1;
         }
 
         // Dump the symbol table if requested
-        if (result.count("dump-symbol-table"))
+        if (result.count("dump-symbol-table") != 0)
         {
             std::cout << "\n";
             analyzer->DumpSymbolTable();
         }
 
         // Phase 2: Code generation (only if --lang was specified)
-        if (generateCode)
+        if (generateCode == true)
         {
             std::string outputPath = result["output"].as<std::string>();
 
             // If no output path specified, derive from input filename
-            if (outputPath.empty())
+            if (outputPath.empty() == true)
             {
                 const std::string& inputFile = sourceFiles[0];
 
                 // Replace .fm extension with .h
-                size_t lastDot = inputFile.find_last_of('.');
-                if (std::string::npos != lastDot)
+                const size_t lastDot = inputFile.find_last_of('.');
+                if (lastDot != std::string::npos)
                 {
                     outputPath = inputFile.substr(0, lastDot) + ".h";
                 }
@@ -162,7 +159,7 @@ int main(int argc, char* argv[])
             }
 
             // Generate code
-            if (!driver.Phase2(ast.get(), analyzer.get(), outputPath))
+            if (driver.Phase2(ast.get(), analyzer.get(), outputPath) == false)
             {
                 return 1;
             }

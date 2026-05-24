@@ -34,12 +34,12 @@ std::vector<std::string> CombineNamespaces(const std::string& targetNamespace, c
 {
     std::vector<std::string> namespaces;
 
-    if (false == targetNamespace.empty())
+    if (targetNamespace.empty() == false)
     {
         namespaces.push_back(targetNamespace);
     }
 
-    if (false == sourceNamespace.empty())
+    if (sourceNamespace.empty() == false)
     {
         namespaces.push_back(sourceNamespace);
     }
@@ -62,7 +62,7 @@ std::unique_ptr<AST> Driver::Phase0()
 {
     // Currently we only support single file compilation
     // Multi-file support will be added later
-    if (sourceFiles_.empty())
+    if (sourceFiles_.empty() == true)
     {
         Console::ReportError("Error: No source files provided");
         hasErrors_ = true;
@@ -84,7 +84,7 @@ std::unique_ptr<AST> Driver::Phase0()
     // Read source file lines for error reporting
     g_source_lines.clear();
     std::ifstream infile(filename);
-    if (infile.is_open())
+    if (infile.is_open() == true)
     {
         std::string line;
         while (std::getline(infile, line))
@@ -96,8 +96,8 @@ std::unique_ptr<AST> Driver::Phase0()
 
     // Open the source file for parsing
 #ifdef _WIN32
-    errno_t err = fopen_s(&yyin, filename.c_str(), "r");
-    if (0 != err || nullptr == yyin)
+    const errno_t err = fopen_s(&yyin, filename.c_str(), "r");
+    if (err != 0 || nullptr == yyin)
 #else
     yyin = fopen(filename.c_str(), "r");
     if (nullptr == yyin)
@@ -111,16 +111,16 @@ std::unique_ptr<AST> Driver::Phase0()
     Console::ReportStatus("Phase 0 (Lexical Analysis) started...");
 
     // Parse the file
-    int result = yyparse();
+    const int result = yyparse();
 
     // Close the file
-    if (yyin != stdin)
+    if (stdin != yyin)
     {
         fclose(yyin);
     }
 
     // Check parsing result
-    if (0 != result)
+    if (result != 0)
     {
         hasErrors_ = true;
         return nullptr;
@@ -150,10 +150,10 @@ std::unique_ptr<SemanticAnalyzer> Driver::Phase1(const AST* ast)
     Console::ReportStatus("Phase 1 (Semantic Analysis) started...");
 
     // Pass combined namespaces to semantic analyzer
-    std::vector<std::string> combinedNamespaces = GetCombinedNamespaces(ast);
-    auto                     analyzer           = std::make_unique<SemanticAnalyzer>(ast, combinedNamespaces);
+    const std::vector<std::string> combinedNamespaces = GetCombinedNamespaces(ast);
+    auto                           analyzer           = std::make_unique<SemanticAnalyzer>(ast, combinedNamespaces);
 
-    if (!analyzer->Analyze())
+    if (analyzer->Analyze() == false)
     {
         Console::ReportError("Phase 1 (Semantic Analysis) failed with errors.");
         hasErrors_ = true;
@@ -180,7 +180,7 @@ bool Driver::Phase2(const AST* ast, const SemanticAnalyzer* analyzer, const std:
         return false;
     }
 
-    if (outputPath.empty())
+    if (outputPath.empty() == true)
     {
         Console::ReportError("Error: Output path cannot be empty");
         hasErrors_ = true;
@@ -190,13 +190,13 @@ bool Driver::Phase2(const AST* ast, const SemanticAnalyzer* analyzer, const std:
     Console::ReportStatus("Phase 2 (Code Generation) started...");
 
     // Get combined namespaces
-    std::vector<std::string> combinedNamespaces = GetCombinedNamespaces(ast);
+    const std::vector<std::string> combinedNamespaces = GetCombinedNamespaces(ast);
 
     // Create C++ code generator
     CppCodeGenerator generator(ast, analyzer, combinedNamespaces, targetClassPrefix_);
 
     // Generate code
-    if (!generator.Generate(outputPath))
+    if (generator.Generate(outputPath) == false)
     {
         Console::ReportError("Phase 2 (Code Generation) failed.");
         hasErrors_ = true;

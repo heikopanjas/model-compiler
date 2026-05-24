@@ -1,6 +1,7 @@
 #include "CppCodeGenerator.h"
 #include "Common.h"
 #include "Console.h"
+#include "Contracts.h"
 #include "SemanticAnalyzer.h"
 #include <algorithm>
 #include <cctype>
@@ -54,12 +55,12 @@ bool CppCodeGenerator::Generate(const std::string& outputPath)
     GenerateFileFooter();
 
     // Close include guard
-    std::string includeGuard = GenerateIncludeGuardName(outputPath);
+    const std::string includeGuard = GenerateIncludeGuardName(outputPath);
     output_ << "#endif // " << includeGuard << "\n";
 
     // Write to output file
     std::ofstream outFile(outputPath);
-    if (false == outFile.is_open())
+    if (outFile.is_open() == false)
     {
         ReportError("Failed to open output file: " + outputPath);
         return false;
@@ -68,7 +69,7 @@ bool CppCodeGenerator::Generate(const std::string& outputPath)
     outFile << output_.str();
     outFile.close();
 
-    if (false == outFile.good())
+    if (outFile.good() == false)
     {
         ReportError("Error writing to output file: " + outputPath);
         return false;
@@ -117,7 +118,7 @@ std::string CppCodeGenerator::MapPrimitiveType(const PrimitiveType type) const
 std::string CppCodeGenerator::MapType(const TypeSpec* typeSpec) const
 {
     // TODO: Implement fully in Step 7
-    if (typeSpec->IsPrimitive())
+    if (typeSpec->IsPrimitive() == true)
     {
         const PrimitiveTypeSpec* primType = dynamic_cast<const PrimitiveTypeSpec*>(typeSpec);
         return MapPrimitiveType(primType->GetType());
@@ -131,10 +132,8 @@ std::string CppCodeGenerator::MapType(const TypeSpec* typeSpec) const
 
 const ClassDeclaration* CppCodeGenerator::FindClassDeclaringField(const ClassDeclaration* classDecl, const std::string& fieldName) const
 {
-    if (nullptr == classDecl)
-    {
-        return nullptr;
-    }
+    RequireReturn(nullptr != classDecl, nullptr);
+    RequireReturn(fieldName.empty() == false, nullptr);
 
     // Check if this class declares the field
     for (const auto& field : classDecl->GetFields())
@@ -161,27 +160,26 @@ const ClassDeclaration* CppCodeGenerator::FindClassDeclaringField(const ClassDec
 
 std::string CppCodeGenerator::GetFieldWrapperType(const Field* field, const ClassDeclaration* classDecl) const
 {
-    if (nullptr == field || field->IsComputed() || field->IsAlias())
-    {
-        return "void";
-    }
+    RequireReturn(nullptr != field, std::string{"void"});
+    RequireReturn(field->IsComputed() == false, std::string{"void"});
+    RequireReturn(field->IsAlias() == false, std::string{"void"});
 
     std::string cppType   = MapType(field->GetType());
     std::string className = ApplyClassPrefix(classDecl->GetName());
 
     // Get cardinality
     const CardinalityModifier* cardMod    = field->GetCardinalityModifier();
-    bool                       isOptional = (nullptr != cardMod) && cardMod->IsOptional();
+    const bool                 isOptional = (nullptr != cardMod) && cardMod->IsOptional() == true;
 
     // Check if field has invariants
-    std::vector<const Invariant*> fieldInvariants = GetInvariantsForField(field->GetName(), classDecl);
-    bool                          hasInvariants   = !fieldInvariants.empty();
+    const std::vector<const Invariant*> fieldInvariants = GetInvariantsForField(field->GetName(), classDecl);
+    const bool                          hasInvariants   = fieldInvariants.empty() == false;
 
     // Build template parameters
     std::string templateParams = cppType + ", " + className;
 
     // Add checker functions if there are invariants
-    if (hasInvariants)
+    if (hasInvariants == true)
     {
         for (const Invariant* inv : fieldInvariants)
         {
@@ -191,15 +189,15 @@ std::string CppCodeGenerator::GetFieldWrapperType(const Field* field, const Clas
 
     // Choose wrapper based on invariants and optionality
     std::string wrapperType;
-    if (hasInvariants && isOptional)
+    if (hasInvariants == true && isOptional == true)
     {
         wrapperType = "bbfm::runtime::OptionalBoundedValue";
     }
-    else if (hasInvariants && !isOptional)
+    else if (hasInvariants == true && isOptional == false)
     {
         wrapperType = "bbfm::runtime::BoundedValue";
     }
-    else if (!hasInvariants && isOptional)
+    else if (hasInvariants == false && isOptional == true)
     {
         wrapperType = "bbfm::runtime::OptionalUnboundedValue";
     }
@@ -218,19 +216,19 @@ std::string CppCodeGenerator::GenerateIncludeGuardName(const std::string& filena
     std::string guard = "__BBFM_GENERATED_";
 
     // Extract base filename without extension
-    size_t      lastSlash = filename.find_last_of("/\\");
-    std::string baseName  = (std::string::npos != lastSlash) ? filename.substr(lastSlash + 1) : filename;
+    const size_t lastSlash = filename.find_last_of("/\\");
+    std::string  baseName  = (lastSlash != std::string::npos) ? filename.substr(lastSlash + 1) : filename;
 
-    size_t lastDot = baseName.find_last_of('.');
-    if (std::string::npos != lastDot)
+    const size_t lastDot = baseName.find_last_of('.');
+    if (lastDot != std::string::npos)
     {
         baseName = baseName.substr(0, lastDot);
     }
 
     // Convert to uppercase and replace non-alphanumeric with underscore
-    for (char c : baseName)
+    for (const char c : baseName)
     {
-        if (std::isalnum(c))
+        if (std::isalnum(c) != 0)
         {
             guard += static_cast<char>(std::toupper(c));
         }
@@ -246,7 +244,7 @@ std::string CppCodeGenerator::GenerateIncludeGuardName(const std::string& filena
 
 void CppCodeGenerator::GenerateFileHeader(const std::string& filename)
 {
-    std::string includeGuard = GenerateIncludeGuardName(filename);
+    const std::string includeGuard = GenerateIncludeGuardName(filename);
 
     // Include guard opening
     output_ << "#ifndef " << includeGuard << "\n";
@@ -286,7 +284,7 @@ void CppCodeGenerator::GenerateFileFooter()
 
 void CppCodeGenerator::GenerateNamespaceOpen()
 {
-    if (namespaces_.empty())
+    if (namespaces_.empty() == true)
     {
         return;
     }
@@ -301,7 +299,7 @@ void CppCodeGenerator::GenerateNamespaceOpen()
 
 void CppCodeGenerator::GenerateNamespaceClose()
 {
-    if (namespaces_.empty())
+    if (namespaces_.empty() == true)
     {
         return;
     }
@@ -316,10 +314,7 @@ void CppCodeGenerator::GenerateNamespaceClose()
 
 void CppCodeGenerator::GenerateEnum(const EnumDeclaration* enumDecl)
 {
-    if (nullptr == enumDecl)
-    {
-        return;
-    }
+    Require(nullptr != enumDecl);
 
     // Generate enum class with prefix if specified
     std::string enumName = ApplyClassPrefix(enumDecl->GetName());
@@ -348,10 +343,7 @@ void CppCodeGenerator::GenerateEnum(const EnumDeclaration* enumDecl)
 
 void CppCodeGenerator::GenerateClass(const ClassDeclaration* classDecl)
 {
-    if (nullptr == classDecl)
-    {
-        return;
-    }
+    Require(nullptr != classDecl);
 
     std::string className = ApplyClassPrefix(classDecl->GetName());
 
@@ -363,7 +355,7 @@ void CppCodeGenerator::GenerateClass(const ClassDeclaration* classDecl)
 
     // Determine inheritance
     const std::string& baseType = classDecl->GetBaseType();
-    if (false == baseType.empty())
+    if (baseType.empty() == false)
     {
         // User-defined base class (which already inherits from Fabric)
         std::string baseClassName = ApplyClassPrefix(baseType);
@@ -399,14 +391,11 @@ void CppCodeGenerator::GenerateClass(const ClassDeclaration* classDecl)
 
 void CppCodeGenerator::GenerateClassFields(const ClassDeclaration* classDecl)
 {
-    if (nullptr == classDecl)
-    {
-        return;
-    }
+    Require(nullptr != classDecl);
 
     const auto& fields = classDecl->GetFields();
 
-    if (fields.empty())
+    if (fields.empty() == true)
     {
         // No user-defined fields (universal metadata inherited from Fabric)
         return;
@@ -425,7 +414,7 @@ void CppCodeGenerator::GenerateClassFields(const ClassDeclaration* classDecl)
     for (const auto& field : fields)
     {
         // Skip alias and computed fields - they'll be generated in later passes
-        if (field->IsAlias() || field->IsComputed())
+        if (field->IsAlias() == true || field->IsComputed() == true)
         {
             continue;
         }
@@ -437,11 +426,11 @@ void CppCodeGenerator::GenerateClassFields(const ClassDeclaration* classDecl)
         const CardinalityModifier* cardMod = field->GetCardinalityModifier();
 
         // Determine if array or optional
-        bool isArray    = (nullptr != cardMod) && cardMod->IsArray();
-        bool isOptional = (nullptr != cardMod) && cardMod->IsOptional() && !isArray;
+        const bool isArray    = (nullptr != cardMod) && cardMod->IsArray() == true;
+        const bool isOptional = (nullptr != cardMod) && cardMod->IsOptional() == true && isArray == false;
 
         // Arrays use std::vector (no wrapper)
-        if (isArray)
+        if (isArray == true)
         {
             cppType = "std::vector<" + cppType + ">";
         }
@@ -449,11 +438,11 @@ void CppCodeGenerator::GenerateClassFields(const ClassDeclaration* classDecl)
         {
             // Determine wrapper type for non-array fields
             // Check if field has invariants
-            std::vector<const Invariant*> fieldInvariants = GetInvariantsForField(field->GetName(), classDecl);
-            bool                          hasInvariants   = !fieldInvariants.empty();
+            const std::vector<const Invariant*> fieldInvariants = GetInvariantsForField(field->GetName(), classDecl);
+            const bool                          hasInvariants   = fieldInvariants.empty() == false;
 
-            std::string className = ApplyClassPrefix(classDecl->GetName());
-            std::string fieldName = field->GetName();
+            const std::string className = ApplyClassPrefix(classDecl->GetName());
+            const std::string fieldName = field->GetName();
 
             // Build template parameters
             std::string templateParams = cppType; // Base type T
@@ -462,7 +451,7 @@ void CppCodeGenerator::GenerateClassFields(const ClassDeclaration* classDecl)
             templateParams += ", " + className;
 
             // Add checker functions if there are invariants
-            if (hasInvariants)
+            if (hasInvariants == true)
             {
                 for (const Invariant* inv : fieldInvariants)
                 {
@@ -472,15 +461,15 @@ void CppCodeGenerator::GenerateClassFields(const ClassDeclaration* classDecl)
 
             // Choose wrapper based on invariants and optionality
             std::string wrapperType;
-            if (hasInvariants && isOptional)
+            if (hasInvariants == true && isOptional == true)
             {
                 wrapperType = "bbfm::runtime::OptionalBoundedValue";
             }
-            else if (hasInvariants && !isOptional)
+            else if (hasInvariants == true && isOptional == false)
             {
                 wrapperType = "bbfm::runtime::BoundedValue";
             }
-            else if (!hasInvariants && isOptional)
+            else if (hasInvariants == false && isOptional == true)
             {
                 wrapperType = "bbfm::runtime::OptionalUnboundedValue";
             }
@@ -497,7 +486,7 @@ void CppCodeGenerator::GenerateClassFields(const ClassDeclaration* classDecl)
         output_ << cppType << " " << field->GetName() << "_";
 
         // Add comment for unique constraints
-        if (field->HasUniqueConstraint())
+        if (field->HasUniqueConstraint() == true)
         {
             output_ << "; // Unique constraint\n";
         }
@@ -510,14 +499,14 @@ void CppCodeGenerator::GenerateClassFields(const ClassDeclaration* classDecl)
     // Pass 2: Generate computed fields (may reference regular fields)
     for (const auto& field : fields)
     {
-        if (!field->IsComputed())
+        if (field->IsComputed() == false)
         {
             continue;
         }
 
-        std::string cppType   = MapType(field->GetType());
-        std::string className = ApplyClassPrefix(classDecl->GetName());
-        std::string fieldName = field->GetName();
+        const std::string cppType   = MapType(field->GetType());
+        const std::string className = ApplyClassPrefix(classDecl->GetName());
+        const std::string fieldName = field->GetName();
 
         // Use DynamicValue wrapper for computed fields
         WriteIndent(1);
@@ -527,7 +516,7 @@ void CppCodeGenerator::GenerateClassFields(const ClassDeclaration* classDecl)
     // Pass 3: Generate alias fields LAST (must come after their target fields)
     for (const auto& field : fields)
     {
-        if (!field->IsAlias())
+        if (field->IsAlias() == false)
         {
             continue;
         }
@@ -537,8 +526,8 @@ void CppCodeGenerator::GenerateClassFields(const ClassDeclaration* classDecl)
         const FieldReference* fieldRef = dynamic_cast<const FieldReference*>(expr);
         if (nullptr != fieldRef)
         {
-            std::string targetFieldName = fieldRef->GetFieldName();
-            std::string fieldName       = field->GetName();
+            const std::string targetFieldName = fieldRef->GetFieldName();
+            const std::string fieldName       = field->GetName();
 
             // Find the target field to determine its wrapper type
             const Field* targetField = analyzer_->FindFieldInClass(classDecl, targetFieldName);
@@ -548,7 +537,7 @@ void CppCodeGenerator::GenerateClassFields(const ClassDeclaration* classDecl)
                 const ClassDeclaration* targetFieldClass = FindClassDeclaringField(classDecl, targetFieldName);
                 if (nullptr != targetFieldClass)
                 {
-                    std::string targetWrapperType = GetFieldWrapperType(targetField, targetFieldClass);
+                    const std::string targetWrapperType = GetFieldWrapperType(targetField, targetFieldClass);
 
                     // Use AliasValue wrapper that forwards to target field
                     WriteIndent(1);
@@ -561,26 +550,23 @@ void CppCodeGenerator::GenerateClassFields(const ClassDeclaration* classDecl)
 
 void CppCodeGenerator::GenerateGetter(const Field* field)
 {
-    if (nullptr == field)
-    {
-        return;
-    }
+    Require(nullptr != field);
 
     // Get the C++ type
     std::string cppType = MapType(field->GetType());
 
     // Get cardinality
     const CardinalityModifier* cardMod    = field->GetCardinalityModifier();
-    bool                       isArray    = (nullptr != cardMod) && cardMod->IsArray();
-    bool                       isOptional = (nullptr != cardMod) && cardMod->IsOptional() && !isArray;
+    const bool                 isArray    = (nullptr != cardMod) && cardMod->IsArray() == true;
+    const bool                 isOptional = (nullptr != cardMod) && cardMod->IsOptional() == true && isArray == false;
 
     // Wrap type if needed
     std::string fullType = cppType;
-    if (isArray)
+    if (isArray == true)
     {
         fullType = "std::vector<" + cppType + ">";
     }
-    else if (isOptional)
+    else if (isOptional == true)
     {
         fullType = "std::optional<" + cppType + ">";
     }
@@ -589,7 +575,7 @@ void CppCodeGenerator::GenerateGetter(const Field* field)
     std::string getterName = "Get" + field->GetName();
 
     // Capitalize first letter of getter name
-    if (false == getterName.empty())
+    if (getterName.empty() == false)
     {
         getterName[3] = static_cast<char>(std::toupper(getterName[3]));
     }
@@ -616,21 +602,21 @@ void CppCodeGenerator::GenerateGetter(const Field* field)
     WriteIndent(1);
 
     // Return by const reference for complex types, by value for primitives
-    bool isPrimitive   = field->GetType()->IsPrimitive();
-    bool returnByValue = isPrimitive && !isArray && !isOptional;
+    const bool isPrimitive   = field->GetType()->IsPrimitive();
+    bool       returnByValue = isPrimitive == true && isArray == false && isOptional == false;
 
     // Exception: return custom runtime types by reference too
-    if (isPrimitive)
+    if (isPrimitive == true)
     {
         const PrimitiveTypeSpec* primType = dynamic_cast<const PrimitiveTypeSpec*>(field->GetType());
-        PrimitiveType            pt       = primType->GetType();
-        if (PrimitiveType::STRING == pt || PrimitiveType::DATE == pt || PrimitiveType::GUID == pt)
+        const PrimitiveType      pt       = primType->GetType();
+        if (pt == PrimitiveType::STRING || pt == PrimitiveType::DATE || pt == PrimitiveType::GUID)
         {
             returnByValue = false; // Return by reference for runtime types
         }
     }
 
-    if (returnByValue)
+    if (true == returnByValue)
     {
         output_ << fullType << " " << getterName << "() const;\n";
     }
@@ -653,17 +639,14 @@ std::string CppCodeGenerator::ExpressionToCpp(
     const Expression* expr, const std::string& objectPrefix, const std::string& fieldToReplace, const std::string& replacementValue,
     const ClassDeclaration* contextClass) const
 {
-    if (nullptr == expr)
-    {
-        return "";
-    }
+    RequireReturn(nullptr != expr, std::string{});
 
     // Handle binary expressions (arithmetic, comparison, logical)
     if (const BinaryExpression* binExpr = dynamic_cast<const BinaryExpression*>(expr))
     {
-        std::string left  = ExpressionToCpp(binExpr->GetLeft(), objectPrefix, fieldToReplace, replacementValue, contextClass);
-        std::string right = ExpressionToCpp(binExpr->GetRight(), objectPrefix, fieldToReplace, replacementValue, contextClass);
-        std::string op;
+        const std::string left  = ExpressionToCpp(binExpr->GetLeft(), objectPrefix, fieldToReplace, replacementValue, contextClass);
+        const std::string right = ExpressionToCpp(binExpr->GetRight(), objectPrefix, fieldToReplace, replacementValue, contextClass);
+        std::string       op;
 
         switch (binExpr->GetOperator())
         {
@@ -717,8 +700,8 @@ std::string CppCodeGenerator::ExpressionToCpp(
     // Handle unary expressions (negation, logical not)
     if (const UnaryExpression* unaryExpr = dynamic_cast<const UnaryExpression*>(expr))
     {
-        std::string operand = ExpressionToCpp(unaryExpr->GetOperand(), objectPrefix, fieldToReplace, replacementValue, contextClass);
-        std::string op;
+        const std::string operand = ExpressionToCpp(unaryExpr->GetOperand(), objectPrefix, fieldToReplace, replacementValue, contextClass);
+        std::string       op;
 
         switch (unaryExpr->GetOperator())
         {
@@ -739,10 +722,10 @@ std::string CppCodeGenerator::ExpressionToCpp(
     // Handle field references
     if (const FieldReference* fieldRef = dynamic_cast<const FieldReference*>(expr))
     {
-        std::string fieldName = fieldRef->GetFieldName();
+        const std::string fieldName = fieldRef->GetFieldName();
 
         // Check if this field should be replaced with a different value
-        if (!fieldToReplace.empty() && fieldName == fieldToReplace)
+        if (fieldToReplace.empty() == false && fieldName == fieldToReplace)
         {
             return replacementValue;
         }
@@ -762,7 +745,7 @@ std::string CppCodeGenerator::ExpressionToCpp(
         }
 
         // Add object prefix if provided (for static functions)
-        if (isComputed)
+        if (true == isComputed)
         {
             // Computed fields and alias fields use implicit conversion - no .value_ suffix
             return objectPrefix + fieldName + "_";
@@ -777,13 +760,13 @@ std::string CppCodeGenerator::ExpressionToCpp(
     // Handle member access (object.field)
     if (const MemberAccessExpression* memberAccess = dynamic_cast<const MemberAccessExpression*>(expr))
     {
-        std::string object = ExpressionToCpp(memberAccess->GetObject(), objectPrefix, fieldToReplace, replacementValue, contextClass);
-        std::string member = memberAccess->GetMemberName();
+        const std::string object = ExpressionToCpp(memberAccess->GetObject(), objectPrefix, fieldToReplace, replacementValue, contextClass);
+        const std::string member = memberAccess->GetMemberName();
 
         // Convert member access to getter call
         // Capitalize first letter for getter name
         std::string getterName = "Get" + member;
-        if (false == getterName.empty() && getterName.length() > 3)
+        if (getterName.empty() == false && getterName.length() > 3)
         {
             getterName[3] = static_cast<char>(std::toupper(getterName[3]));
         }
@@ -809,10 +792,7 @@ std::string CppCodeGenerator::ExpressionToCpp(
 
 void CppCodeGenerator::GenerateInvariantMethods(const ClassDeclaration* classDecl)
 {
-    if (nullptr == classDecl)
-    {
-        return;
-    }
+    Require(nullptr != classDecl);
 
     const auto& invariants = classDecl->GetInvariants();
 
@@ -885,6 +865,8 @@ void CppCodeGenerator::GenerateInvariantMethods(const ClassDeclaration* classDec
 
 std::vector<const Invariant*> CppCodeGenerator::GetInvariantsForField(const std::string& fieldName, const ClassDeclaration* classDecl) const
 {
+    RequireReturn(fieldName.empty() == false, std::vector<const Invariant*>{});
+
     std::vector<const Invariant*> result;
 
     if (nullptr == classDecl || nullptr == analyzer_)
@@ -909,7 +891,7 @@ std::vector<const Invariant*> CppCodeGenerator::GetInvariantsForField(const std:
         analyzer_->CollectFieldReferences(invariant->GetExpression(), referencedFields);
 
         // If this field is referenced, add the invariant
-        if (0 != referencedFields.count(fieldName))
+        if (referencedFields.count(fieldName) != 0)
         {
             result.push_back(invariant);
         }
@@ -920,10 +902,8 @@ std::vector<const Invariant*> CppCodeGenerator::GetInvariantsForField(const std:
 
 void CppCodeGenerator::GenerateFieldChecker(const Field* field, const ClassDeclaration* classDecl, const std::vector<const Invariant*>& invariants)
 {
-    if (nullptr == field || invariants.empty())
-    {
-        return;
-    }
+    Require(nullptr != field);
+    Require(invariants.empty() == false);
 
     std::string fieldName = field->GetName();
     std::string cppType   = MapType(field->GetType());
@@ -1018,47 +998,45 @@ void CppCodeGenerator::GenerateFieldChecker(const Field* field, const ClassDecla
 
 void CppCodeGenerator::GenerateSetter(const Field* field, const ClassDeclaration* classDecl)
 {
-    if (nullptr == field || nullptr == classDecl)
-    {
-        return;
-    }
+    Require(nullptr != field);
+    Require(nullptr != classDecl);
 
-    std::string fieldName = field->GetName();
-    std::string cppType   = MapType(field->GetType());
+    const std::string fieldName = field->GetName();
+    const std::string cppType   = MapType(field->GetType());
 
     // Get cardinality
     const CardinalityModifier* cardMod    = field->GetCardinalityModifier();
-    bool                       isArray    = (nullptr != cardMod) && cardMod->IsArray();
-    bool                       isOptional = (nullptr != cardMod) && cardMod->IsOptional() && !isArray;
+    const bool                 isArray    = (nullptr != cardMod) && cardMod->IsArray() == true;
+    const bool                 isOptional = (nullptr != cardMod) && cardMod->IsOptional() == true && isArray == false;
 
     // Wrap type if needed
     std::string fullType = cppType;
-    if (isArray)
+    if (isArray == true)
     {
         fullType = "std::vector<" + cppType + ">";
     }
-    else if (isOptional)
+    else if (isOptional == true)
     {
         fullType = "std::optional<" + cppType + ">";
     }
 
     // Determine parameter type (const reference for complex types, by value for primitives)
-    bool isPrimitive = field->GetType()->IsPrimitive();
-    bool passByValue = isPrimitive && !isArray && !isOptional;
+    const bool isPrimitive = field->GetType()->IsPrimitive();
+    bool       passByValue = isPrimitive == true && isArray == false && isOptional == false;
 
     // Exception: pass custom runtime types by reference too
-    if (isPrimitive)
+    if (isPrimitive == true)
     {
         const PrimitiveTypeSpec* primType = dynamic_cast<const PrimitiveTypeSpec*>(field->GetType());
-        PrimitiveType            pt       = primType->GetType();
-        if (PrimitiveType::STRING == pt || PrimitiveType::DATE == pt || PrimitiveType::GUID == pt)
+        const PrimitiveType      pt       = primType->GetType();
+        if (pt == PrimitiveType::STRING || pt == PrimitiveType::DATE || pt == PrimitiveType::GUID)
         {
             passByValue = false; // Pass by reference for runtime types
         }
     }
 
     std::string paramType;
-    if (passByValue)
+    if (true == passByValue)
     {
         paramType = fullType;
     }
@@ -1069,7 +1047,7 @@ void CppCodeGenerator::GenerateSetter(const Field* field, const ClassDeclaration
 
     // Generate setter name
     std::string setterName = "Set" + fieldName;
-    if (false == setterName.empty() && setterName.length() > 3)
+    if (setterName.empty() == false && setterName.length() > 3)
     {
         setterName[3] = static_cast<char>(std::toupper(setterName[3]));
     }
@@ -1085,9 +1063,9 @@ void CppCodeGenerator::GenerateSetter(const Field* field, const ClassDeclaration
     output_ << "{\n";
 
     // Get invariants for this field
-    std::vector<const Invariant*> fieldInvariants = GetInvariantsForField(fieldName, classDecl);
+    const std::vector<const Invariant*> fieldInvariants = GetInvariantsForField(fieldName, classDecl);
 
-    if (false == fieldInvariants.empty())
+    if (fieldInvariants.empty() == false)
     {
         // Call checker function
         WriteIndent(2);
@@ -1117,13 +1095,10 @@ void CppCodeGenerator::GenerateUniversalMetadata(const ClassDeclaration* classDe
 
 void CppCodeGenerator::GenerateConstructorImplementation(const ClassDeclaration* classDecl)
 {
-    if (nullptr == classDecl)
-    {
-        return;
-    }
+    Require(nullptr != classDecl);
 
-    const auto& fields    = classDecl->GetFields();
-    std::string className = ApplyClassPrefix(classDecl->GetName());
+    const auto&       fields    = classDecl->GetFields();
+    const std::string className = ApplyClassPrefix(classDecl->GetName());
 
     // Generate inline constructor implementation with field initialization
     WriteIndent(1);
@@ -1136,14 +1111,14 @@ void CppCodeGenerator::GenerateConstructorImplementation(const ClassDeclaration*
     for (const auto& field : fields)
     {
         // Alias fields get initialized with reference to target field
-        if (field->IsAlias())
+        if (field->IsAlias() == true)
         {
             const Expression*     expr     = field->GetInitializer();
             const FieldReference* fieldRef = dynamic_cast<const FieldReference*>(expr);
             if (nullptr != fieldRef)
             {
-                std::string targetFieldName = fieldRef->GetFieldName();
-                if (firstInit)
+                const std::string targetFieldName = fieldRef->GetFieldName();
+                if (true == firstInit)
                 {
                     WriteIndent(2);
                     output_ << ": " << field->GetName() << "_(" << targetFieldName << "_)";
@@ -1160,9 +1135,9 @@ void CppCodeGenerator::GenerateConstructorImplementation(const ClassDeclaration*
         }
 
         // Computed fields get initialized with lambda
-        if (field->IsComputed())
+        if (field->IsComputed() == true)
         {
-            if (firstInit)
+            if (true == firstInit)
             {
                 WriteIndent(2);
                 output_ << ": " << field->GetName() << "_(*this, [](const " << className << "& parent) { return ";
@@ -1189,14 +1164,14 @@ void CppCodeGenerator::GenerateConstructorImplementation(const ClassDeclaration*
 
         // Skip array fields (they don't use wrappers, default constructed)
         const CardinalityModifier* cardMod = field->GetCardinalityModifier();
-        bool                       isArray = (nullptr != cardMod) && cardMod->IsArray();
-        if (isArray)
+        const bool                 isArray = (nullptr != cardMod) && cardMod->IsArray() == true;
+        if (isArray == true)
         {
             continue;
         }
 
         // Regular wrapped fields just need parent reference
-        if (firstInit)
+        if (true == firstInit)
         {
             WriteIndent(2);
             output_ << ": " << field->GetName() << "_(*this)";
@@ -1219,27 +1194,25 @@ void CppCodeGenerator::GenerateConstructorImplementation(const ClassDeclaration*
 
 void CppCodeGenerator::GenerateStaticCheckerFunctions(const ClassDeclaration* classDecl)
 {
-    if (nullptr == classDecl || nullptr == analyzer_)
-    {
-        return;
-    }
+    Require(nullptr != classDecl);
+    Require(nullptr != analyzer_);
 
-    const auto& fields    = classDecl->GetFields();
-    std::string className = ApplyClassPrefix(classDecl->GetName());
+    const auto&       fields    = classDecl->GetFields();
+    const std::string className = ApplyClassPrefix(classDecl->GetName());
 
     // Generate checker functions for each field that has invariants
     for (const auto& field : fields)
     {
         // Skip computed fields and alias fields
-        if (field->IsComputed() || field->IsAlias())
+        if (field->IsComputed() == true || field->IsAlias() == true)
         {
             continue;
         }
 
         // Get invariants for this field
-        std::vector<const Invariant*> fieldInvariants = GetInvariantsForField(field->GetName(), classDecl);
+        const std::vector<const Invariant*> fieldInvariants = GetInvariantsForField(field->GetName(), classDecl);
 
-        if (fieldInvariants.empty())
+        if (fieldInvariants.empty() == true)
         {
             continue;
         }
@@ -1254,15 +1227,14 @@ void CppCodeGenerator::GenerateStaticCheckerFunctions(const ClassDeclaration* cl
 
 void CppCodeGenerator::GenerateCheckerFunction(const Field* field, const Invariant* invariant, const ClassDeclaration* classDecl)
 {
-    if (nullptr == field || nullptr == invariant || nullptr == classDecl)
-    {
-        return;
-    }
+    Require(nullptr != field);
+    Require(nullptr != invariant);
+    Require(nullptr != classDecl);
 
-    std::string className     = ApplyClassPrefix(classDecl->GetName());
-    std::string fieldName     = field->GetName();
-    std::string invariantName = invariant->GetName();
-    std::string cppType       = MapType(field->GetType());
+    const std::string className     = ApplyClassPrefix(classDecl->GetName());
+    const std::string fieldName     = field->GetName();
+    const std::string invariantName = invariant->GetName();
+    const std::string cppType       = MapType(field->GetType());
 
     // Generate documentation
     WriteIndent(1);
@@ -1299,7 +1271,7 @@ void CppCodeGenerator::GenerateCheckerFunction(const Field* field, const Invaria
 
 std::string CppCodeGenerator::ApplyClassPrefix(const std::string& name) const
 {
-    if (classPrefix_.empty())
+    if (classPrefix_.empty() == true)
     {
         return name;
     }

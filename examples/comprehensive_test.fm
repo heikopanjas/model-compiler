@@ -8,7 +8,6 @@
 //   - Timestamp creationDate
 //   - Timestamp modificationDate
 //   - String comment
-
 // ============================================================================
 // ENUMERATIONS
 // ============================================================================
@@ -27,7 +26,6 @@ enum Status {
 // ============================================================================
 // PRIMITIVE TYPES - Test all primitive types
 // ============================================================================
-
 class PrimitiveTypes {
     feature stringField: String;
     feature intField: Int;
@@ -42,27 +40,20 @@ class PrimitiveTypes {
 // ============================================================================
 // FIELD MODIFIERS - Test all cardinality and constraint modifiers
 // ============================================================================
-
 class FieldModifiers {
     // Default modifier [1] - mandatory single value (no modifier specified)
     feature mandatoryField: String;
-
     // Explicit mandatory [1]
     feature explicitMandatory: String [1];
-
     // Optional using [optional] modifier (equivalent to [0..1])
     feature optionalField: String [optional];
-
     // Explicit optional [0..1]
     feature explicitOptional: String [0..1];
-
     // Arrays
     feature optionalArray: String [0..*];     // May be empty
     feature requiredArray: String [1..*];     // At least one element
-
     // Unique constraint
     feature uniqueField: String [unique];
-
     // Combined modifiers
     feature mandatoryUnique: String [1,unique];
     feature optionalUnique: String [optional,unique];
@@ -71,7 +62,6 @@ class FieldModifiers {
 // ============================================================================
 // FIELD NAMES MATCHING TYPE KEYWORDS - Test parser disambiguation
 // ============================================================================
-
 class FieldNamesMatchingTypes {
     // Field names that match primitive type names
     feature string: String;
@@ -87,7 +77,6 @@ class FieldNamesMatchingTypes {
 // ============================================================================
 // INHERITANCE - Test single inheritance
 // ============================================================================
-
 class Asset {
     feature url: String;
     feature title: String;
@@ -111,7 +100,6 @@ class VideoAsset inherits Asset {
 // ============================================================================
 // INVARIANTS - Test all comparison operators and literal types
 // ============================================================================
-
 class InvariantTests {
     feature count: Int;
     feature price: Real;
@@ -127,25 +115,20 @@ class InvariantTests {
     invariant belowLimit: count < 999;
     invariant exactCount: count == 42;
     invariant notZero: count != 0;
-
     // Real literal comparisons
     invariant validPrice: price >= 0.0;
     invariant maxPrice: price <= 999.99;
     invariant positivePrice: price > 0.0;
     invariant belowThousand: price < 1000.0;
-
     // String literal comparisons
     invariant nonEmptyName: name != "";
     invariant specificName: name == "test";
-
     // Bool literal comparisons
     invariant isActive: active == true;
     invariant notInactive: active != false;
-
     // Timestamp comparisons (using Real literals since Timestamp maps to double)
     invariant validTimestamp: createdAt >= 0.0;
     invariant futureTimestamp: createdAt > 1704067200.0;
-
     // Timespan comparisons (using Real literals since Timespan maps to double)
     invariant validDuration: duration > 0.0;
     invariant maxDuration: duration <= 7200.0;
@@ -156,8 +139,8 @@ class ImageConstraints {
     feature height: Int;
     feature format: String;
 
-    invariant validWidth: width <= 3840;      // Max 4K width
-    invariant validHeight: height <= 2160;    // Max 4K height
+    invariant validWidth: width <= 3840;     // Max 4K width
+    invariant validHeight: height <= 2160;     // Max 4K height
     invariant minWidth: width >= 100;
     invariant minHeight: height >= 100;
 }
@@ -165,7 +148,6 @@ class ImageConstraints {
 // ============================================================================
 // RELATIONSHIPS - Test one-to-one, one-to-many, many-to-many
 // ============================================================================
-
 class Author {
     feature name: String;
     feature email: String [optional];
@@ -180,16 +162,12 @@ class Book {
     feature title: String;
     feature isbn: String [unique];
     feature publicationDate: Date;
-
     // One-to-one relationship
     feature primaryAuthor: Author;
-
     // Optional one-to-one
     feature publisher: Publisher [optional];
-
     // One-to-many (book has many authors)
     feature authors: Author [1..*];
-
     // Many-to-many (through arrays)
     feature tags: String [0..*];
 }
@@ -197,7 +175,6 @@ class Book {
 // ============================================================================
 // COMPLEX DOMAIN MODEL - Podcast example
 // ============================================================================
-
 class Podcast {
     feature title: String;
     feature description: String;
@@ -236,7 +213,6 @@ class ChapterMarker {
 // ============================================================================
 // USER PREFERENCES - Boolean types
 // ============================================================================
-
 class UserPreferences {
     feature userId: Guid;
     feature emailNotifications: Bool;
@@ -256,7 +232,6 @@ class FeatureFlags {
 // ============================================================================
 // MULTI-LEVEL INHERITANCE
 // ============================================================================
-
 class MediaItem {
     feature title: String;
     feature description: String [optional];
@@ -277,7 +252,6 @@ class PodcastEpisode inherits StreamableMedia {
 // ============================================================================
 // INVARIANT INHERITANCE - Test that invariants are inherited with features
 // ============================================================================
-
 class BaseWithInvariant {
     feature width: Int;
     feature height: Int;

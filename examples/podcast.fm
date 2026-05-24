@@ -39,7 +39,7 @@ class Podcast {
     feature description: String;
     feature author: String [optional];     // Optional field using optional modifier
     feature feedUrl: String [1,unique];     // Mandatory + unique
-    feature episodes: Episode [0..*];      // One-to-many (may be empty)
+    feature episodes: Episode [0..*];     // One-to-many (may be empty)
 }
 
 class Episode {
@@ -47,14 +47,14 @@ class Episode {
     feature publicationDate: Date;
     feature duration: Timespan;
     feature mediaType: MediaType;
-    feature audio: AudioAsset;            // One-to-one relationship
-    feature transcript: Transcript [optional]; // Optional one-to-one using optional modifier
+    feature audio: AudioAsset;     // One-to-one relationship
+    feature transcript: Transcript [optional];     // Optional one-to-one using optional modifier
 }
 
 class Transcript {
     feature text: String;
     feature language: String;
-    feature regions: Region [0..*];          // One-to-many relationship
+    feature regions: Region [0..*];     // One-to-many relationship
 }
 
 class Tag {

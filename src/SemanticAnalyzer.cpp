@@ -1,6 +1,7 @@
 #include "SemanticAnalyzer.h"
 #include "Common.h"
 #include "Console.h"
+#include "Contracts.h"
 #include <iostream>
 
 namespace bbfm {
@@ -8,7 +9,7 @@ SemanticAnalyzer::SemanticAnalyzer(const AST* ast, const std::vector<std::string
 
 std::string SemanticAnalyzer::FormatNamespacePrefix() const
 {
-    if (namespaces_.empty())
+    if (namespaces_.empty() == true)
     {
         return "";
     }
@@ -28,18 +29,18 @@ bool SemanticAnalyzer::Analyze()
     RegisterPrimitiveTypes();
 
     // Build symbol table from declarations
-    if (!BuildSymbolTable())
+    if (BuildSymbolTable() == false)
     {
         return false;
     }
 
     // Validate type references
-    if (!ValidateTypeReferences())
+    if (ValidateTypeReferences() == false)
     {
         return false;
     }
 
-    return !hasErrors_;
+    return hasErrors_ == false;
 }
 
 void SemanticAnalyzer::RegisterPrimitiveTypes()
@@ -66,7 +67,7 @@ bool SemanticAnalyzer::BuildSymbolTable()
             const std::string&     name     = enumDecl->GetName();
 
             // Check for duplicate type names
-            if (TypeExists(name))
+            if (TypeExists(name) == true)
             {
                 ReportError("Type '" + name + "' is already declared");
                 success = false;
@@ -82,7 +83,7 @@ bool SemanticAnalyzer::BuildSymbolTable()
             const std::string&      name      = classDecl->GetName();
 
             // Check for duplicate type names
-            if (TypeExists(name))
+            if (TypeExists(name) == true)
             {
                 ReportError("Type '" + name + "' is already declared");
                 success = false;
@@ -108,7 +109,7 @@ bool SemanticAnalyzer::ValidateTypeReferences()
         {
             const ClassDeclaration* classDecl = decl->AsClass();
 
-            if (!ValidateClassDeclaration(classDecl))
+            if (ValidateClassDeclaration(classDecl) == false)
             {
                 success = false;
             }
@@ -123,11 +124,11 @@ bool SemanticAnalyzer::ValidateTypeReferences()
         {
             const ClassDeclaration* classDecl = decl->AsClass();
 
-            if (classDecl->HasExplicitBase())
+            if (classDecl->HasExplicitBase() == true)
             {
                 std::set<std::string> visited;
                 visited.insert(classDecl->GetName());
-                if (HasInheritanceCycle(classDecl->GetBaseType(), visited))
+                if (HasInheritanceCycle(classDecl->GetBaseType(), visited) == true)
                 {
                     ReportError("Circular inheritance detected in class '" + classDecl->GetName() + "'");
                     success = false;
@@ -141,14 +142,16 @@ bool SemanticAnalyzer::ValidateTypeReferences()
 
 bool SemanticAnalyzer::ValidateClassDeclaration(const ClassDeclaration* classDecl)
 {
+    RequireReturn(nullptr != classDecl, false);
+
     bool success = true;
 
     // Validate base type if specified
-    if (classDecl->HasExplicitBase())
+    if (classDecl->HasExplicitBase() == true)
     {
         const std::string& baseType = classDecl->GetBaseType();
 
-        if (!TypeExists(baseType))
+        if (TypeExists(baseType) == false)
         {
             ReportError("Class '" + classDecl->GetName() + "' inherits from undefined type '" + baseType + "'");
             success = false;
@@ -170,7 +173,7 @@ bool SemanticAnalyzer::ValidateClassDeclaration(const ClassDeclaration* classDec
     for (const auto& field : classDecl->GetFields())
     {
         // Skip alias fields - they don't have explicit types
-        if (field->IsAlias())
+        if (field->IsAlias() == true)
         {
             continue;
         }
@@ -182,7 +185,7 @@ bool SemanticAnalyzer::ValidateClassDeclaration(const ClassDeclaration* classDec
             const UserDefinedTypeSpec* userType = static_cast<const UserDefinedTypeSpec*>(typeSpec);
             const std::string&         typeName = userType->GetTypeName();
 
-            if (!TypeExists(typeName))
+            if (TypeExists(typeName) == false)
             {
                 ReportError("Field '" + field->GetName() + "' in class '" + classDecl->GetName() + "' has undefined type '" + typeName + "'");
                 success = false;
@@ -191,19 +194,19 @@ bool SemanticAnalyzer::ValidateClassDeclaration(const ClassDeclaration* classDec
     }
 
     // Validate field uniqueness
-    if (!ValidateFieldUniqueness(classDecl))
+    if (ValidateFieldUniqueness(classDecl) == false)
     {
         success = false;
     }
 
     // Validate invariants
-    if (!ValidateInvariants(classDecl))
+    if (ValidateInvariants(classDecl) == false)
     {
         success = false;
     }
 
     // Validate computed features
-    if (!ValidateComputedFeatures(classDecl))
+    if (ValidateComputedFeatures(classDecl) == false)
     {
         success = false;
     }
@@ -213,8 +216,10 @@ bool SemanticAnalyzer::ValidateClassDeclaration(const ClassDeclaration* classDec
 
 bool SemanticAnalyzer::HasInheritanceCycle(const std::string& className, std::set<std::string>& visited)
 {
+    RequireReturn(className.empty() == false, false);
+
     // If we've visited this class before, we have a cycle
-    if (0 != visited.count(className))
+    if (visited.count(className) != 0)
     {
         return true;
     }
@@ -232,7 +237,7 @@ bool SemanticAnalyzer::HasInheritanceCycle(const std::string& className, std::se
     }
 
     const ClassDeclaration* classDecl = typeSym->classDecl;
-    if (!classDecl->HasExplicitBase())
+    if (classDecl->HasExplicitBase() == false)
     {
         return false;
     }
@@ -253,13 +258,10 @@ void SemanticAnalyzer::GetAllFields(const ClassDeclaration* classDecl, std::vect
 
 void SemanticAnalyzer::GetAllFieldsHelper(const ClassDeclaration* classDecl, std::vector<const Field*>& allFields, std::set<std::string>& visited) const
 {
-    if (nullptr == classDecl)
-    {
-        return;
-    }
+    Require(nullptr != classDecl);
 
     // If we've already visited this class, stop (cycle detected)
-    if (0 != visited.count(classDecl->GetName()))
+    if (visited.count(classDecl->GetName()) != 0)
     {
         return;
     }
@@ -267,7 +269,7 @@ void SemanticAnalyzer::GetAllFieldsHelper(const ClassDeclaration* classDecl, std
     visited.insert(classDecl->GetName());
 
     // First, get fields from base class if any
-    if (classDecl->HasExplicitBase())
+    if (classDecl->HasExplicitBase() == true)
     {
         const TypeSymbol* baseSym = LookupType(classDecl->GetBaseType());
         if (nullptr != baseSym && TypeSymbol::Kind::CLASS == baseSym->kind)
@@ -293,13 +295,10 @@ void SemanticAnalyzer::GetAllInvariants(const ClassDeclaration* classDecl, std::
 void SemanticAnalyzer::GetAllInvariantsHelper(
     const ClassDeclaration* classDecl, std::vector<const Invariant*>& allInvariants, std::set<std::string>& visited) const
 {
-    if (nullptr == classDecl)
-    {
-        return;
-    }
+    Require(nullptr != classDecl);
 
     // If we've already visited this class, stop (cycle detected)
-    if (0 != visited.count(classDecl->GetName()))
+    if (visited.count(classDecl->GetName()) != 0)
     {
         return;
     }
@@ -307,7 +306,7 @@ void SemanticAnalyzer::GetAllInvariantsHelper(
     visited.insert(classDecl->GetName());
 
     // First, get invariants from base class if any
-    if (classDecl->HasExplicitBase())
+    if (classDecl->HasExplicitBase() == true)
     {
         const TypeSymbol* baseSym = LookupType(classDecl->GetBaseType());
         if (nullptr != baseSym && TypeSymbol::Kind::CLASS == baseSym->kind)
@@ -325,6 +324,8 @@ void SemanticAnalyzer::GetAllInvariantsHelper(
 
 bool SemanticAnalyzer::ValidateFieldUniqueness(const ClassDeclaration* classDecl)
 {
+    RequireReturn(nullptr != classDecl, false);
+
     std::vector<const Field*> allFields;
     GetAllFields(classDecl, allFields);
 
@@ -334,7 +335,7 @@ bool SemanticAnalyzer::ValidateFieldUniqueness(const ClassDeclaration* classDecl
     for (const Field* field : allFields)
     {
         const std::string& name = field->GetName();
-        if (0 != fieldNames.count(name))
+        if (fieldNames.count(name) != 0)
         {
             ReportError("Duplicate field '" + name + "' in class '" + classDecl->GetName() + "' (possibly inherited)");
             success = false;
@@ -347,6 +348,8 @@ bool SemanticAnalyzer::ValidateFieldUniqueness(const ClassDeclaration* classDecl
 
 bool SemanticAnalyzer::ValidateInvariants(const ClassDeclaration* classDecl)
 {
+    RequireReturn(nullptr != classDecl, false);
+
     bool success = true;
 
     // Get all fields (including inherited) for validation
@@ -377,7 +380,7 @@ bool SemanticAnalyzer::ValidateInvariants(const ClassDeclaration* classDecl)
         // Validate that all referenced fields exist
         for (const std::string& fieldName : referencedFields)
         {
-            if (0 == fieldNames.count(fieldName))
+            if (fieldNames.count(fieldName) == 0)
             {
                 ReportError("Invariant '" + invariant->GetName() + "' in class '" + classDecl->GetName() + "' references undefined field '" + fieldName + "'");
                 success = false;
@@ -390,10 +393,7 @@ bool SemanticAnalyzer::ValidateInvariants(const ClassDeclaration* classDecl)
 
 void SemanticAnalyzer::CollectFieldReferences(const Expression* expr, std::set<std::string>& fields) const
 {
-    if (nullptr == expr)
-    {
-        return;
-    }
+    Require(nullptr != expr);
 
     // Check if this is a field reference
     const FieldReference* fieldRef = dynamic_cast<const FieldReference*>(expr);
@@ -453,6 +453,8 @@ void SemanticAnalyzer::CollectFieldReferences(const Expression* expr, std::set<s
 
 bool SemanticAnalyzer::ValidateComputedFeatures(const ClassDeclaration* classDecl)
 {
+    RequireReturn(nullptr != classDecl, false);
+
     bool success = true;
 
     // Get all fields including inherited ones
@@ -469,16 +471,16 @@ bool SemanticAnalyzer::ValidateComputedFeatures(const ClassDeclaration* classDec
     // Validate each computed feature and alias
     for (const auto& field : classDecl->GetFields())
     {
-        if (field->IsAlias())
+        if (field->IsAlias() == true)
         {
-            if (!ValidateAliasField(field.get(), classDecl, availableFields))
+            if (ValidateAliasField(field.get(), classDecl, availableFields) == false)
             {
                 success = false;
             }
         }
-        else if (field->IsComputed())
+        else if (field->IsComputed() == true)
         {
-            if (!ValidateComputedFeatureExpression(field.get(), classDecl, availableFields))
+            if (ValidateComputedFeatureExpression(field.get(), classDecl, availableFields) == false)
             {
                 success = false;
             }
@@ -490,6 +492,9 @@ bool SemanticAnalyzer::ValidateComputedFeatures(const ClassDeclaration* classDec
 
 bool SemanticAnalyzer::ValidateAliasField(const Field* field, const ClassDeclaration* classDecl, const std::set<std::string>& availableFields)
 {
+    RequireReturn(nullptr != field, false);
+    RequireReturn(nullptr != classDecl, false);
+
     bool              success = true;
     const Expression* expr    = field->GetInitializer();
 
@@ -509,7 +514,7 @@ bool SemanticAnalyzer::ValidateAliasField(const Field* field, const ClassDeclara
 
     // Validate that the target field exists
     const std::string& targetFieldName = fieldRef->GetFieldName();
-    if (0 == availableFields.count(targetFieldName))
+    if (availableFields.count(targetFieldName) == 0)
     {
         ReportError("Alias '" + field->GetName() + "' in class '" + classDecl->GetName() + "' references undefined field '" + targetFieldName + "'");
         return false;
@@ -517,7 +522,7 @@ bool SemanticAnalyzer::ValidateAliasField(const Field* field, const ClassDeclara
 
     // Find the target field to validate it's not another alias (prevent alias chains)
     const Field* targetField = FindFieldInClass(classDecl, targetFieldName);
-    if (nullptr != targetField && targetField->IsAlias())
+    if (nullptr != targetField && targetField->IsAlias() == true)
     {
         ReportError(
             "Alias '" + field->GetName() + "' in class '" + classDecl->GetName() + "' cannot reference another alias '" + targetFieldName +
@@ -530,6 +535,9 @@ bool SemanticAnalyzer::ValidateAliasField(const Field* field, const ClassDeclara
 
 bool SemanticAnalyzer::ValidateComputedFeatureExpression(const Field* field, const ClassDeclaration* classDecl, const std::set<std::string>& availableFields)
 {
+    RequireReturn(nullptr != field, false);
+    RequireReturn(nullptr != classDecl, false);
+
     bool              success = true;
     const Expression* expr    = field->GetInitializer();
 
@@ -542,7 +550,7 @@ bool SemanticAnalyzer::ValidateComputedFeatureExpression(const Field* field, con
     const CardinalityModifier* cardinality = field->GetCardinalityModifier();
     if (nullptr != cardinality)
     {
-        if (cardinality->IsArray())
+        if (cardinality->IsArray() == true)
         {
             ReportError(
                 "Computed feature '" + field->GetName() + "' in class '" + classDecl->GetName() +
@@ -558,7 +566,7 @@ bool SemanticAnalyzer::ValidateComputedFeatureExpression(const Field* field, con
     // Validate that all referenced fields exist
     for (const std::string& refField : referencedFields)
     {
-        if (0 == availableFields.count(refField))
+        if (availableFields.count(refField) == 0)
         {
             ReportError("Computed feature '" + field->GetName() + "' in class '" + classDecl->GetName() + "' references undefined field '" + refField + "'");
             success = false;
@@ -572,7 +580,7 @@ bool SemanticAnalyzer::ValidateComputedFeatureExpression(const Field* field, con
         if (nullptr != referencedField)
         {
             const CardinalityModifier* refCardinality = referencedField->GetCardinalityModifier();
-            if (nullptr != refCardinality && refCardinality->IsOptional())
+            if (nullptr != refCardinality && refCardinality->IsOptional() == true)
             {
                 ReportError(
                     "Computed feature '" + field->GetName() + "' in class '" + classDecl->GetName() + "' references optional field '" + refField +
@@ -583,20 +591,20 @@ bool SemanticAnalyzer::ValidateComputedFeatureExpression(const Field* field, con
     }
 
     // Validate member access expressions
-    if (!ValidateMemberAccessInExpression(expr, classDecl, "computed feature '" + field->GetName() + "'"))
+    if (ValidateMemberAccessInExpression(expr, classDecl, "computed feature '" + field->GetName() + "'") == false)
     {
         success = false;
     }
 
     // Type checking - verify expression type matches declared field type
-    Expression::Type exprType = InferExpressionType(expr, classDecl);
+    const Expression::Type exprType = InferExpressionType(expr, classDecl);
     if (Expression::Type::UNKNOWN != exprType)
     {
-        if (!IsTypeCompatible(exprType, field->GetType()))
+        if (IsTypeCompatible(exprType, field->GetType()) == false)
         {
             const TypeSpec* fieldTypeSpec = field->GetType();
             std::string     fieldTypeName;
-            if (fieldTypeSpec->IsPrimitive())
+            if (fieldTypeSpec->IsPrimitive() == true)
             {
                 const PrimitiveTypeSpec* primType = static_cast<const PrimitiveTypeSpec*>(fieldTypeSpec);
                 fieldTypeName                     = PrimitiveTypeSpec::TypeToString(primType->GetType());
@@ -649,10 +657,7 @@ bool SemanticAnalyzer::ValidateComputedFeatureExpression(const Field* field, con
 
 bool SemanticAnalyzer::ValidateMemberAccessInExpression(const Expression* expr, const ClassDeclaration* classDecl, const std::string& errorContext)
 {
-    if (nullptr == expr)
-    {
-        return true;
-    }
+    RequireReturn(nullptr != expr, true);
 
     bool success = true;
 
@@ -660,7 +665,7 @@ bool SemanticAnalyzer::ValidateMemberAccessInExpression(const Expression* expr, 
     const MemberAccessExpression* memberAccess = dynamic_cast<const MemberAccessExpression*>(expr);
     if (nullptr != memberAccess)
     {
-        if (!ValidateMemberAccess(memberAccess, classDecl, errorContext))
+        if (ValidateMemberAccess(memberAccess, classDecl, errorContext) == false)
         {
             success = false;
         }
@@ -672,11 +677,11 @@ bool SemanticAnalyzer::ValidateMemberAccessInExpression(const Expression* expr, 
     const BinaryExpression* binExpr = dynamic_cast<const BinaryExpression*>(expr);
     if (nullptr != binExpr)
     {
-        if (!ValidateMemberAccessInExpression(binExpr->GetLeft(), classDecl, errorContext))
+        if (ValidateMemberAccessInExpression(binExpr->GetLeft(), classDecl, errorContext) == false)
         {
             success = false;
         }
-        if (!ValidateMemberAccessInExpression(binExpr->GetRight(), classDecl, errorContext))
+        if (ValidateMemberAccessInExpression(binExpr->GetRight(), classDecl, errorContext) == false)
         {
             success = false;
         }
@@ -703,7 +708,7 @@ bool SemanticAnalyzer::ValidateMemberAccessInExpression(const Expression* expr, 
     {
         for (const auto& arg : funcCall->GetArguments())
         {
-            if (!ValidateMemberAccessInExpression(arg.get(), classDecl, errorContext))
+            if (ValidateMemberAccessInExpression(arg.get(), classDecl, errorContext) == false)
             {
                 success = false;
             }
@@ -717,6 +722,9 @@ bool SemanticAnalyzer::ValidateMemberAccessInExpression(const Expression* expr, 
 
 bool SemanticAnalyzer::ValidateMemberAccess(const MemberAccessExpression* memberAccess, const ClassDeclaration* classDecl, const std::string& errorContext)
 {
+    RequireReturn(nullptr != memberAccess, false);
+    RequireReturn(nullptr != classDecl, false);
+
     bool success = true;
 
     // Get the object expression (left side of the dot)
@@ -759,7 +767,7 @@ bool SemanticAnalyzer::ValidateMemberAccess(const MemberAccessExpression* member
         if (nullptr != nestedAccess)
         {
             // Validate the nested access first
-            if (!ValidateMemberAccess(nestedAccess, classDecl, errorContext))
+            if (ValidateMemberAccess(nestedAccess, classDecl, errorContext) == false)
             {
                 return false;
             }
@@ -773,6 +781,9 @@ bool SemanticAnalyzer::ValidateMemberAccess(const MemberAccessExpression* member
 
 const TypeSymbol* SemanticAnalyzer::GetFieldType(const ClassDeclaration* classDecl, const std::string& fieldName) const
 {
+    RequireReturn(nullptr != classDecl, nullptr);
+    RequireReturn(fieldName.empty() == false, nullptr);
+
     // Get all fields including inherited
     std::vector<const Field*> allFields;
     const_cast<SemanticAnalyzer*>(this)->GetAllFields(classDecl, allFields);
@@ -783,7 +794,7 @@ const TypeSymbol* SemanticAnalyzer::GetFieldType(const ClassDeclaration* classDe
         if (field->GetName() == fieldName)
         {
             // Handle alias fields - get type from target field
-            if (field->IsAlias())
+            if (field->IsAlias() == true)
             {
                 const Expression*     expr     = field->GetInitializer();
                 const FieldReference* fieldRef = dynamic_cast<const FieldReference*>(expr);
@@ -797,7 +808,7 @@ const TypeSymbol* SemanticAnalyzer::GetFieldType(const ClassDeclaration* classDe
 
             const TypeSpec* typeSpec = field->GetType();
 
-            if (nullptr != typeSpec && typeSpec->IsPrimitive())
+            if (nullptr != typeSpec && typeSpec->IsPrimitive() == true)
             {
                 const PrimitiveTypeSpec* primType = static_cast<const PrimitiveTypeSpec*>(typeSpec);
                 const std::string        typeName = PrimitiveTypeSpec::TypeToString(primType->GetType());
@@ -816,10 +827,7 @@ const TypeSymbol* SemanticAnalyzer::GetFieldType(const ClassDeclaration* classDe
 
 Expression::Type SemanticAnalyzer::InferExpressionType(const Expression* expr, const ClassDeclaration* classDecl) const
 {
-    if (nullptr == expr)
-    {
-        return Expression::Type::UNKNOWN;
-    }
+    RequireReturn(nullptr != expr, Expression::Type::UNKNOWN);
 
     // Check for literal expressions
     const LiteralExpression* literal = dynamic_cast<const LiteralExpression*>(expr);
@@ -881,30 +889,30 @@ Expression::Type SemanticAnalyzer::InferExpressionType(const Expression* expr, c
         }
 
         // For arithmetic operators, infer from operands
-        Expression::Type leftType  = InferExpressionType(binExpr->GetLeft(), classDecl);
-        Expression::Type rightType = InferExpressionType(binExpr->GetRight(), classDecl);
+        const Expression::Type leftType  = InferExpressionType(binExpr->GetLeft(), classDecl);
+        const Expression::Type rightType = InferExpressionType(binExpr->GetRight(), classDecl);
 
         // If either is UNKNOWN, we can't infer
-        if (Expression::Type::UNKNOWN == leftType || Expression::Type::UNKNOWN == rightType)
+        if (leftType == Expression::Type::UNKNOWN || rightType == Expression::Type::UNKNOWN)
         {
             return Expression::Type::UNKNOWN;
         }
 
         // Type widening: if either is REAL, result is REAL
-        if (Expression::Type::REAL == leftType || Expression::Type::REAL == rightType || Expression::Type::TIMESTAMP == leftType ||
-            Expression::Type::TIMESTAMP == rightType || Expression::Type::TIMESPAN == leftType || Expression::Type::TIMESPAN == rightType)
+        if (leftType == Expression::Type::REAL || rightType == Expression::Type::REAL || leftType == Expression::Type::TIMESTAMP ||
+            rightType == Expression::Type::TIMESTAMP || leftType == Expression::Type::TIMESPAN || rightType == Expression::Type::TIMESPAN)
         {
             return Expression::Type::REAL;
         }
 
         // If both are INT, result is INT
-        if (Expression::Type::INT == leftType && Expression::Type::INT == rightType)
+        if (leftType == Expression::Type::INT && rightType == Expression::Type::INT)
         {
             return Expression::Type::INT;
         }
 
         // If both are STRING, result is STRING (for concatenation)
-        if (Expression::Type::STRING == leftType && Expression::Type::STRING == rightType && BinaryExpression::Op::ADD == op)
+        if (leftType == Expression::Type::STRING && rightType == Expression::Type::STRING && BinaryExpression::Op::ADD == op)
         {
             return Expression::Type::STRING;
         }
@@ -917,12 +925,10 @@ Expression::Type SemanticAnalyzer::InferExpressionType(const Expression* expr, c
     if (nullptr != unaryExpr)
     {
         // NOT operator returns BOOL
-        if (UnaryExpression::Op::NOT == unaryExpr->GetOperator())
+        if (unaryExpr->GetOperator() == UnaryExpression::Op::NOT)
         {
             return Expression::Type::BOOL;
         }
-        // NEG operator returns same type as operand
-        return InferExpressionType(unaryExpr->GetOperand(), classDecl);
     }
 
     // Check for parenthesized expressions
@@ -944,10 +950,7 @@ Expression::Type SemanticAnalyzer::InferExpressionType(const Expression* expr, c
 
 bool SemanticAnalyzer::IsTypeCompatible(Expression::Type exprType, const TypeSpec* fieldTypeSpec) const
 {
-    if (nullptr == fieldTypeSpec)
-    {
-        return false;
-    }
+    RequireReturn(nullptr != fieldTypeSpec, false);
 
     // User-defined types can't be validated this way
     if (fieldTypeSpec->IsUserDefined())
@@ -956,7 +959,7 @@ bool SemanticAnalyzer::IsTypeCompatible(Expression::Type exprType, const TypeSpe
     }
 
     const PrimitiveTypeSpec* primType  = static_cast<const PrimitiveTypeSpec*>(fieldTypeSpec);
-    Expression::Type         fieldType = PrimitiveNameToExpressionType(PrimitiveTypeSpec::TypeToString(primType->GetType()));
+    const Expression::Type   fieldType = PrimitiveNameToExpressionType(PrimitiveTypeSpec::TypeToString(primType->GetType()));
 
     // Exact match
     if (exprType == fieldType)
@@ -987,31 +990,31 @@ bool SemanticAnalyzer::IsTypeCompatible(Expression::Type exprType, const TypeSpe
 
 Expression::Type SemanticAnalyzer::PrimitiveNameToExpressionType(const std::string& typeName) const
 {
-    if ("Int" == typeName)
+    if (typeName == "Int")
     {
         return Expression::Type::INT;
     }
-    if ("Real" == typeName)
+    if (typeName == "Real")
     {
         return Expression::Type::REAL;
     }
-    if ("String" == typeName)
+    if (typeName == "String")
     {
         return Expression::Type::STRING;
     }
-    if ("Bool" == typeName)
+    if (typeName == "Bool")
     {
         return Expression::Type::BOOL;
     }
-    if ("Timestamp" == typeName)
+    if (typeName == "Timestamp")
     {
         return Expression::Type::TIMESTAMP;
     }
-    if ("Timespan" == typeName)
+    if (typeName == "Timespan")
     {
         return Expression::Type::TIMESPAN;
     }
-    if ("Guid" == typeName)
+    if (typeName == "Guid")
     {
         return Expression::Type::GUID;
     }
@@ -1021,7 +1024,7 @@ Expression::Type SemanticAnalyzer::PrimitiveNameToExpressionType(const std::stri
 
 bool SemanticAnalyzer::TypeExists(const std::string& typeName) const
 {
-    return 0 != symbolTable_.count(typeName);
+    return symbolTable_.count(typeName) != 0;
 }
 
 const TypeSymbol* SemanticAnalyzer::LookupType(const std::string& typeName) const
@@ -1036,10 +1039,8 @@ const TypeSymbol* SemanticAnalyzer::LookupType(const std::string& typeName) cons
 
 const Field* SemanticAnalyzer::FindFieldInClass(const ClassDeclaration* classDecl, const std::string& fieldName) const
 {
-    if (nullptr == classDecl)
-    {
-        return nullptr;
-    }
+    RequireReturn(nullptr != classDecl, nullptr);
+    RequireReturn(fieldName.empty() == false, nullptr);
 
     // Get all fields including inherited ones
     std::vector<const Field*> allFields;
@@ -1152,7 +1153,7 @@ void SemanticAnalyzer::DumpSymbolTable() const
     {
         std::cout << "Classes:\n";
         std::cout << "--------\n";
-        std::string nsPrefix = FormatNamespacePrefix();
+        const std::string nsPrefix = FormatNamespacePrefix();
         for (const auto& entry : symbolTable_)
         {
             if (TypeSymbol::Kind::CLASS == entry.second.kind)
@@ -1161,7 +1162,7 @@ void SemanticAnalyzer::DumpSymbolTable() const
 
                 // Show inheritance
                 const std::string& baseType = entry.second.classDecl->GetBaseType();
-                if (false == baseType.empty())
+                if (baseType.empty() == false)
                 {
                     std::cout << " inherits " << nsPrefix << baseType;
                 }
@@ -1179,17 +1180,17 @@ void SemanticAnalyzer::DumpSymbolTable() const
                     localFieldSet.insert(field.get());
                 }
 
-                if (false == allFields.empty())
+                if (allFields.empty() == false)
                 {
                     std::cout << "    Features:\n";
                     for (const auto* field : allFields)
                     {
                         // Determine if this is a local or inherited field
-                        bool isLocal = (0 != localFieldSet.count(field));
-                        std::cout << "      " << (isLocal ? "Self::" : "Base::") << field->GetName() << ": ";
+                        const bool isLocal = (localFieldSet.count(field) != 0);
+                        std::cout << "      " << (isLocal == true ? "Self::" : "Base::") << field->GetName() << ": ";
 
                         // Handle alias fields specially
-                        if (field->IsAlias())
+                        if (field->IsAlias() == true)
                         {
                             // For aliases, resolve the target field's type
                             const TypeSymbol* targetType = GetFieldType(entry.second.classDecl, field->GetName());
@@ -1215,7 +1216,7 @@ void SemanticAnalyzer::DumpSymbolTable() const
                             const TypeSpec* typeSpec = field->GetType();
                             if (nullptr != typeSpec)
                             {
-                                if (typeSpec->IsPrimitive())
+                                if (typeSpec->IsPrimitive() == true)
                                 {
                                     const PrimitiveTypeSpec* primType = dynamic_cast<const PrimitiveTypeSpec*>(typeSpec);
                                     std::cout << "<builtin>::" << PrimitiveTypeSpec::TypeToString(primType->GetType());
@@ -1234,7 +1235,7 @@ void SemanticAnalyzer::DumpSymbolTable() const
 
                         // Show modifiers
                         const auto& modifiers = field->GetModifiers();
-                        if (false == modifiers.empty())
+                        if (modifiers.empty() == false)
                         {
                             std::cout << " [";
                             for (size_t i = 0; i < modifiers.size(); ++i)
@@ -1257,7 +1258,7 @@ void SemanticAnalyzer::DumpSymbolTable() const
                         }
 
                         // Show computed feature expression with annotated field origins
-                        if (field->IsComputed())
+                        if (field->IsComputed() == true)
                         {
                             const Expression* initializer = field->GetInitializer();
                             if (nullptr != initializer)
@@ -1268,7 +1269,7 @@ void SemanticAnalyzer::DumpSymbolTable() const
                         }
 
                         // Show alias target
-                        if (field->IsAlias())
+                        if (field->IsAlias() == true)
                         {
                             const Expression* initializer = field->GetInitializer();
                             if (nullptr != initializer)
@@ -1297,14 +1298,14 @@ void SemanticAnalyzer::DumpSymbolTable() const
                     localInvariantSet.insert(invariant.get());
                 }
 
-                if (false == allInvariants.empty())
+                if (allInvariants.empty() == false)
                 {
                     std::cout << "    Invariants:\n";
                     for (const auto* invariant : allInvariants)
                     {
                         // Determine if this is a local or inherited invariant
-                        bool isLocal = (0 != localInvariantSet.count(invariant));
-                        std::cout << "      " << (isLocal ? "Self::" : "Base::") << invariant->GetName() << ": ";
+                        const bool isLocal = (localInvariantSet.count(invariant) != 0);
+                        std::cout << "      " << (isLocal == true ? "Self::" : "Base::") << invariant->GetName() << ": ";
                         if (nullptr != invariant->GetExpression())
                         {
                             std::cout << invariant->GetExpression()->ToString();
@@ -1324,17 +1325,14 @@ void SemanticAnalyzer::DumpSymbolTable() const
 std::string
     SemanticAnalyzer::AnnotateExpressionWithOrigin(const Expression* expr, const ClassDeclaration* classDecl, const std::set<const Field*>& localFields) const
 {
-    if (nullptr == expr)
-    {
-        return "";
-    }
+    RequireReturn(nullptr != expr, std::string{});
 
     // Handle different expression types
     if (const BinaryExpression* binExpr = dynamic_cast<const BinaryExpression*>(expr))
     {
-        std::string left  = AnnotateExpressionWithOrigin(binExpr->GetLeft(), classDecl, localFields);
-        std::string right = AnnotateExpressionWithOrigin(binExpr->GetRight(), classDecl, localFields);
-        std::string op;
+        const std::string left  = AnnotateExpressionWithOrigin(binExpr->GetLeft(), classDecl, localFields);
+        const std::string right = AnnotateExpressionWithOrigin(binExpr->GetRight(), classDecl, localFields);
+        std::string       op;
 
         switch (binExpr->GetOperator())
         {
@@ -1383,12 +1381,12 @@ std::string
     }
     else if (const UnaryExpression* unaryExpr = dynamic_cast<const UnaryExpression*>(expr))
     {
-        std::string operand = AnnotateExpressionWithOrigin(unaryExpr->GetOperand(), classDecl, localFields);
-        if (UnaryExpression::Op::NEG == unaryExpr->GetOperator())
+        const std::string operand = AnnotateExpressionWithOrigin(unaryExpr->GetOperand(), classDecl, localFields);
+        if (unaryExpr->GetOperator() == UnaryExpression::Op::NEG)
         {
             return "-" + operand;
         }
-        else if (UnaryExpression::Op::NOT == unaryExpr->GetOperator())
+        else if (unaryExpr->GetOperator() == UnaryExpression::Op::NOT)
         {
             return "!" + operand;
         }
@@ -1409,7 +1407,7 @@ std::string
             if (fieldName == field->GetName())
             {
                 foundField = field;
-                isLocal    = (0 != localFields.count(field));
+                isLocal    = (localFields.count(field) != 0);
                 break;
             }
         }
@@ -1417,7 +1415,7 @@ std::string
         // Annotate with origin marker
         if (nullptr != foundField)
         {
-            return (isLocal ? "Self::" : "Base::") + fieldName;
+            return (true == isLocal ? "Self::" : "Base::") + fieldName;
         }
         else
         {
@@ -1426,8 +1424,8 @@ std::string
     }
     else if (const MemberAccessExpression* memberExpr = dynamic_cast<const MemberAccessExpression*>(expr))
     {
-        std::string object = AnnotateExpressionWithOrigin(memberExpr->GetObject(), classDecl, localFields);
-        std::string member = memberExpr->GetMemberName();
+        const std::string object = AnnotateExpressionWithOrigin(memberExpr->GetObject(), classDecl, localFields);
+        const std::string member = memberExpr->GetMemberName();
         return object + "." + member;
     }
     else if (const LiteralExpression* litExpr = dynamic_cast<const LiteralExpression*>(expr))
@@ -1436,7 +1434,7 @@ std::string
     }
     else if (const ParenthesizedExpression* parenExpr = dynamic_cast<const ParenthesizedExpression*>(expr))
     {
-        std::string inner = AnnotateExpressionWithOrigin(parenExpr->GetExpression(), classDecl, localFields);
+        const std::string inner = AnnotateExpressionWithOrigin(parenExpr->GetExpression(), classDecl, localFields);
         return "(" + inner + ")";
     }
     else if (const FunctionCall* funcCall = dynamic_cast<const FunctionCall*>(expr))
