@@ -5,7 +5,7 @@
 
 set -e  # Exit on error
 
-BUILD_DIR="_build"
+BUILD_DIR="build"
 
 # Create build directory if it doesn't exist
 if [ ! -d "$BUILD_DIR" ]; then
@@ -15,7 +15,7 @@ fi
 
 # Configure with CMake and Ninja
 echo "Configuring with CMake..."
-cmake -G Ninja -B "$BUILD_DIR"
+cmake -G Ninja -B "$BUILD_DIR" -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
 
 # Build
 echo "Building with CMake..."
