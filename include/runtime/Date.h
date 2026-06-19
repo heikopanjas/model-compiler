@@ -1,5 +1,5 @@
-#ifndef __BBFM_RUNTIME_DATE_H_INCL__
-#define __BBFM_RUNTIME_DATE_H_INCL__
+#ifndef __RUNTIME_DATE_H_INCL__
+#define __RUNTIME_DATE_H_INCL__
 
 // Set 8-byte alignment for all types in this header
 #pragma pack(push, 8)
@@ -7,9 +7,8 @@
 #include <string>
 #include <cstdint>
 
-namespace bbfm {
 namespace runtime {
-/// \brief Date type for BBFM runtime (stub implementation)
+/// \brief Date type for model runtime (stub implementation)
 ///
 /// This is a stub implementation that stores dates as ISO 8601 strings.
 /// Full implementation with date arithmetic, formatting, parsing, and
@@ -52,9 +51,8 @@ private:
     std::string value_; // ISO 8601 format: YYYY-MM-DD
 };
 } // namespace runtime
-} // namespace bbfm
 
 // Restore previous alignment
 #pragma pack(pop)
 
-#endif // __BBFM_RUNTIME_DATE_H_INCL__
+#endif // __RUNTIME_DATE_H_INCL__

@@ -1,5 +1,5 @@
-#ifndef __BBFM_GENERATED_ERROR_TEST_SUITE_H_INCL__
-#define __BBFM_GENERATED_ERROR_TEST_SUITE_H_INCL__
+#ifndef __GENERATED_ERROR_TEST_SUITE_H_INCL__
+#define __GENERATED_ERROR_TEST_SUITE_H_INCL__
 
 // Set 8-byte alignment for all types in this header
 #pragma pack(push, 8)
@@ -18,4 +18,4 @@
 // Restore previous alignment
 #pragma pack(pop)
 
-#endif // __BBFM_GENERATED_ERROR_TEST_SUITE_H_INCL__
+#endif // __GENERATED_ERROR_TEST_SUITE_H_INCL__

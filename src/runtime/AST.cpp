@@ -1,9 +1,12 @@
-#include "AST.h"
+#include "runtime/AST.h"
 #include "Common.h"
+#include "runtime/Array.h"
+#include "runtime/Dictionary.h"
+#include "runtime/String.h"
 #include <iostream>
 #include <string>
 
-namespace bbfm {
+namespace runtime {
 // ============================================================================
 // Helper Functions
 // ============================================================================
@@ -60,7 +63,7 @@ const char* PrimitiveTypeSpec::TypeToString(const PrimitiveType type)
     }
 }
 
-void PrimitiveTypeSpec::Dump(const int indent, const std::string& nsPrefix) const
+void PrimitiveTypeSpec::Dump(const int indent, const String& nsPrefix) const
 {
     UNREFERENCED_PARAMETER(indent);
     UNREFERENCED_PARAMETER(nsPrefix);
@@ -71,7 +74,7 @@ void PrimitiveTypeSpec::Dump(const int indent, const std::string& nsPrefix) cons
 // UserDefinedTypeSpec Implementation
 // ============================================================================
 
-const std::string& UserDefinedTypeSpec::GetTypeName() const
+const String& UserDefinedTypeSpec::GetTypeName() const
 {
     return typeName_;
 }
@@ -86,7 +89,7 @@ bool UserDefinedTypeSpec::IsUserDefined() const
     return true;
 }
 
-void UserDefinedTypeSpec::Dump(const int indent, const std::string& nsPrefix) const
+void UserDefinedTypeSpec::Dump(const int indent, const String& nsPrefix) const
 {
     UNREFERENCED_PARAMETER(indent);
     std::cout << nsPrefix << typeName_;
@@ -135,7 +138,7 @@ bool CardinalityModifier::IsArray() const
     return -1 == maxCardinality_ || maxCardinality_ > 1;
 }
 
-void CardinalityModifier::Dump(const int indent, const std::string& nsPrefix) const
+void CardinalityModifier::Dump(const int indent, const String& nsPrefix) const
 {
     UNREFERENCED_PARAMETER(indent);
     UNREFERENCED_PARAMETER(nsPrefix);
@@ -155,7 +158,7 @@ void CardinalityModifier::Dump(const int indent, const std::string& nsPrefix) co
 // UniqueModifier Implementation
 // ============================================================================
 
-void UniqueModifier::Dump(const int indent, const std::string& nsPrefix) const
+void UniqueModifier::Dump(const int indent, const String& nsPrefix) const
 {
     UNREFERENCED_PARAMETER(indent);
     UNREFERENCED_PARAMETER(nsPrefix);
@@ -171,12 +174,12 @@ const TypeSpec* Field::GetType() const
     return type_.get();
 }
 
-const std::string& Field::GetName() const
+const String& Field::GetName() const
 {
     return name_;
 }
 
-const std::vector<std::unique_ptr<Modifier>>& Field::GetModifiers() const
+const Array<std::unique_ptr<Modifier>>& Field::GetModifiers() const
 {
     return modifiers_;
 }
@@ -203,11 +206,11 @@ const Expression* Field::GetInitializer() const
 
 const CardinalityModifier* Field::GetCardinalityModifier() const
 {
-    for (const auto& mod : modifiers_)
+    for (size_t i = 0; i < modifiers_.GetCount(); ++i)
     {
-        if (mod->GetType() == ModifierType::CARDINALITY)
+        if (modifiers_.At(i)->GetType() == ModifierType::CARDINALITY)
         {
-            return static_cast<const CardinalityModifier*>(mod.get());
+            return static_cast<const CardinalityModifier*>(modifiers_.At(i).get());
         }
     }
     return nullptr;
@@ -215,9 +218,9 @@ const CardinalityModifier* Field::GetCardinalityModifier() const
 
 bool Field::HasUniqueConstraint() const
 {
-    for (const auto& mod : modifiers_)
+    for (size_t i = 0; i < modifiers_.GetCount(); ++i)
     {
-        if (mod->GetType() == ModifierType::UNIQUE)
+        if (modifiers_.At(i)->GetType() == ModifierType::UNIQUE)
         {
             return true;
         }
@@ -225,7 +228,7 @@ bool Field::HasUniqueConstraint() const
     return false;
 }
 
-void Field::Dump(const int indent, const std::string& nsPrefix) const
+void Field::Dump(const int indent, const String& nsPrefix) const
 {
     PrintIndent(indent);
     if (isStatic_)
@@ -260,10 +263,10 @@ void Field::Dump(const int indent, const std::string& nsPrefix) const
     }
 
     // Print modifiers
-    for (const auto& mod : modifiers_)
+    for (size_t i = 0; i < modifiers_.GetCount(); ++i)
     {
         std::cout << " ";
-        mod->Dump(0, nsPrefix);
+        modifiers_.At(i)->Dump(0, nsPrefix);
     }
 
     // Print initializer if present
@@ -279,9 +282,9 @@ void Field::Dump(const int indent, const std::string& nsPrefix) const
 // Invariant Implementation
 // ============================================================================
 
-Invariant::Invariant(const std::string& name, std::unique_ptr<Expression> expression) : name_(name), expression_(std::move(expression)) {}
+Invariant::Invariant(const String& name, std::unique_ptr<Expression> expression) : name_(name), expression_(std::move(expression)) {}
 
-const std::string& Invariant::GetName() const
+const String& Invariant::GetName() const
 {
     return name_;
 }
@@ -291,7 +294,7 @@ const Expression* Invariant::GetExpression() const
     return expression_.get();
 }
 
-void Invariant::Dump(const int indent, const std::string& nsPrefix) const
+void Invariant::Dump(const int indent, const String& nsPrefix) const
 {
     UNREFERENCED_PARAMETER(nsPrefix);
     PrintIndent(indent);
@@ -307,26 +310,26 @@ void Invariant::Dump(const int indent, const std::string& nsPrefix) const
 // EnumDeclaration Implementation
 // ============================================================================
 
-const std::string& EnumDeclaration::GetName() const
+const String& EnumDeclaration::GetName() const
 {
     return name_;
 }
 
-const std::vector<std::string>& EnumDeclaration::GetValues() const
+const Array<String>& EnumDeclaration::GetValues() const
 {
     return values_;
 }
 
-void EnumDeclaration::Dump(const int indent, const std::string& nsPrefix) const
+void EnumDeclaration::Dump(const int indent, const String& nsPrefix) const
 {
     PrintIndent(indent);
     std::cout << "enum " << nsPrefix << name_ << " {\n";
 
-    for (size_t i = 0; i < values_.size(); ++i)
+    for (size_t i = 0; i < values_.GetCount(); ++i)
     {
         PrintIndent(indent + 1);
-        std::cout << values_[i];
-        if (i < values_.size() - 1)
+        std::cout << values_.GetValueAt(i);
+        if (i < values_.GetCount() - 1)
         {
             std::cout << ",";
         }
@@ -341,51 +344,51 @@ void EnumDeclaration::Dump(const int indent, const std::string& nsPrefix) const
 // ClassDeclaration Implementation
 // ============================================================================
 
-const std::string& ClassDeclaration::GetName() const
+const String& ClassDeclaration::GetName() const
 {
     return name_;
 }
 
-const std::string& ClassDeclaration::GetBaseType() const
+const String& ClassDeclaration::GetBaseType() const
 {
     return baseType_;
 }
 
 bool ClassDeclaration::HasExplicitBase() const
 {
-    return false == baseType_.empty();
+    return false == baseType_.IsEmpty();
 }
 
-const std::vector<std::unique_ptr<Field>>& ClassDeclaration::GetFields() const
+const Array<std::unique_ptr<Field>>& ClassDeclaration::GetFields() const
 {
     return fields_;
 }
 
-const std::vector<std::unique_ptr<Invariant>>& ClassDeclaration::GetInvariants() const
+const Array<std::unique_ptr<Invariant>>& ClassDeclaration::GetInvariants() const
 {
     return invariants_;
 }
 
-void ClassDeclaration::Dump(const int indent, const std::string& nsPrefix) const
+void ClassDeclaration::Dump(const int indent, const String& nsPrefix) const
 {
     PrintIndent(indent);
     std::cout << "class " << nsPrefix << name_;
 
-    if (false == baseType_.empty())
+    if (false == baseType_.IsEmpty())
     {
         std::cout << " inherits " << nsPrefix << baseType_;
     }
 
     std::cout << " {\n";
 
-    for (const auto& field : fields_)
+    for (size_t i = 0; i < fields_.GetCount(); ++i)
     {
-        field->Dump(indent + 1, nsPrefix);
+        fields_.At(i)->Dump(indent + 1, nsPrefix);
     }
 
-    for (const auto& invariant : invariants_)
+    for (size_t i = 0; i < invariants_.GetCount(); ++i)
     {
-        invariant->Dump(indent + 1, nsPrefix);
+        invariants_.At(i)->Dump(indent + 1, nsPrefix);
     }
 
     PrintIndent(indent);
@@ -411,7 +414,7 @@ const ClassDeclaration* Declaration::AsClass() const
     return Kind::CLASS == kind_ ? static_cast<const ClassDeclaration*>(declaration_.get()) : nullptr;
 }
 
-void Declaration::Dump(const int indent, const std::string& nsPrefix) const
+void Declaration::Dump(const int indent, const String& nsPrefix) const
 {
     declaration_->Dump(indent, nsPrefix);
 }
@@ -475,12 +478,12 @@ Expression::Type BinaryExpression::GetResultType() const
     }
 }
 
-std::string BinaryExpression::ToString() const
+String BinaryExpression::ToString() const
 {
-    return "(" + left_->ToString() + " " + std::string(OpToString(op_)) + " " + right_->ToString() + ")";
+    return String("(") + left_->ToString() + String(" ") + String(OpToString(op_)) + String(" ") + right_->ToString() + String(")");
 }
 
-void BinaryExpression::Dump(const int indent, const std::string& nsPrefix) const
+void BinaryExpression::Dump(const int indent, const String& nsPrefix) const
 {
     PrintIndent(indent);
     std::cout << "BinaryExpression [" << OpToString(op_) << "]\n";
@@ -556,12 +559,12 @@ Expression::Type UnaryExpression::GetResultType() const
     }
 }
 
-std::string UnaryExpression::ToString() const
+String UnaryExpression::ToString() const
 {
-    return std::string(OpToString(op_)) + operand_->ToString();
+    return String(OpToString(op_)) + operand_->ToString();
 }
 
-void UnaryExpression::Dump(const int indent, const std::string& nsPrefix) const
+void UnaryExpression::Dump(const int indent, const String& nsPrefix) const
 {
     PrintIndent(indent);
     std::cout << "UnaryExpression [" << OpToString(op_) << "]\n";
@@ -592,7 +595,7 @@ const char* UnaryExpression::OpToString(const Op op)
 }
 
 // FieldReference
-FieldReference::FieldReference(const std::string& fieldName) : fieldName_(fieldName) {}
+FieldReference::FieldReference(const String& fieldName) : fieldName_(fieldName) {}
 
 Expression::Type FieldReference::GetResultType() const
 {
@@ -600,25 +603,25 @@ Expression::Type FieldReference::GetResultType() const
     return Type::UNKNOWN;
 }
 
-std::string FieldReference::ToString() const
+String FieldReference::ToString() const
 {
     return fieldName_;
 }
 
-void FieldReference::Dump(const int indent, const std::string& nsPrefix) const
+void FieldReference::Dump(const int indent, const String& nsPrefix) const
 {
     UNREFERENCED_PARAMETER(nsPrefix);
     PrintIndent(indent);
     std::cout << "FieldReference: " << fieldName_ << "\n";
 }
 
-const std::string& FieldReference::GetFieldName() const
+const String& FieldReference::GetFieldName() const
 {
     return fieldName_;
 }
 
 // MemberAccessExpression
-MemberAccessExpression::MemberAccessExpression(std::unique_ptr<Expression> object, const std::string& memberName) :
+MemberAccessExpression::MemberAccessExpression(std::unique_ptr<Expression> object, const String& memberName) :
     object_(std::move(object)), memberName_(memberName)
 {
 }
@@ -629,12 +632,12 @@ Expression::Type MemberAccessExpression::GetResultType() const
     return Type::UNKNOWN;
 }
 
-std::string MemberAccessExpression::ToString() const
+String MemberAccessExpression::ToString() const
 {
-    return object_->ToString() + "." + memberName_;
+    return object_->ToString() + String(".") + memberName_;
 }
 
-void MemberAccessExpression::Dump(const int indent, const std::string& nsPrefix) const
+void MemberAccessExpression::Dump(const int indent, const String& nsPrefix) const
 {
     PrintIndent(indent);
     std::cout << "MemberAccess: ." << memberName_ << "\n";
@@ -646,7 +649,7 @@ const Expression* MemberAccessExpression::GetObject() const
     return object_.get();
 }
 
-const std::string& MemberAccessExpression::GetMemberName() const
+const String& MemberAccessExpression::GetMemberName() const
 {
     return memberName_;
 }
@@ -656,7 +659,7 @@ LiteralExpression::LiteralExpression(const int64_t value) : type_(Type::INT), in
 
 LiteralExpression::LiteralExpression(const double value) : type_(Type::REAL), intValue_(0), realValue_(value), boolValue_(false) {}
 
-LiteralExpression::LiteralExpression(const std::string& value) : type_(Type::STRING), intValue_(0), realValue_(0.0), stringValue_(value), boolValue_(false) {}
+LiteralExpression::LiteralExpression(const String& value) : type_(Type::STRING), intValue_(0), realValue_(0.0), stringValue_(value), boolValue_(false) {}
 
 LiteralExpression::LiteralExpression(const bool value) : type_(Type::BOOL), intValue_(0), realValue_(0.0), boolValue_(value) {}
 
@@ -665,14 +668,14 @@ Expression::Type LiteralExpression::GetResultType() const
     return type_;
 }
 
-std::string LiteralExpression::ToString() const
+String LiteralExpression::ToString() const
 {
     switch (type_)
     {
         case Type::INT:
-            return std::to_string(intValue_);
+            return String(std::to_string(intValue_));
         case Type::REAL:
-            return std::to_string(realValue_);
+            return String(std::to_string(realValue_));
         case Type::STRING:
             return "\"" + stringValue_ + "\"";
         case Type::BOOL:
@@ -682,7 +685,7 @@ std::string LiteralExpression::ToString() const
     }
 }
 
-void LiteralExpression::Dump(const int indent, const std::string& nsPrefix) const
+void LiteralExpression::Dump(const int indent, const String& nsPrefix) const
 {
     UNREFERENCED_PARAMETER(nsPrefix);
     PrintIndent(indent);
@@ -699,7 +702,7 @@ double LiteralExpression::GetRealValue() const
     return realValue_;
 }
 
-const std::string& LiteralExpression::GetStringValue() const
+const String& LiteralExpression::GetStringValue() const
 {
     return stringValue_;
 }
@@ -710,7 +713,7 @@ bool LiteralExpression::GetBoolValue() const
 }
 
 // FunctionCall
-FunctionCall::FunctionCall(const std::string& functionName, std::vector<std::unique_ptr<Expression>> arguments) :
+FunctionCall::FunctionCall(const String& functionName, Array<std::unique_ptr<Expression>> arguments) :
     functionName_(functionName), arguments_(std::move(arguments))
 {
 }
@@ -721,37 +724,37 @@ Expression::Type FunctionCall::GetResultType() const
     return Type::UNKNOWN;
 }
 
-std::string FunctionCall::ToString() const
+String FunctionCall::ToString() const
 {
-    std::string result = functionName_ + "(";
-    for (size_t i = 0; i < arguments_.size(); ++i)
+    String result = functionName_ + String("(");
+    for (size_t i = 0; i < arguments_.GetCount(); ++i)
     {
         if (i > 0)
         {
-            result += ", ";
+            result = result + String(", ");
         }
-        result += arguments_[i]->ToString();
+        result = result + arguments_.At(i)->ToString();
     }
-    result += ")";
+    result = result + String(")");
     return result;
 }
 
-void FunctionCall::Dump(const int indent, const std::string& nsPrefix) const
+void FunctionCall::Dump(const int indent, const String& nsPrefix) const
 {
     PrintIndent(indent);
     std::cout << "FunctionCall: " << functionName_ << "\n";
-    for (const auto& arg : arguments_)
+    for (size_t i = 0; i < arguments_.GetCount(); ++i)
     {
-        arg->Dump(indent + 1, nsPrefix);
+        arguments_.At(i)->Dump(indent + 1, nsPrefix);
     }
 }
 
-const std::string& FunctionCall::GetFunctionName() const
+const String& FunctionCall::GetFunctionName() const
 {
     return functionName_;
 }
 
-const std::vector<std::unique_ptr<Expression>>& FunctionCall::GetArguments() const
+const Array<std::unique_ptr<Expression>>& FunctionCall::GetArguments() const
 {
     return arguments_;
 }
@@ -764,12 +767,12 @@ Expression::Type ParenthesizedExpression::GetResultType() const
     return expr_->GetResultType();
 }
 
-std::string ParenthesizedExpression::ToString() const
+String ParenthesizedExpression::ToString() const
 {
-    return "(" + expr_->ToString() + ")";
+    return String("(") + expr_->ToString() + String(")");
 }
 
-void ParenthesizedExpression::Dump(const int indent, const std::string& nsPrefix) const
+void ParenthesizedExpression::Dump(const int indent, const String& nsPrefix) const
 {
     PrintIndent(indent);
     std::cout << "ParenthesizedExpression\n";
@@ -785,27 +788,27 @@ const Expression* ParenthesizedExpression::GetExpression() const
 // AST Implementation
 // ============================================================================
 
-AST::AST(const std::string& sourceNamespace, std::vector<std::unique_ptr<Declaration>> declarations) :
+AST::AST(const String& sourceNamespace, Array<std::unique_ptr<Declaration>> declarations) :
     sourceNamespace_(sourceNamespace), declarations_(std::move(declarations))
 {
 }
 
-const std::string& AST::GetSourceNamespace() const
+const String& AST::GetSourceNamespace() const
 {
     return sourceNamespace_;
 }
 
-const std::vector<std::unique_ptr<Declaration>>& AST::GetDeclarations() const
+const Array<std::unique_ptr<Declaration>>& AST::GetDeclarations() const
 {
     return declarations_;
 }
 
-void AST::Dump(const int indent, const std::string& nsPrefix) const
+void AST::Dump(const int indent, const String& nsPrefix) const
 {
     PrintIndent(indent);
-    std::cout << "=== BBFM Program AST ===\n";
+    std::cout << "=== Program AST ===\n";
 
-    if (false == sourceNamespace_.empty())
+    if (false == sourceNamespace_.IsEmpty())
     {
         PrintIndent(indent);
         std::cout << "Namespace: " << sourceNamespace_ << "\n";
@@ -813,13 +816,13 @@ void AST::Dump(const int indent, const std::string& nsPrefix) const
 
     std::cout << "\n";
 
-    for (const auto& decl : declarations_)
+    for (size_t i = 0; i < declarations_.GetCount(); ++i)
     {
-        decl->Dump(indent, nsPrefix);
+        declarations_.At(i)->Dump(indent, nsPrefix);
         std::cout << "\n";
     }
 
     PrintIndent(indent);
     std::cout << "=== End of AST ===\n";
 }
-} // namespace bbfm
+} // namespace runtime

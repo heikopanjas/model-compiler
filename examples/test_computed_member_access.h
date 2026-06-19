@@ -1,5 +1,5 @@
-#ifndef __BBFM_GENERATED_TEST_COMPUTED_MEMBER_ACCESS_H_INCL__
-#define __BBFM_GENERATED_TEST_COMPUTED_MEMBER_ACCESS_H_INCL__
+#ifndef __GENERATED_TEST_COMPUTED_MEMBER_ACCESS_H_INCL__
+#define __GENERATED_TEST_COMPUTED_MEMBER_ACCESS_H_INCL__
 
 // Set 8-byte alignment for all types in this header
 #pragma pack(push, 8)
@@ -16,7 +16,7 @@
 #include "runtime/Guid.h"
 
 /// \brief Point struct
-struct Point : public bbfm::runtime::Fabric
+struct Point : public runtime::Fabric
 {
     /// \brief Constructor - initializes all fields with parent reference
     Point()
@@ -29,12 +29,12 @@ struct Point : public bbfm::runtime::Fabric
     virtual ~Point() = default;
 
     // User-defined fields
-    bbfm::runtime::UnboundedValue<int64_t, Point> x_;
-    bbfm::runtime::UnboundedValue<int64_t, Point> y_;
+    runtime::UnboundedValue<int64_t, Point> x_;
+    runtime::UnboundedValue<int64_t, Point> y_;
 };
 
 /// \brief Rectangle struct
-struct Rectangle : public bbfm::runtime::Fabric
+struct Rectangle : public runtime::Fabric
 {
     /// \brief Constructor - initializes all fields with parent reference
     Rectangle()
@@ -50,14 +50,14 @@ struct Rectangle : public bbfm::runtime::Fabric
     virtual ~Rectangle() = default;
 
     // User-defined fields
-    bbfm::runtime::UnboundedValue<Point, Rectangle> topLeft_;
-    bbfm::runtime::UnboundedValue<Point, Rectangle> bottomRight_;
-    bbfm::runtime::DynamicValue<int64_t, Rectangle> width_;
-    bbfm::runtime::DynamicValue<int64_t, Rectangle> height_;
-    bbfm::runtime::DynamicValue<int64_t, Rectangle> area_;
+    runtime::UnboundedValue<Point, Rectangle> topLeft_;
+    runtime::UnboundedValue<Point, Rectangle> bottomRight_;
+    runtime::DynamicValue<int64_t, Rectangle> width_;
+    runtime::DynamicValue<int64_t, Rectangle> height_;
+    runtime::DynamicValue<int64_t, Rectangle> area_;
 };
 
 // Restore previous alignment
 #pragma pack(pop)
 
-#endif // __BBFM_GENERATED_TEST_COMPUTED_MEMBER_ACCESS_H_INCL__
+#endif // __GENERATED_TEST_COMPUTED_MEMBER_ACCESS_H_INCL__

@@ -1,5 +1,5 @@
-#ifndef __BBFM_GENERATED_COMPREHENSIVE_TEST_H_INCL__
-#define __BBFM_GENERATED_COMPREHENSIVE_TEST_H_INCL__
+#ifndef __GENERATED_COMPREHENSIVE_TEST_H_INCL__
+#define __GENERATED_COMPREHENSIVE_TEST_H_INCL__
 
 // Set 8-byte alignment for all types in this header
 #pragma pack(push, 8)
@@ -31,7 +31,7 @@ enum class Status
 };
 
 /// \brief PrimitiveTypes struct
-struct PrimitiveTypes : public bbfm::runtime::Fabric
+struct PrimitiveTypes : public runtime::Fabric
 {
     /// \brief Constructor - initializes all fields with parent reference
     PrimitiveTypes()
@@ -50,18 +50,18 @@ struct PrimitiveTypes : public bbfm::runtime::Fabric
     virtual ~PrimitiveTypes() = default;
 
     // User-defined fields
-    bbfm::runtime::UnboundedValue<bbfm::runtime::String, PrimitiveTypes> stringField_;
-    bbfm::runtime::UnboundedValue<int64_t, PrimitiveTypes> intField_;
-    bbfm::runtime::UnboundedValue<double, PrimitiveTypes> realField_;
-    bbfm::runtime::UnboundedValue<bool, PrimitiveTypes> boolField_;
-    bbfm::runtime::UnboundedValue<double, PrimitiveTypes> timestampField_;
-    bbfm::runtime::UnboundedValue<double, PrimitiveTypes> timespanField_;
-    bbfm::runtime::UnboundedValue<bbfm::runtime::Date, PrimitiveTypes> dateField_;
-    bbfm::runtime::UnboundedValue<bbfm::runtime::Guid, PrimitiveTypes> guidField_;
+    runtime::UnboundedValue<runtime::String, PrimitiveTypes> stringField_;
+    runtime::UnboundedValue<int64_t, PrimitiveTypes> intField_;
+    runtime::UnboundedValue<double, PrimitiveTypes> realField_;
+    runtime::UnboundedValue<bool, PrimitiveTypes> boolField_;
+    runtime::UnboundedValue<double, PrimitiveTypes> timestampField_;
+    runtime::UnboundedValue<double, PrimitiveTypes> timespanField_;
+    runtime::UnboundedValue<runtime::Date, PrimitiveTypes> dateField_;
+    runtime::UnboundedValue<runtime::Guid, PrimitiveTypes> guidField_;
 };
 
 /// \brief FieldModifiers struct
-struct FieldModifiers : public bbfm::runtime::Fabric
+struct FieldModifiers : public runtime::Fabric
 {
     /// \brief Constructor - initializes all fields with parent reference
     FieldModifiers()
@@ -79,19 +79,19 @@ struct FieldModifiers : public bbfm::runtime::Fabric
     virtual ~FieldModifiers() = default;
 
     // User-defined fields
-    bbfm::runtime::UnboundedValue<bbfm::runtime::String, FieldModifiers> mandatoryField_;
-    bbfm::runtime::UnboundedValue<bbfm::runtime::String, FieldModifiers> explicitMandatory_;
-    bbfm::runtime::OptionalUnboundedValue<bbfm::runtime::String, FieldModifiers> optionalField_;
-    bbfm::runtime::OptionalUnboundedValue<bbfm::runtime::String, FieldModifiers> explicitOptional_;
-    std::vector<bbfm::runtime::String> optionalArray_;
-    std::vector<bbfm::runtime::String> requiredArray_;
-    bbfm::runtime::UnboundedValue<bbfm::runtime::String, FieldModifiers> uniqueField_; // Unique constraint
-    bbfm::runtime::UnboundedValue<bbfm::runtime::String, FieldModifiers> mandatoryUnique_; // Unique constraint
-    bbfm::runtime::OptionalUnboundedValue<bbfm::runtime::String, FieldModifiers> optionalUnique_; // Unique constraint
+    runtime::UnboundedValue<runtime::String, FieldModifiers> mandatoryField_;
+    runtime::UnboundedValue<runtime::String, FieldModifiers> explicitMandatory_;
+    runtime::OptionalUnboundedValue<runtime::String, FieldModifiers> optionalField_;
+    runtime::OptionalUnboundedValue<runtime::String, FieldModifiers> explicitOptional_;
+    std::vector<runtime::String> optionalArray_;
+    std::vector<runtime::String> requiredArray_;
+    runtime::UnboundedValue<runtime::String, FieldModifiers> uniqueField_; // Unique constraint
+    runtime::UnboundedValue<runtime::String, FieldModifiers> mandatoryUnique_; // Unique constraint
+    runtime::OptionalUnboundedValue<runtime::String, FieldModifiers> optionalUnique_; // Unique constraint
 };
 
 /// \brief FieldNamesMatchingTypes struct
-struct FieldNamesMatchingTypes : public bbfm::runtime::Fabric
+struct FieldNamesMatchingTypes : public runtime::Fabric
 {
     /// \brief Constructor - initializes all fields with parent reference
     FieldNamesMatchingTypes()
@@ -110,18 +110,18 @@ struct FieldNamesMatchingTypes : public bbfm::runtime::Fabric
     virtual ~FieldNamesMatchingTypes() = default;
 
     // User-defined fields
-    bbfm::runtime::UnboundedValue<bbfm::runtime::String, FieldNamesMatchingTypes> string_;
-    bbfm::runtime::UnboundedValue<int64_t, FieldNamesMatchingTypes> int_;
-    bbfm::runtime::UnboundedValue<double, FieldNamesMatchingTypes> real_;
-    bbfm::runtime::UnboundedValue<bool, FieldNamesMatchingTypes> bool_;
-    bbfm::runtime::UnboundedValue<double, FieldNamesMatchingTypes> timestamp_;
-    bbfm::runtime::UnboundedValue<double, FieldNamesMatchingTypes> timespan_;
-    bbfm::runtime::UnboundedValue<bbfm::runtime::Date, FieldNamesMatchingTypes> date_;
-    bbfm::runtime::UnboundedValue<bbfm::runtime::Guid, FieldNamesMatchingTypes> guid_;
+    runtime::UnboundedValue<runtime::String, FieldNamesMatchingTypes> string_;
+    runtime::UnboundedValue<int64_t, FieldNamesMatchingTypes> int_;
+    runtime::UnboundedValue<double, FieldNamesMatchingTypes> real_;
+    runtime::UnboundedValue<bool, FieldNamesMatchingTypes> bool_;
+    runtime::UnboundedValue<double, FieldNamesMatchingTypes> timestamp_;
+    runtime::UnboundedValue<double, FieldNamesMatchingTypes> timespan_;
+    runtime::UnboundedValue<runtime::Date, FieldNamesMatchingTypes> date_;
+    runtime::UnboundedValue<runtime::Guid, FieldNamesMatchingTypes> guid_;
 };
 
 /// \brief Asset struct
-struct Asset : public bbfm::runtime::Fabric
+struct Asset : public runtime::Fabric
 {
     /// \brief Constructor - initializes all fields with parent reference
     Asset()
@@ -135,9 +135,9 @@ struct Asset : public bbfm::runtime::Fabric
     virtual ~Asset() = default;
 
     // User-defined fields
-    bbfm::runtime::UnboundedValue<bbfm::runtime::String, Asset> url_;
-    bbfm::runtime::UnboundedValue<bbfm::runtime::String, Asset> title_;
-    bbfm::runtime::OptionalUnboundedValue<bbfm::runtime::String, Asset> description_;
+    runtime::UnboundedValue<runtime::String, Asset> url_;
+    runtime::UnboundedValue<runtime::String, Asset> title_;
+    runtime::OptionalUnboundedValue<runtime::String, Asset> description_;
 };
 
 /// \brief AudioAsset struct
@@ -156,10 +156,10 @@ struct AudioAsset : public Asset
     virtual ~AudioAsset() = default;
 
     // User-defined fields
-    bbfm::runtime::UnboundedValue<bbfm::runtime::String, AudioAsset> format_;
-    bbfm::runtime::UnboundedValue<int64_t, AudioAsset> fileSize_;
-    bbfm::runtime::UnboundedValue<double, AudioAsset> duration_;
-    bbfm::runtime::OptionalUnboundedValue<int64_t, AudioAsset> bitrate_;
+    runtime::UnboundedValue<runtime::String, AudioAsset> format_;
+    runtime::UnboundedValue<int64_t, AudioAsset> fileSize_;
+    runtime::UnboundedValue<double, AudioAsset> duration_;
+    runtime::OptionalUnboundedValue<int64_t, AudioAsset> bitrate_;
 };
 
 /// \brief VideoAsset struct
@@ -178,14 +178,14 @@ struct VideoAsset : public Asset
     virtual ~VideoAsset() = default;
 
     // User-defined fields
-    bbfm::runtime::UnboundedValue<int64_t, VideoAsset> width_;
-    bbfm::runtime::UnboundedValue<int64_t, VideoAsset> height_;
-    bbfm::runtime::UnboundedValue<double, VideoAsset> duration_;
-    bbfm::runtime::UnboundedValue<bbfm::runtime::String, VideoAsset> codec_;
+    runtime::UnboundedValue<int64_t, VideoAsset> width_;
+    runtime::UnboundedValue<int64_t, VideoAsset> height_;
+    runtime::UnboundedValue<double, VideoAsset> duration_;
+    runtime::UnboundedValue<runtime::String, VideoAsset> codec_;
 };
 
 /// \brief InvariantTests struct
-struct InvariantTests : public bbfm::runtime::Fabric
+struct InvariantTests : public runtime::Fabric
 {
     /// \brief Constructor - initializes all fields with parent reference
     InvariantTests()
@@ -202,12 +202,12 @@ struct InvariantTests : public bbfm::runtime::Fabric
     virtual ~InvariantTests() = default;
 
     // User-defined fields
-    bbfm::runtime::BoundedValue<int64_t, InvariantTests, &InvariantTests::Require_count_validCount, &InvariantTests::Require_count_maxCount, &InvariantTests::Require_count_positiveCount, &InvariantTests::Require_count_belowLimit, &InvariantTests::Require_count_exactCount, &InvariantTests::Require_count_notZero> count_;
-    bbfm::runtime::BoundedValue<double, InvariantTests, &InvariantTests::Require_price_validPrice, &InvariantTests::Require_price_maxPrice, &InvariantTests::Require_price_positivePrice, &InvariantTests::Require_price_belowThousand> price_;
-    bbfm::runtime::BoundedValue<bbfm::runtime::String, InvariantTests, &InvariantTests::Require_name_nonEmptyName, &InvariantTests::Require_name_specificName> name_;
-    bbfm::runtime::BoundedValue<bool, InvariantTests, &InvariantTests::Require_active_isActive, &InvariantTests::Require_active_notInactive> active_;
-    bbfm::runtime::BoundedValue<double, InvariantTests, &InvariantTests::Require_createdAt_validTimestamp, &InvariantTests::Require_createdAt_futureTimestamp> createdAt_;
-    bbfm::runtime::BoundedValue<double, InvariantTests, &InvariantTests::Require_duration_validDuration, &InvariantTests::Require_duration_maxDuration> duration_;
+    runtime::BoundedValue<int64_t, InvariantTests, &InvariantTests::Require_count_validCount, &InvariantTests::Require_count_maxCount, &InvariantTests::Require_count_positiveCount, &InvariantTests::Require_count_belowLimit, &InvariantTests::Require_count_exactCount, &InvariantTests::Require_count_notZero> count_;
+    runtime::BoundedValue<double, InvariantTests, &InvariantTests::Require_price_validPrice, &InvariantTests::Require_price_maxPrice, &InvariantTests::Require_price_positivePrice, &InvariantTests::Require_price_belowThousand> price_;
+    runtime::BoundedValue<runtime::String, InvariantTests, &InvariantTests::Require_name_nonEmptyName, &InvariantTests::Require_name_specificName> name_;
+    runtime::BoundedValue<bool, InvariantTests, &InvariantTests::Require_active_isActive, &InvariantTests::Require_active_notInactive> active_;
+    runtime::BoundedValue<double, InvariantTests, &InvariantTests::Require_createdAt_validTimestamp, &InvariantTests::Require_createdAt_futureTimestamp> createdAt_;
+    runtime::BoundedValue<double, InvariantTests, &InvariantTests::Require_duration_validDuration, &InvariantTests::Require_duration_maxDuration> duration_;
     /// \brief Require invariant 'validCount' for field 'count'
     /// \param object Reference to the containing object
     /// \param newValue The new value being assigned to count
@@ -302,7 +302,7 @@ struct InvariantTests : public bbfm::runtime::Fabric
     /// \param object Reference to the containing object
     /// \param newValue The new value being assigned to name
     /// \return True if invariant is satisfied, false otherwise
-    static bool Require_name_nonEmptyName(const InvariantTests& object, const bbfm::runtime::String& newValue)
+    static bool Require_name_nonEmptyName(const InvariantTests& object, const runtime::String& newValue)
     {
         return newValue != """";
     }
@@ -311,7 +311,7 @@ struct InvariantTests : public bbfm::runtime::Fabric
     /// \param object Reference to the containing object
     /// \param newValue The new value being assigned to name
     /// \return True if invariant is satisfied, false otherwise
-    static bool Require_name_specificName(const InvariantTests& object, const bbfm::runtime::String& newValue)
+    static bool Require_name_specificName(const InvariantTests& object, const runtime::String& newValue)
     {
         return newValue == ""test"";
     }
@@ -373,7 +373,7 @@ struct InvariantTests : public bbfm::runtime::Fabric
 };
 
 /// \brief ImageConstraints struct
-struct ImageConstraints : public bbfm::runtime::Fabric
+struct ImageConstraints : public runtime::Fabric
 {
     /// \brief Constructor - initializes all fields with parent reference
     ImageConstraints()
@@ -387,9 +387,9 @@ struct ImageConstraints : public bbfm::runtime::Fabric
     virtual ~ImageConstraints() = default;
 
     // User-defined fields
-    bbfm::runtime::BoundedValue<int64_t, ImageConstraints, &ImageConstraints::Require_width_validWidth, &ImageConstraints::Require_width_minWidth> width_;
-    bbfm::runtime::BoundedValue<int64_t, ImageConstraints, &ImageConstraints::Require_height_validHeight, &ImageConstraints::Require_height_minHeight> height_;
-    bbfm::runtime::UnboundedValue<bbfm::runtime::String, ImageConstraints> format_;
+    runtime::BoundedValue<int64_t, ImageConstraints, &ImageConstraints::Require_width_validWidth, &ImageConstraints::Require_width_minWidth> width_;
+    runtime::BoundedValue<int64_t, ImageConstraints, &ImageConstraints::Require_height_validHeight, &ImageConstraints::Require_height_minHeight> height_;
+    runtime::UnboundedValue<runtime::String, ImageConstraints> format_;
     /// \brief Require invariant 'validWidth' for field 'width'
     /// \param object Reference to the containing object
     /// \param newValue The new value being assigned to width
@@ -429,7 +429,7 @@ struct ImageConstraints : public bbfm::runtime::Fabric
 };
 
 /// \brief Author struct
-struct Author : public bbfm::runtime::Fabric
+struct Author : public runtime::Fabric
 {
     /// \brief Constructor - initializes all fields with parent reference
     Author()
@@ -442,12 +442,12 @@ struct Author : public bbfm::runtime::Fabric
     virtual ~Author() = default;
 
     // User-defined fields
-    bbfm::runtime::UnboundedValue<bbfm::runtime::String, Author> name_;
-    bbfm::runtime::OptionalUnboundedValue<bbfm::runtime::String, Author> email_;
+    runtime::UnboundedValue<runtime::String, Author> name_;
+    runtime::OptionalUnboundedValue<runtime::String, Author> email_;
 };
 
 /// \brief Publisher struct
-struct Publisher : public bbfm::runtime::Fabric
+struct Publisher : public runtime::Fabric
 {
     /// \brief Constructor - initializes all fields with parent reference
     Publisher()
@@ -460,12 +460,12 @@ struct Publisher : public bbfm::runtime::Fabric
     virtual ~Publisher() = default;
 
     // User-defined fields
-    bbfm::runtime::UnboundedValue<bbfm::runtime::String, Publisher> name_;
-    bbfm::runtime::OptionalUnboundedValue<bbfm::runtime::String, Publisher> website_;
+    runtime::UnboundedValue<runtime::String, Publisher> name_;
+    runtime::OptionalUnboundedValue<runtime::String, Publisher> website_;
 };
 
 /// \brief Book struct
-struct Book : public bbfm::runtime::Fabric
+struct Book : public runtime::Fabric
 {
     /// \brief Constructor - initializes all fields with parent reference
     Book()
@@ -481,17 +481,17 @@ struct Book : public bbfm::runtime::Fabric
     virtual ~Book() = default;
 
     // User-defined fields
-    bbfm::runtime::UnboundedValue<bbfm::runtime::String, Book> title_;
-    bbfm::runtime::UnboundedValue<bbfm::runtime::String, Book> isbn_; // Unique constraint
-    bbfm::runtime::UnboundedValue<bbfm::runtime::Date, Book> publicationDate_;
-    bbfm::runtime::UnboundedValue<Author, Book> primaryAuthor_;
-    bbfm::runtime::OptionalUnboundedValue<Publisher, Book> publisher_;
+    runtime::UnboundedValue<runtime::String, Book> title_;
+    runtime::UnboundedValue<runtime::String, Book> isbn_; // Unique constraint
+    runtime::UnboundedValue<runtime::Date, Book> publicationDate_;
+    runtime::UnboundedValue<Author, Book> primaryAuthor_;
+    runtime::OptionalUnboundedValue<Publisher, Book> publisher_;
     std::vector<Author> authors_;
-    std::vector<bbfm::runtime::String> tags_;
+    std::vector<runtime::String> tags_;
 };
 
 /// \brief Podcast struct
-struct Podcast : public bbfm::runtime::Fabric
+struct Podcast : public runtime::Fabric
 {
     /// \brief Constructor - initializes all fields with parent reference
     Podcast()
@@ -508,17 +508,17 @@ struct Podcast : public bbfm::runtime::Fabric
     virtual ~Podcast() = default;
 
     // User-defined fields
-    bbfm::runtime::UnboundedValue<bbfm::runtime::String, Podcast> title_;
-    bbfm::runtime::UnboundedValue<bbfm::runtime::String, Podcast> description_;
-    bbfm::runtime::OptionalUnboundedValue<bbfm::runtime::String, Podcast> author_;
-    bbfm::runtime::UnboundedValue<bbfm::runtime::String, Podcast> rssUrl_; // Unique constraint
-    bbfm::runtime::OptionalUnboundedValue<Asset, Podcast> coverArt_;
+    runtime::UnboundedValue<runtime::String, Podcast> title_;
+    runtime::UnboundedValue<runtime::String, Podcast> description_;
+    runtime::OptionalUnboundedValue<runtime::String, Podcast> author_;
+    runtime::UnboundedValue<runtime::String, Podcast> rssUrl_; // Unique constraint
+    runtime::OptionalUnboundedValue<Asset, Podcast> coverArt_;
     std::vector<Episode> episodes_;
-    bbfm::runtime::UnboundedValue<Status, Podcast> status_;
+    runtime::UnboundedValue<Status, Podcast> status_;
 };
 
 /// \brief Episode struct
-struct Episode : public bbfm::runtime::Fabric
+struct Episode : public runtime::Fabric
 {
     /// \brief Constructor - initializes all fields with parent reference
     Episode()
@@ -536,18 +536,18 @@ struct Episode : public bbfm::runtime::Fabric
     virtual ~Episode() = default;
 
     // User-defined fields
-    bbfm::runtime::UnboundedValue<bbfm::runtime::String, Episode> title_;
-    bbfm::runtime::OptionalUnboundedValue<bbfm::runtime::String, Episode> description_;
-    bbfm::runtime::UnboundedValue<bbfm::runtime::Date, Episode> publicationDate_;
-    bbfm::runtime::UnboundedValue<double, Episode> duration_;
-    bbfm::runtime::UnboundedValue<MediaType, Episode> mediaType_;
-    bbfm::runtime::UnboundedValue<AudioAsset, Episode> audioFile_;
-    bbfm::runtime::OptionalUnboundedValue<Transcript, Episode> transcript_;
+    runtime::UnboundedValue<runtime::String, Episode> title_;
+    runtime::OptionalUnboundedValue<runtime::String, Episode> description_;
+    runtime::UnboundedValue<runtime::Date, Episode> publicationDate_;
+    runtime::UnboundedValue<double, Episode> duration_;
+    runtime::UnboundedValue<MediaType, Episode> mediaType_;
+    runtime::UnboundedValue<AudioAsset, Episode> audioFile_;
+    runtime::OptionalUnboundedValue<Transcript, Episode> transcript_;
     std::vector<ChapterMarker> chapterMarkers_;
 };
 
 /// \brief Transcript struct
-struct Transcript : public bbfm::runtime::Fabric
+struct Transcript : public runtime::Fabric
 {
     /// \brief Constructor - initializes all fields with parent reference
     Transcript()
@@ -561,13 +561,13 @@ struct Transcript : public bbfm::runtime::Fabric
     virtual ~Transcript() = default;
 
     // User-defined fields
-    bbfm::runtime::UnboundedValue<bbfm::runtime::String, Transcript> text_;
-    bbfm::runtime::UnboundedValue<bbfm::runtime::String, Transcript> language_;
-    bbfm::runtime::OptionalUnboundedValue<bbfm::runtime::String, Transcript> format_;
+    runtime::UnboundedValue<runtime::String, Transcript> text_;
+    runtime::UnboundedValue<runtime::String, Transcript> language_;
+    runtime::OptionalUnboundedValue<runtime::String, Transcript> format_;
 };
 
 /// \brief ChapterMarker struct
-struct ChapterMarker : public bbfm::runtime::Fabric
+struct ChapterMarker : public runtime::Fabric
 {
     /// \brief Constructor - initializes all fields with parent reference
     ChapterMarker()
@@ -581,9 +581,9 @@ struct ChapterMarker : public bbfm::runtime::Fabric
     virtual ~ChapterMarker() = default;
 
     // User-defined fields
-    bbfm::runtime::UnboundedValue<bbfm::runtime::String, ChapterMarker> title_;
-    bbfm::runtime::BoundedValue<double, ChapterMarker, &ChapterMarker::Require_startTime_validStart> startTime_;
-    bbfm::runtime::OptionalUnboundedValue<double, ChapterMarker> endTime_;
+    runtime::UnboundedValue<runtime::String, ChapterMarker> title_;
+    runtime::BoundedValue<double, ChapterMarker, &ChapterMarker::Require_startTime_validStart> startTime_;
+    runtime::OptionalUnboundedValue<double, ChapterMarker> endTime_;
     /// \brief Require invariant 'validStart' for field 'startTime'
     /// \param object Reference to the containing object
     /// \param newValue The new value being assigned to startTime
@@ -596,7 +596,7 @@ struct ChapterMarker : public bbfm::runtime::Fabric
 };
 
 /// \brief UserPreferences struct
-struct UserPreferences : public bbfm::runtime::Fabric
+struct UserPreferences : public runtime::Fabric
 {
     /// \brief Constructor - initializes all fields with parent reference
     UserPreferences()
@@ -612,15 +612,15 @@ struct UserPreferences : public bbfm::runtime::Fabric
     virtual ~UserPreferences() = default;
 
     // User-defined fields
-    bbfm::runtime::UnboundedValue<bbfm::runtime::Guid, UserPreferences> userId_;
-    bbfm::runtime::UnboundedValue<bool, UserPreferences> emailNotifications_;
-    bbfm::runtime::UnboundedValue<bool, UserPreferences> pushNotifications_;
-    bbfm::runtime::OptionalUnboundedValue<bool, UserPreferences> darkMode_;
-    bbfm::runtime::UnboundedValue<bool, UserPreferences> isActive_;
+    runtime::UnboundedValue<runtime::Guid, UserPreferences> userId_;
+    runtime::UnboundedValue<bool, UserPreferences> emailNotifications_;
+    runtime::UnboundedValue<bool, UserPreferences> pushNotifications_;
+    runtime::OptionalUnboundedValue<bool, UserPreferences> darkMode_;
+    runtime::UnboundedValue<bool, UserPreferences> isActive_;
 };
 
 /// \brief FeatureFlags struct
-struct FeatureFlags : public bbfm::runtime::Fabric
+struct FeatureFlags : public runtime::Fabric
 {
     /// \brief Constructor - initializes all fields with parent reference
     FeatureFlags()
@@ -634,9 +634,9 @@ struct FeatureFlags : public bbfm::runtime::Fabric
     virtual ~FeatureFlags() = default;
 
     // User-defined fields
-    bbfm::runtime::UnboundedValue<bool, FeatureFlags> enableBetaFeatures_;
-    bbfm::runtime::UnboundedValue<bool, FeatureFlags> allowGuestAccess_;
-    bbfm::runtime::BoundedValue<bool, FeatureFlags, &FeatureFlags::Require_maintenanceMode_safeMode> maintenanceMode_;
+    runtime::UnboundedValue<bool, FeatureFlags> enableBetaFeatures_;
+    runtime::UnboundedValue<bool, FeatureFlags> allowGuestAccess_;
+    runtime::BoundedValue<bool, FeatureFlags, &FeatureFlags::Require_maintenanceMode_safeMode> maintenanceMode_;
     /// \brief Require invariant 'safeMode' for field 'maintenanceMode'
     /// \param object Reference to the containing object
     /// \param newValue The new value being assigned to maintenanceMode
@@ -649,7 +649,7 @@ struct FeatureFlags : public bbfm::runtime::Fabric
 };
 
 /// \brief MediaItem struct
-struct MediaItem : public bbfm::runtime::Fabric
+struct MediaItem : public runtime::Fabric
 {
     /// \brief Constructor - initializes all fields with parent reference
     MediaItem()
@@ -662,8 +662,8 @@ struct MediaItem : public bbfm::runtime::Fabric
     virtual ~MediaItem() = default;
 
     // User-defined fields
-    bbfm::runtime::UnboundedValue<bbfm::runtime::String, MediaItem> title_;
-    bbfm::runtime::OptionalUnboundedValue<bbfm::runtime::String, MediaItem> description_;
+    runtime::UnboundedValue<runtime::String, MediaItem> title_;
+    runtime::OptionalUnboundedValue<runtime::String, MediaItem> description_;
 };
 
 /// \brief StreamableMedia struct
@@ -680,8 +680,8 @@ struct StreamableMedia : public MediaItem
     virtual ~StreamableMedia() = default;
 
     // User-defined fields
-    bbfm::runtime::UnboundedValue<bbfm::runtime::String, StreamableMedia> url_;
-    bbfm::runtime::UnboundedValue<double, StreamableMedia> duration_;
+    runtime::UnboundedValue<runtime::String, StreamableMedia> url_;
+    runtime::UnboundedValue<double, StreamableMedia> duration_;
 };
 
 /// \brief PodcastEpisode struct
@@ -698,8 +698,8 @@ struct PodcastEpisode : public StreamableMedia
     virtual ~PodcastEpisode() = default;
 
     // User-defined fields
-    bbfm::runtime::BoundedValue<int64_t, PodcastEpisode, &PodcastEpisode::Require_episodeNumber_validEpisode> episodeNumber_;
-    bbfm::runtime::OptionalUnboundedValue<int64_t, PodcastEpisode> seasonNumber_;
+    runtime::BoundedValue<int64_t, PodcastEpisode, &PodcastEpisode::Require_episodeNumber_validEpisode> episodeNumber_;
+    runtime::OptionalUnboundedValue<int64_t, PodcastEpisode> seasonNumber_;
     /// \brief Require invariant 'validEpisode' for field 'episodeNumber'
     /// \param object Reference to the containing object
     /// \param newValue The new value being assigned to episodeNumber
@@ -712,7 +712,7 @@ struct PodcastEpisode : public StreamableMedia
 };
 
 /// \brief BaseWithInvariant struct
-struct BaseWithInvariant : public bbfm::runtime::Fabric
+struct BaseWithInvariant : public runtime::Fabric
 {
     /// \brief Constructor - initializes all fields with parent reference
     BaseWithInvariant()
@@ -725,8 +725,8 @@ struct BaseWithInvariant : public bbfm::runtime::Fabric
     virtual ~BaseWithInvariant() = default;
 
     // User-defined fields
-    bbfm::runtime::BoundedValue<int64_t, BaseWithInvariant, &BaseWithInvariant::Require_width_validWidth> width_;
-    bbfm::runtime::BoundedValue<int64_t, BaseWithInvariant, &BaseWithInvariant::Require_height_validHeight> height_;
+    runtime::BoundedValue<int64_t, BaseWithInvariant, &BaseWithInvariant::Require_width_validWidth> width_;
+    runtime::BoundedValue<int64_t, BaseWithInvariant, &BaseWithInvariant::Require_height_validHeight> height_;
     /// \brief Require invariant 'validWidth' for field 'width'
     /// \param object Reference to the containing object
     /// \param newValue The new value being assigned to width
@@ -760,7 +760,7 @@ struct DerivedWithInvariant : public BaseWithInvariant
     virtual ~DerivedWithInvariant() = default;
 
     // User-defined fields
-    bbfm::runtime::BoundedValue<int64_t, DerivedWithInvariant, &DerivedWithInvariant::Require_depth_validDepth> depth_;
+    runtime::BoundedValue<int64_t, DerivedWithInvariant, &DerivedWithInvariant::Require_depth_validDepth> depth_;
     /// \brief Require invariant 'validDepth' for field 'depth'
     /// \param object Reference to the containing object
     /// \param newValue The new value being assigned to depth
@@ -785,12 +785,12 @@ struct FurtherDerivedWithInvariant : public DerivedWithInvariant
     virtual ~FurtherDerivedWithInvariant() = default;
 
     // User-defined fields
-    bbfm::runtime::BoundedValue<bbfm::runtime::String, FurtherDerivedWithInvariant, &FurtherDerivedWithInvariant::Require_color_nonEmptyColor> color_;
+    runtime::BoundedValue<runtime::String, FurtherDerivedWithInvariant, &FurtherDerivedWithInvariant::Require_color_nonEmptyColor> color_;
     /// \brief Require invariant 'nonEmptyColor' for field 'color'
     /// \param object Reference to the containing object
     /// \param newValue The new value being assigned to color
     /// \return True if invariant is satisfied, false otherwise
-    static bool Require_color_nonEmptyColor(const FurtherDerivedWithInvariant& object, const bbfm::runtime::String& newValue)
+    static bool Require_color_nonEmptyColor(const FurtherDerivedWithInvariant& object, const runtime::String& newValue)
     {
         return newValue != """";
     }
@@ -800,4 +800,4 @@ struct FurtherDerivedWithInvariant : public DerivedWithInvariant
 // Restore previous alignment
 #pragma pack(pop)
 
-#endif // __BBFM_GENERATED_COMPREHENSIVE_TEST_H_INCL__
+#endif // __GENERATED_COMPREHENSIVE_TEST_H_INCL__

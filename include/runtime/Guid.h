@@ -1,5 +1,5 @@
-#ifndef __BBFM_RUNTIME_GUID_H_INCL__
-#define __BBFM_RUNTIME_GUID_H_INCL__
+#ifndef __RUNTIME_GUID_H_INCL__
+#define __RUNTIME_GUID_H_INCL__
 
 // Set 8-byte alignment for all types in this header
 #pragma pack(push, 8)
@@ -9,8 +9,8 @@
 #include <memory>
 #include <string>
 
-namespace bbfm { namespace runtime {
-/// \brief Cross-platform GUID (UUID) type for BBFM runtime
+namespace runtime {
+/// \brief Cross-platform GUID (UUID) type for model runtime
 ///
 /// Stores a 128-bit universally unique identifier using the PIMPL idiom
 /// to hide platform-specific implementation details. Supports generation
@@ -107,17 +107,17 @@ private:
 
     friend struct std::hash<Guid>;
 };
-}} // namespace bbfm::runtime
+} // namespace runtime
 
 // std::hash specialization for Guid
 namespace std {
-template<> struct hash<bbfm::runtime::Guid>
+template<> struct hash<runtime::Guid>
 {
-    size_t operator()(const bbfm::runtime::Guid& guid) const;
+    size_t operator()(const runtime::Guid& guid) const;
 };
 } // namespace std
 
 // Restore previous alignment
 #pragma pack(pop)
 
-#endif // __BBFM_RUNTIME_GUID_H_INCL__
+#endif // __RUNTIME_GUID_H_INCL__

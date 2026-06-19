@@ -1,5 +1,5 @@
-#ifndef __BBFM_CONTRACTS_H_INCL__
-#define __BBFM_CONTRACTS_H_INCL__
+#ifndef __CONTRACTS_H_INCL__
+#define __CONTRACTS_H_INCL__
 
 #pragma pack(push, 8)
 
@@ -48,4 +48,4 @@
 
 #pragma pack(pop)
 
-#endif // __BBFM_CONTRACTS_H_INCL__
+#endif // __CONTRACTS_H_INCL__

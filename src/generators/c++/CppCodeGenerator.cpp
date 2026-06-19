@@ -2,31 +2,27 @@
 #include "Common.h"
 #include "Console.h"
 #include "Contracts.h"
-#include "SemanticAnalyzer.h"
-#include <algorithm>
+#include "GeneratorPlugin.h"
+#include "runtime/SemanticAnalyzer.h"
 #include <cctype>
-#include <chrono>
 #include <fstream>
-#include <iostream>
 #include <set>
-#include <stdexcept>
 
-namespace bbfm {
 // ============================================================================
 // CppCodeGenerator Implementation
 // ============================================================================
 
 CppCodeGenerator::CppCodeGenerator(
-    const AST* ast, const SemanticAnalyzer* analyzer, const std::vector<std::string>& namespaces, const std::string& classPrefix) :
-    CodeGenerator(ast, analyzer, namespaces, classPrefix)
+    const runtime::AST* ast, const runtime::SemanticAnalyzer* analyzer, const runtime::Array<runtime::String>& namespaces, const runtime::String& classPrefix) :
+    runtime::ICodeGenerator(ast, analyzer, namespaces, classPrefix)
 {
 }
 
-bool CppCodeGenerator::Generate(const std::string& outputPath)
+bool CppCodeGenerator::Generate(const runtime::String& outputPath)
 {
     if (nullptr == ast_ || nullptr == analyzer_)
     {
-        ReportError("Cannot generate code: AST or analyzer is null");
+        ReportError("Cannot generate code: runtime::AST or analyzer is null");
         return false;
     }
 
@@ -41,11 +37,11 @@ bool CppCodeGenerator::Generate(const std::string& outputPath)
     const auto& declarations = ast_->GetDeclarations();
     for (const auto& decl : declarations)
     {
-        if (Declaration::Kind::ENUM == decl->GetKind())
+        if (runtime::Declaration::Kind::ENUM == decl->GetKind())
         {
             GenerateEnum(decl->AsEnum());
         }
-        else if (Declaration::Kind::CLASS == decl->GetKind())
+        else if (runtime::Declaration::Kind::CLASS == decl->GetKind())
         {
             GenerateClass(decl->AsClass());
         }
@@ -55,11 +51,11 @@ bool CppCodeGenerator::Generate(const std::string& outputPath)
     GenerateFileFooter();
 
     // Close include guard
-    const std::string includeGuard = GenerateIncludeGuardName(outputPath);
+    const runtime::String includeGuard = GenerateIncludeGuardName(outputPath);
     output_ << "#endif // " << includeGuard << "\n";
 
     // Write to output file
-    std::ofstream outFile(outputPath);
+    std::ofstream outFile(outputPath.GetValue());
     if (outFile.is_open() == false)
     {
         ReportError("Failed to open output file: " + outputPath);
@@ -79,61 +75,61 @@ bool CppCodeGenerator::Generate(const std::string& outputPath)
     return true;
 }
 
-std::string CppCodeGenerator::GetFileExtension() const
+runtime::String CppCodeGenerator::GetFileExtension() const
 {
     return ".h";
 }
 
-std::string CppCodeGenerator::GetLanguageName() const
+runtime::String CppCodeGenerator::GetLanguageName() const
 {
     return "C++";
 }
 
-std::string CppCodeGenerator::MapPrimitiveType(const PrimitiveType type) const
+runtime::String CppCodeGenerator::MapPrimitiveType(const runtime::PrimitiveType type) const
 {
     // TODO: Implement in Step 7
     switch (type)
     {
-        case PrimitiveType::STRING:
-            return "bbfm::runtime::String";
-        case PrimitiveType::INT:
+        case runtime::PrimitiveType::STRING:
+            return "runtime::String";
+        case runtime::PrimitiveType::INT:
             return "int64_t";
-        case PrimitiveType::REAL:
+        case runtime::PrimitiveType::REAL:
             return "double";
-        case PrimitiveType::BOOL:
+        case runtime::PrimitiveType::BOOL:
             return "bool";
-        case PrimitiveType::TIMESTAMP:
+        case runtime::PrimitiveType::TIMESTAMP:
             return "double";
-        case PrimitiveType::TIMESPAN:
+        case runtime::PrimitiveType::TIMESPAN:
             return "double";
-        case PrimitiveType::DATE:
-            return "bbfm::runtime::Date";
-        case PrimitiveType::GUID:
-            return "bbfm::runtime::Guid";
+        case runtime::PrimitiveType::DATE:
+            return "runtime::Date";
+        case runtime::PrimitiveType::GUID:
+            return "runtime::Guid";
         default:
             return "unknown";
     }
 }
 
-std::string CppCodeGenerator::MapType(const TypeSpec* typeSpec) const
+runtime::String CppCodeGenerator::MapType(const runtime::TypeSpec* typeSpec) const
 {
     // TODO: Implement fully in Step 7
     if (typeSpec->IsPrimitive() == true)
     {
-        const PrimitiveTypeSpec* primType = dynamic_cast<const PrimitiveTypeSpec*>(typeSpec);
+        const runtime::PrimitiveTypeSpec* primType = dynamic_cast<const runtime::PrimitiveTypeSpec*>(typeSpec);
         return MapPrimitiveType(primType->GetType());
     }
     else
     {
-        const UserDefinedTypeSpec* userType = dynamic_cast<const UserDefinedTypeSpec*>(typeSpec);
+        const runtime::UserDefinedTypeSpec* userType = dynamic_cast<const runtime::UserDefinedTypeSpec*>(typeSpec);
         return FormatNamespacePrefix() + ApplyClassPrefix(userType->GetTypeName());
     }
 }
 
-const ClassDeclaration* CppCodeGenerator::FindClassDeclaringField(const ClassDeclaration* classDecl, const std::string& fieldName) const
+const runtime::ClassDeclaration* CppCodeGenerator::FindClassDeclaringField(const runtime::ClassDeclaration* classDecl, const runtime::String& fieldName) const
 {
     RequireReturn(nullptr != classDecl, nullptr);
-    RequireReturn(fieldName.empty() == false, nullptr);
+    RequireReturn(fieldName.IsEmpty() == false, nullptr);
 
     // Check if this class declares the field
     for (const auto& field : classDecl->GetFields())
@@ -148,103 +144,103 @@ const ClassDeclaration* CppCodeGenerator::FindClassDeclaringField(const ClassDec
     if (classDecl->HasExplicitBase())
     {
         const auto& symbolTable = analyzer_->GetSymbolTable();
-        auto        it          = symbolTable.find(classDecl->GetBaseType());
-        if (it != symbolTable.end() && nullptr != it->second.classDecl)
+        const TypeSymbol* baseSymbol = symbolTable.GetValuePtr(classDecl->GetBaseType());
+        if (nullptr != baseSymbol && nullptr != baseSymbol->classDecl)
         {
-            return FindClassDeclaringField(it->second.classDecl, fieldName);
+            return FindClassDeclaringField(baseSymbol->classDecl, fieldName);
         }
     }
 
     return nullptr;
 }
 
-std::string CppCodeGenerator::GetFieldWrapperType(const Field* field, const ClassDeclaration* classDecl) const
+runtime::String CppCodeGenerator::GetFieldWrapperType(const runtime::Field* field, const runtime::ClassDeclaration* classDecl) const
 {
-    RequireReturn(nullptr != field, std::string{"void"});
-    RequireReturn(field->IsComputed() == false, std::string{"void"});
-    RequireReturn(field->IsAlias() == false, std::string{"void"});
+    RequireReturn(nullptr != field, runtime::String{"void"});
+    RequireReturn(field->IsComputed() == false, runtime::String{"void"});
+    RequireReturn(field->IsAlias() == false, runtime::String{"void"});
 
-    std::string cppType   = MapType(field->GetType());
-    std::string className = ApplyClassPrefix(classDecl->GetName());
+    runtime::String cppType   = MapType(field->GetType());
+    runtime::String className = ApplyClassPrefix(classDecl->GetName());
 
     // Get cardinality
-    const CardinalityModifier* cardMod    = field->GetCardinalityModifier();
-    const bool                 isOptional = (nullptr != cardMod) && cardMod->IsOptional() == true;
+    const runtime::CardinalityModifier* cardMod    = field->GetCardinalityModifier();
+    const bool                          isOptional = (nullptr != cardMod) && cardMod->IsOptional() == true;
 
     // Check if field has invariants
-    const std::vector<const Invariant*> fieldInvariants = GetInvariantsForField(field->GetName(), classDecl);
-    const bool                          hasInvariants   = fieldInvariants.empty() == false;
+    const runtime::Array<const runtime::Invariant*> fieldInvariants = GetInvariantsForField(field->GetName(), classDecl);
+    const bool                                   hasInvariants   = fieldInvariants.GetCount() > 0;
 
     // Build template parameters
-    std::string templateParams = cppType + ", " + className;
+    runtime::String templateParams = cppType + ", " + className;
 
     // Add checker functions if there are invariants
     if (hasInvariants == true)
     {
-        for (const Invariant* inv : fieldInvariants)
+        for (const runtime::Invariant* inv : fieldInvariants)
         {
-            templateParams += ", &" + className + "::Require_" + field->GetName() + "_" + inv->GetName();
+            templateParams = templateParams + ", &" + className + "::Require_" + field->GetName() + "_" + inv->GetName();
         }
     }
 
     // Choose wrapper based on invariants and optionality
-    std::string wrapperType;
+    runtime::String wrapperType;
     if (hasInvariants == true && isOptional == true)
     {
-        wrapperType = "bbfm::runtime::OptionalBoundedValue";
+        wrapperType = "runtime::OptionalBoundedValue";
     }
     else if (hasInvariants == true && isOptional == false)
     {
-        wrapperType = "bbfm::runtime::BoundedValue";
+        wrapperType = "runtime::BoundedValue";
     }
     else if (hasInvariants == false && isOptional == true)
     {
-        wrapperType = "bbfm::runtime::OptionalUnboundedValue";
+        wrapperType = "runtime::OptionalUnboundedValue";
     }
     else
     {
-        wrapperType = "bbfm::runtime::UnboundedValue";
+        wrapperType = "runtime::UnboundedValue";
     }
 
     return wrapperType + "<" + templateParams + ">";
 }
 
-std::string CppCodeGenerator::GenerateIncludeGuardName(const std::string& filename) const
+runtime::String CppCodeGenerator::GenerateIncludeGuardName(const runtime::String& filename) const
 {
     // Convert filename to include guard format
-    // Example: "podcast.h" -> "__BBFM_GENERATED_PODCAST_H_INCL__"
-    std::string guard = "__BBFM_GENERATED_";
+    // Example: "podcast.h" -> "__GENERATED_PODCAST_H_INCL__"
+    runtime::String guard = "__GENERATED_";
 
     // Extract base filename without extension
-    const size_t lastSlash = filename.find_last_of("/\\");
-    std::string  baseName  = (lastSlash != std::string::npos) ? filename.substr(lastSlash + 1) : filename;
+    const size_t lastSlash = filename.GetValue().find_last_of("/\\");
+    runtime::String baseName = (lastSlash != std::string::npos) ? runtime::String(filename.GetValue().substr(lastSlash + 1)) : filename;
 
-    const size_t lastDot = baseName.find_last_of('.');
+    const size_t lastDot = baseName.GetValue().find_last_of('.');
     if (lastDot != std::string::npos)
     {
-        baseName = baseName.substr(0, lastDot);
+        baseName = runtime::String(baseName.GetValue().substr(0, lastDot));
     }
 
     // Convert to uppercase and replace non-alphanumeric with underscore
-    for (const char c : baseName)
+    for (const char c : baseName.GetValue())
     {
         if (std::isalnum(c) != 0)
         {
-            guard += static_cast<char>(std::toupper(c));
+            guard = guard + runtime::String(std::string(1, static_cast<char>(std::toupper(c))));
         }
         else
         {
-            guard += '_';
+            guard = guard + runtime::String("_");
         }
     }
 
-    guard += "_H_INCL__";
+    guard = guard + runtime::String("_H_INCL__");
     return guard;
 }
 
-void CppCodeGenerator::GenerateFileHeader(const std::string& filename)
+void CppCodeGenerator::GenerateFileHeader(const runtime::String& filename)
 {
-    const std::string includeGuard = GenerateIncludeGuardName(filename);
+    const runtime::String includeGuard = GenerateIncludeGuardName(filename);
 
     // Include guard opening
     output_ << "#ifndef " << includeGuard << "\n";
@@ -284,7 +280,7 @@ void CppCodeGenerator::GenerateFileFooter()
 
 void CppCodeGenerator::GenerateNamespaceOpen()
 {
-    if (namespaces_.empty() == true)
+    if (namespaces_.GetCount() == 0)
     {
         return;
     }
@@ -299,25 +295,25 @@ void CppCodeGenerator::GenerateNamespaceOpen()
 
 void CppCodeGenerator::GenerateNamespaceClose()
 {
-    if (namespaces_.empty() == true)
+    if (namespaces_.GetCount() == 0)
     {
         return;
     }
 
     // Close namespaces in reverse order
     output_ << "\n";
-    for (auto it = namespaces_.rbegin(); it != namespaces_.rend(); ++it)
+    for (size_t i = namespaces_.GetCount(); i > 0; --i)
     {
-        output_ << "} // namespace " << *it << "\n";
+        output_ << "} // namespace " << namespaces_.GetValueAt(i - 1) << "\n";
     }
 }
 
-void CppCodeGenerator::GenerateEnum(const EnumDeclaration* enumDecl)
+void CppCodeGenerator::GenerateEnum(const runtime::EnumDeclaration* enumDecl)
 {
     Require(nullptr != enumDecl);
 
     // Generate enum class with prefix if specified
-    std::string enumName = ApplyClassPrefix(enumDecl->GetName());
+    runtime::String enumName = ApplyClassPrefix(enumDecl->GetName());
     const auto& values   = enumDecl->GetValues();
 
     output_ << "/// \\brief " << enumName << " enumeration\n";
@@ -325,12 +321,12 @@ void CppCodeGenerator::GenerateEnum(const EnumDeclaration* enumDecl)
     output_ << "{\n";
 
     // Generate enum values
-    for (size_t i = 0; i < values.size(); ++i)
+    for (size_t i = 0; i < values.GetCount(); ++i)
     {
         WriteIndent(1);
-        output_ << values[i];
+        output_ << values.GetValueAt(i);
 
-        if (i < values.size() - 1)
+        if (i < values.GetCount() - 1)
         {
             output_ << ",";
         }
@@ -341,11 +337,11 @@ void CppCodeGenerator::GenerateEnum(const EnumDeclaration* enumDecl)
     output_ << "};\n\n";
 }
 
-void CppCodeGenerator::GenerateClass(const ClassDeclaration* classDecl)
+void CppCodeGenerator::GenerateClass(const runtime::ClassDeclaration* classDecl)
 {
     Require(nullptr != classDecl);
 
-    std::string className = ApplyClassPrefix(classDecl->GetName());
+    runtime::String className = ApplyClassPrefix(classDecl->GetName());
 
     // Generate struct documentation
     output_ << "/// \\brief " << className << " struct\n";
@@ -354,17 +350,17 @@ void CppCodeGenerator::GenerateClass(const ClassDeclaration* classDecl)
     output_ << "struct " << className;
 
     // Determine inheritance
-    const std::string& baseType = classDecl->GetBaseType();
-    if (baseType.empty() == false)
+    const runtime::String& baseType = classDecl->GetBaseType();
+    if (baseType.IsEmpty() == false)
     {
         // User-defined base class (which already inherits from Fabric)
-        std::string baseClassName = ApplyClassPrefix(baseType);
+        runtime::String baseClassName = ApplyClassPrefix(baseType);
         output_ << " : public " << baseClassName;
     }
     else
     {
         // No user-defined base class, so inherit from Fabric
-        output_ << " : public bbfm::runtime::Fabric";
+        output_ << " : public runtime::Fabric";
     }
 
     output_ << "\n{\n";
@@ -389,13 +385,13 @@ void CppCodeGenerator::GenerateClass(const ClassDeclaration* classDecl)
     output_ << "};\n\n";
 }
 
-void CppCodeGenerator::GenerateClassFields(const ClassDeclaration* classDecl)
+void CppCodeGenerator::GenerateClassFields(const runtime::ClassDeclaration* classDecl)
 {
     Require(nullptr != classDecl);
 
     const auto& fields = classDecl->GetFields();
 
-    if (fields.empty() == true)
+    if (fields.GetCount() == 0)
     {
         // No user-defined fields (universal metadata inherited from Fabric)
         return;
@@ -420,10 +416,10 @@ void CppCodeGenerator::GenerateClassFields(const ClassDeclaration* classDecl)
         }
 
         // Get the base type
-        std::string cppType = MapType(field->GetType());
+        runtime::String cppType = MapType(field->GetType());
 
         // Get cardinality modifier
-        const CardinalityModifier* cardMod = field->GetCardinalityModifier();
+        const runtime::CardinalityModifier* cardMod = field->GetCardinalityModifier();
 
         // Determine if array or optional
         const bool isArray    = (nullptr != cardMod) && cardMod->IsArray() == true;
@@ -432,50 +428,50 @@ void CppCodeGenerator::GenerateClassFields(const ClassDeclaration* classDecl)
         // Arrays use std::vector (no wrapper)
         if (isArray == true)
         {
-            cppType = "std::vector<" + cppType + ">";
+            cppType = "runtime::Array<" + cppType + ">";
         }
         else
         {
             // Determine wrapper type for non-array fields
             // Check if field has invariants
-            const std::vector<const Invariant*> fieldInvariants = GetInvariantsForField(field->GetName(), classDecl);
-            const bool                          hasInvariants   = fieldInvariants.empty() == false;
+            const runtime::Array<const runtime::Invariant*> fieldInvariants = GetInvariantsForField(field->GetName(), classDecl);
+            const bool                                   hasInvariants   = fieldInvariants.GetCount() > 0;
 
-            const std::string className = ApplyClassPrefix(classDecl->GetName());
-            const std::string fieldName = field->GetName();
+            const runtime::String className = ApplyClassPrefix(classDecl->GetName());
+            const runtime::String fieldName = field->GetName();
 
             // Build template parameters
-            std::string templateParams = cppType; // Base type T
+            runtime::String templateParams = cppType; // Base type T
 
             // Add ParentT parameter
-            templateParams += ", " + className;
+            templateParams = templateParams + ", " + className;
 
             // Add checker functions if there are invariants
             if (hasInvariants == true)
             {
-                for (const Invariant* inv : fieldInvariants)
+                for (const runtime::Invariant* inv : fieldInvariants)
                 {
-                    templateParams += ", &" + className + "::Require_" + fieldName + "_" + inv->GetName();
+                    templateParams = templateParams + ", &" + className + "::Require_" + fieldName + "_" + inv->GetName();
                 }
             }
 
             // Choose wrapper based on invariants and optionality
-            std::string wrapperType;
+            runtime::String wrapperType;
             if (hasInvariants == true && isOptional == true)
             {
-                wrapperType = "bbfm::runtime::OptionalBoundedValue";
+                wrapperType = "runtime::OptionalBoundedValue";
             }
             else if (hasInvariants == true && isOptional == false)
             {
-                wrapperType = "bbfm::runtime::BoundedValue";
+                wrapperType = "runtime::BoundedValue";
             }
             else if (hasInvariants == false && isOptional == true)
             {
-                wrapperType = "bbfm::runtime::OptionalUnboundedValue";
+                wrapperType = "runtime::OptionalUnboundedValue";
             }
             else
             {
-                wrapperType = "bbfm::runtime::UnboundedValue";
+                wrapperType = "runtime::UnboundedValue";
             }
 
             cppType = wrapperType + "<" + templateParams + ">";
@@ -504,13 +500,13 @@ void CppCodeGenerator::GenerateClassFields(const ClassDeclaration* classDecl)
             continue;
         }
 
-        const std::string cppType   = MapType(field->GetType());
-        const std::string className = ApplyClassPrefix(classDecl->GetName());
-        const std::string fieldName = field->GetName();
+        const runtime::String cppType   = MapType(field->GetType());
+        const runtime::String className = ApplyClassPrefix(classDecl->GetName());
+        const runtime::String fieldName = field->GetName();
 
         // Use DynamicValue wrapper for computed fields
         WriteIndent(1);
-        output_ << "bbfm::runtime::DynamicValue<" << cppType << ", " << className << "> " << fieldName << "_;\n";
+        output_ << "runtime::DynamicValue<" << cppType << ", " << className << "> " << fieldName << "_;\n";
     }
 
     // Pass 3: Generate alias fields LAST (must come after their target fields)
@@ -521,50 +517,50 @@ void CppCodeGenerator::GenerateClassFields(const ClassDeclaration* classDecl)
             continue;
         }
 
-        // Get the target field name from the FieldReference expression
-        const Expression*     expr     = field->GetInitializer();
-        const FieldReference* fieldRef = dynamic_cast<const FieldReference*>(expr);
+        // Get the target field name from the runtime::FieldReference expression
+        const runtime::Expression*     expr     = field->GetInitializer();
+        const runtime::FieldReference* fieldRef = dynamic_cast<const runtime::FieldReference*>(expr);
         if (nullptr != fieldRef)
         {
-            const std::string targetFieldName = fieldRef->GetFieldName();
-            const std::string fieldName       = field->GetName();
+            const runtime::String targetFieldName = fieldRef->GetFieldName();
+            const runtime::String fieldName       = field->GetName();
 
             // Find the target field to determine its wrapper type
-            const Field* targetField = analyzer_->FindFieldInClass(classDecl, targetFieldName);
+            const runtime::Field* targetField = analyzer_->FindFieldInClass(classDecl, targetFieldName);
             if (nullptr != targetField)
             {
                 // Find which class actually declares this field (could be base class)
-                const ClassDeclaration* targetFieldClass = FindClassDeclaringField(classDecl, targetFieldName);
+                const runtime::ClassDeclaration* targetFieldClass = FindClassDeclaringField(classDecl, targetFieldName);
                 if (nullptr != targetFieldClass)
                 {
-                    const std::string targetWrapperType = GetFieldWrapperType(targetField, targetFieldClass);
+                    const runtime::String targetWrapperType = GetFieldWrapperType(targetField, targetFieldClass);
 
                     // Use AliasValue wrapper that forwards to target field
                     WriteIndent(1);
-                    output_ << "bbfm::runtime::AliasValue<" << targetWrapperType << "> " << fieldName << "_;\n";
+                    output_ << "runtime::AliasValue<" << targetWrapperType << "> " << fieldName << "_;\n";
                 }
             }
         }
     }
 }
 
-void CppCodeGenerator::GenerateGetter(const Field* field)
+void CppCodeGenerator::GenerateGetter(const runtime::Field* field)
 {
     Require(nullptr != field);
 
     // Get the C++ type
-    std::string cppType = MapType(field->GetType());
+    runtime::String cppType = MapType(field->GetType());
 
     // Get cardinality
-    const CardinalityModifier* cardMod    = field->GetCardinalityModifier();
-    const bool                 isArray    = (nullptr != cardMod) && cardMod->IsArray() == true;
-    const bool                 isOptional = (nullptr != cardMod) && cardMod->IsOptional() == true && isArray == false;
+    const runtime::CardinalityModifier* cardMod    = field->GetCardinalityModifier();
+    const bool                          isArray    = (nullptr != cardMod) && cardMod->IsArray() == true;
+    const bool                          isOptional = (nullptr != cardMod) && cardMod->IsOptional() == true && isArray == false;
 
     // Wrap type if needed
-    std::string fullType = cppType;
+    runtime::String fullType = cppType;
     if (isArray == true)
     {
-        fullType = "std::vector<" + cppType + ">";
+        fullType = "runtime::Array<" + cppType + ">";
     }
     else if (isOptional == true)
     {
@@ -572,12 +568,14 @@ void CppCodeGenerator::GenerateGetter(const Field* field)
     }
 
     // Generate getter method
-    std::string getterName = "Get" + field->GetName();
+    runtime::String getterName = "Get" + field->GetName();
 
     // Capitalize first letter of getter name
-    if (getterName.empty() == false)
+    if (getterName.IsEmpty() == false)
     {
-        getterName[3] = static_cast<char>(std::toupper(getterName[3]));
+        std::string getterNameMut = getterName.GetValue();
+        getterNameMut[3]          = static_cast<char>(std::toupper(getterNameMut[3]));
+        getterName                = runtime::String(getterNameMut);
     }
 
     WriteIndent(1);
@@ -608,9 +606,9 @@ void CppCodeGenerator::GenerateGetter(const Field* field)
     // Exception: return custom runtime types by reference too
     if (isPrimitive == true)
     {
-        const PrimitiveTypeSpec* primType = dynamic_cast<const PrimitiveTypeSpec*>(field->GetType());
-        const PrimitiveType      pt       = primType->GetType();
-        if (pt == PrimitiveType::STRING || pt == PrimitiveType::DATE || pt == PrimitiveType::GUID)
+        const runtime::PrimitiveTypeSpec* primType = dynamic_cast<const runtime::PrimitiveTypeSpec*>(field->GetType());
+        const runtime::PrimitiveType      pt       = primType->GetType();
+        if (pt == runtime::PrimitiveType::STRING || pt == runtime::PrimitiveType::DATE || pt == runtime::PrimitiveType::GUID)
         {
             returnByValue = false; // Return by reference for runtime types
         }
@@ -628,65 +626,65 @@ void CppCodeGenerator::GenerateGetter(const Field* field)
     output_ << "\n";
 }
 
-void CppCodeGenerator::GenerateComputedGetter(const Field* field)
+void CppCodeGenerator::GenerateComputedGetter(const runtime::Field* field)
 {
     // NOTE: This method is currently unused - computed fields use DynamicValue wrappers instead
     // Kept for potential future use or backwards compatibility
     UNREFERENCED_PARAMETER(field);
 }
 
-std::string CppCodeGenerator::ExpressionToCpp(
-    const Expression* expr, const std::string& objectPrefix, const std::string& fieldToReplace, const std::string& replacementValue,
-    const ClassDeclaration* contextClass) const
+runtime::String CppCodeGenerator::ExpressionToCpp(
+    const runtime::Expression* expr, const runtime::String& objectPrefix, const runtime::String& fieldToReplace, const runtime::String& replacementValue,
+    const runtime::ClassDeclaration* contextClass) const
 {
-    RequireReturn(nullptr != expr, std::string{});
+    RequireReturn(nullptr != expr, runtime::String{});
 
     // Handle binary expressions (arithmetic, comparison, logical)
-    if (const BinaryExpression* binExpr = dynamic_cast<const BinaryExpression*>(expr))
+    if (const runtime::BinaryExpression* binExpr = dynamic_cast<const runtime::BinaryExpression*>(expr))
     {
-        const std::string left  = ExpressionToCpp(binExpr->GetLeft(), objectPrefix, fieldToReplace, replacementValue, contextClass);
-        const std::string right = ExpressionToCpp(binExpr->GetRight(), objectPrefix, fieldToReplace, replacementValue, contextClass);
-        std::string       op;
+        const runtime::String left  = ExpressionToCpp(binExpr->GetLeft(), objectPrefix, fieldToReplace, replacementValue, contextClass);
+        const runtime::String right = ExpressionToCpp(binExpr->GetRight(), objectPrefix, fieldToReplace, replacementValue, contextClass);
+        runtime::String       op;
 
         switch (binExpr->GetOperator())
         {
-            case BinaryExpression::Op::ADD:
+            case runtime::BinaryExpression::Op::ADD:
                 op = " + ";
                 break;
-            case BinaryExpression::Op::SUB:
+            case runtime::BinaryExpression::Op::SUB:
                 op = " - ";
                 break;
-            case BinaryExpression::Op::MUL:
+            case runtime::BinaryExpression::Op::MUL:
                 op = " * ";
                 break;
-            case BinaryExpression::Op::DIV:
+            case runtime::BinaryExpression::Op::DIV:
                 op = " / ";
                 break;
-            case BinaryExpression::Op::MOD:
+            case runtime::BinaryExpression::Op::MOD:
                 op = " % ";
                 break;
-            case BinaryExpression::Op::LT:
+            case runtime::BinaryExpression::Op::LT:
                 op = " < ";
                 break;
-            case BinaryExpression::Op::GT:
+            case runtime::BinaryExpression::Op::GT:
                 op = " > ";
                 break;
-            case BinaryExpression::Op::LE:
+            case runtime::BinaryExpression::Op::LE:
                 op = " <= ";
                 break;
-            case BinaryExpression::Op::GE:
+            case runtime::BinaryExpression::Op::GE:
                 op = " >= ";
                 break;
-            case BinaryExpression::Op::EQ:
+            case runtime::BinaryExpression::Op::EQ:
                 op = " == ";
                 break;
-            case BinaryExpression::Op::NE:
+            case runtime::BinaryExpression::Op::NE:
                 op = " != ";
                 break;
-            case BinaryExpression::Op::AND:
+            case runtime::BinaryExpression::Op::AND:
                 op = " && ";
                 break;
-            case BinaryExpression::Op::OR:
+            case runtime::BinaryExpression::Op::OR:
                 op = " || ";
                 break;
             default:
@@ -698,17 +696,17 @@ std::string CppCodeGenerator::ExpressionToCpp(
     }
 
     // Handle unary expressions (negation, logical not)
-    if (const UnaryExpression* unaryExpr = dynamic_cast<const UnaryExpression*>(expr))
+    if (const runtime::UnaryExpression* unaryExpr = dynamic_cast<const runtime::UnaryExpression*>(expr))
     {
-        const std::string operand = ExpressionToCpp(unaryExpr->GetOperand(), objectPrefix, fieldToReplace, replacementValue, contextClass);
-        std::string       op;
+        const runtime::String operand = ExpressionToCpp(unaryExpr->GetOperand(), objectPrefix, fieldToReplace, replacementValue, contextClass);
+        runtime::String       op;
 
         switch (unaryExpr->GetOperator())
         {
-            case UnaryExpression::Op::NEG:
+            case runtime::UnaryExpression::Op::NEG:
                 op = "-";
                 break;
-            case UnaryExpression::Op::NOT:
+            case runtime::UnaryExpression::Op::NOT:
                 op = "!";
                 break;
             default:
@@ -720,24 +718,24 @@ std::string CppCodeGenerator::ExpressionToCpp(
     }
 
     // Handle field references
-    if (const FieldReference* fieldRef = dynamic_cast<const FieldReference*>(expr))
+    if (const runtime::FieldReference* fieldRef = dynamic_cast<const runtime::FieldReference*>(expr))
     {
-        const std::string fieldName = fieldRef->GetFieldName();
+        const runtime::String fieldName = fieldRef->GetFieldName();
 
         // Check if this field should be replaced with a different value
-        if (fieldToReplace.empty() == false && fieldName == fieldToReplace)
+        if (fieldToReplace.IsEmpty() == false && fieldName == fieldToReplace)
         {
             return replacementValue;
         }
 
-        // Field references become member variable access with underscore postfix
+        // runtime::Field references become member variable access with underscore postfix
         // Check if this field is computed (needs implicit conversion, no .value_)
         // or regular (needs .value_ accessor)
         bool isComputed = false;
         if (nullptr != contextClass && nullptr != analyzer_)
         {
             // Check if field exists and is computed or alias in the current class or base classes
-            const Field* field = analyzer_->FindFieldInClass(contextClass, fieldName);
+            const runtime::Field* field = analyzer_->FindFieldInClass(contextClass, fieldName);
             if (nullptr != field)
             {
                 isComputed = field->IsComputed() || field->IsAlias();
@@ -758,30 +756,32 @@ std::string CppCodeGenerator::ExpressionToCpp(
     }
 
     // Handle member access (object.field)
-    if (const MemberAccessExpression* memberAccess = dynamic_cast<const MemberAccessExpression*>(expr))
+    if (const runtime::MemberAccessExpression* memberAccess = dynamic_cast<const runtime::MemberAccessExpression*>(expr))
     {
-        const std::string object = ExpressionToCpp(memberAccess->GetObject(), objectPrefix, fieldToReplace, replacementValue, contextClass);
-        const std::string member = memberAccess->GetMemberName();
+        const runtime::String object = ExpressionToCpp(memberAccess->GetObject(), objectPrefix, fieldToReplace, replacementValue, contextClass);
+        const runtime::String member = memberAccess->GetMemberName();
 
         // Convert member access to getter call
         // Capitalize first letter for getter name
-        std::string getterName = "Get" + member;
-        if (getterName.empty() == false && getterName.length() > 3)
+        runtime::String getterName = "Get" + member;
+        if (getterName.IsEmpty() == false && getterName.GetLength() > 3)
         {
-            getterName[3] = static_cast<char>(std::toupper(getterName[3]));
+            std::string getterNameMut = getterName.GetValue();
+        getterNameMut[3]          = static_cast<char>(std::toupper(getterNameMut[3]));
+        getterName                = runtime::String(getterNameMut);
         }
 
         return object + "." + getterName + "()";
     }
 
     // Handle literals
-    if (const LiteralExpression* literal = dynamic_cast<const LiteralExpression*>(expr))
+    if (const runtime::LiteralExpression* literal = dynamic_cast<const runtime::LiteralExpression*>(expr))
     {
         return literal->ToString();
     }
 
     // Handle parenthesized expressions
-    if (const ParenthesizedExpression* parenExpr = dynamic_cast<const ParenthesizedExpression*>(expr))
+    if (const runtime::ParenthesizedExpression* parenExpr = dynamic_cast<const runtime::ParenthesizedExpression*>(expr))
     {
         return "(" + ExpressionToCpp(parenExpr->GetExpression(), objectPrefix, fieldToReplace, replacementValue, contextClass) + ")";
     }
@@ -790,13 +790,13 @@ std::string CppCodeGenerator::ExpressionToCpp(
     return "/* unknown expression */";
 }
 
-void CppCodeGenerator::GenerateInvariantMethods(const ClassDeclaration* classDecl)
+void CppCodeGenerator::GenerateInvariantMethods(const runtime::ClassDeclaration* classDecl)
 {
     Require(nullptr != classDecl);
 
     const auto& invariants = classDecl->GetInvariants();
 
-    if (invariants.empty())
+    if (invariants.GetCount() == 0)
     {
         return;
     }
@@ -863,11 +863,11 @@ void CppCodeGenerator::GenerateInvariantMethods(const ClassDeclaration* classDec
     output_ << "private:\n";
 }
 
-std::vector<const Invariant*> CppCodeGenerator::GetInvariantsForField(const std::string& fieldName, const ClassDeclaration* classDecl) const
+runtime::Array<const runtime::Invariant*> CppCodeGenerator::GetInvariantsForField(const runtime::String& fieldName, const runtime::ClassDeclaration* classDecl) const
 {
-    RequireReturn(fieldName.empty() == false, std::vector<const Invariant*>{});
+    RequireReturn(fieldName.IsEmpty() == false, runtime::Array<const runtime::Invariant*>{});
 
-    std::vector<const Invariant*> result;
+    runtime::Array<const runtime::Invariant*> result;
 
     if (nullptr == classDecl || nullptr == analyzer_)
     {
@@ -875,11 +875,11 @@ std::vector<const Invariant*> CppCodeGenerator::GetInvariantsForField(const std:
     }
 
     // Get all invariants including inherited ones
-    std::vector<const Invariant*> allInvariants;
+    runtime::Array<const runtime::Invariant*> allInvariants;
     analyzer_->GetAllInvariants(classDecl, allInvariants);
 
     // Check each invariant to see if it references this field
-    for (const Invariant* invariant : allInvariants)
+    for (const runtime::Invariant* invariant : allInvariants)
     {
         if (nullptr == invariant || nullptr == invariant->GetExpression())
         {
@@ -887,37 +887,38 @@ std::vector<const Invariant*> CppCodeGenerator::GetInvariantsForField(const std:
         }
 
         // Collect field references from the invariant expression
-        std::set<std::string> referencedFields;
+        std::set<runtime::String> referencedFields;
         analyzer_->CollectFieldReferences(invariant->GetExpression(), referencedFields);
 
         // If this field is referenced, add the invariant
         if (referencedFields.count(fieldName) != 0)
         {
-            result.push_back(invariant);
+            result.AddValue(invariant);
         }
     }
 
     return result;
 }
 
-void CppCodeGenerator::GenerateFieldChecker(const Field* field, const ClassDeclaration* classDecl, const std::vector<const Invariant*>& invariants)
+void CppCodeGenerator::GenerateFieldChecker(
+    const runtime::Field* field, const runtime::ClassDeclaration* classDecl, const runtime::Array<const runtime::Invariant*>& invariants)
 {
     Require(nullptr != field);
-    Require(invariants.empty() == false);
+    Require(invariants.GetCount() > 0);
 
-    std::string fieldName = field->GetName();
-    std::string cppType   = MapType(field->GetType());
+    runtime::String fieldName = field->GetName();
+    runtime::String cppType   = MapType(field->GetType());
 
     // Get cardinality
-    const CardinalityModifier* cardMod    = field->GetCardinalityModifier();
-    bool                       isArray    = (nullptr != cardMod) && cardMod->IsArray();
-    bool                       isOptional = (nullptr != cardMod) && cardMod->IsOptional() && !isArray;
+    const runtime::CardinalityModifier* cardMod    = field->GetCardinalityModifier();
+    bool                                isArray    = (nullptr != cardMod) && cardMod->IsArray();
+    bool                                isOptional = (nullptr != cardMod) && cardMod->IsOptional() && !isArray;
 
     // Wrap type if needed
-    std::string fullType = cppType;
+    runtime::String fullType = cppType;
     if (isArray)
     {
-        fullType = "std::vector<" + cppType + ">";
+        fullType = "runtime::Array<" + cppType + ">";
     }
     else if (isOptional)
     {
@@ -945,7 +946,7 @@ void CppCodeGenerator::GenerateFieldChecker(const Field* field, const ClassDecla
     // Check each invariant
     WriteIndent(2);
     output_ << "// Check invariants\n";
-    for (const Invariant* invariant : invariants)
+    for (const runtime::Invariant* invariant : invariants)
     {
         WriteIndent(2);
         output_ << "if (false == Check" << invariant->GetName() << "())\n";
@@ -961,9 +962,9 @@ void CppCodeGenerator::GenerateFieldChecker(const Field* field, const ClassDecla
         // Include the invariant condition expression
         if (nullptr != invariant->GetExpression())
         {
-            std::string exprStr = ExpressionToCpp(invariant->GetExpression(), "", "", "", classDecl);
+            runtime::String exprStr = ExpressionToCpp(invariant->GetExpression(), "", "", "", classDecl);
             // Escape quotes in the expression string
-            for (char c : exprStr)
+            for (char c : exprStr.GetValue())
             {
                 if ('\"' == c)
                 {
@@ -996,24 +997,24 @@ void CppCodeGenerator::GenerateFieldChecker(const Field* field, const ClassDecla
     output_ << "}\n\n";
 }
 
-void CppCodeGenerator::GenerateSetter(const Field* field, const ClassDeclaration* classDecl)
+void CppCodeGenerator::GenerateSetter(const runtime::Field* field, const runtime::ClassDeclaration* classDecl)
 {
     Require(nullptr != field);
     Require(nullptr != classDecl);
 
-    const std::string fieldName = field->GetName();
-    const std::string cppType   = MapType(field->GetType());
+    const runtime::String fieldName = field->GetName();
+    const runtime::String cppType   = MapType(field->GetType());
 
     // Get cardinality
-    const CardinalityModifier* cardMod    = field->GetCardinalityModifier();
-    const bool                 isArray    = (nullptr != cardMod) && cardMod->IsArray() == true;
-    const bool                 isOptional = (nullptr != cardMod) && cardMod->IsOptional() == true && isArray == false;
+    const runtime::CardinalityModifier* cardMod    = field->GetCardinalityModifier();
+    const bool                          isArray    = (nullptr != cardMod) && cardMod->IsArray() == true;
+    const bool                          isOptional = (nullptr != cardMod) && cardMod->IsOptional() == true && isArray == false;
 
     // Wrap type if needed
-    std::string fullType = cppType;
+    runtime::String fullType = cppType;
     if (isArray == true)
     {
-        fullType = "std::vector<" + cppType + ">";
+        fullType = "runtime::Array<" + cppType + ">";
     }
     else if (isOptional == true)
     {
@@ -1027,15 +1028,15 @@ void CppCodeGenerator::GenerateSetter(const Field* field, const ClassDeclaration
     // Exception: pass custom runtime types by reference too
     if (isPrimitive == true)
     {
-        const PrimitiveTypeSpec* primType = dynamic_cast<const PrimitiveTypeSpec*>(field->GetType());
-        const PrimitiveType      pt       = primType->GetType();
-        if (pt == PrimitiveType::STRING || pt == PrimitiveType::DATE || pt == PrimitiveType::GUID)
+        const runtime::PrimitiveTypeSpec* primType = dynamic_cast<const runtime::PrimitiveTypeSpec*>(field->GetType());
+        const runtime::PrimitiveType      pt       = primType->GetType();
+        if (pt == runtime::PrimitiveType::STRING || pt == runtime::PrimitiveType::DATE || pt == runtime::PrimitiveType::GUID)
         {
             passByValue = false; // Pass by reference for runtime types
         }
     }
 
-    std::string paramType;
+    runtime::String paramType;
     if (true == passByValue)
     {
         paramType = fullType;
@@ -1046,10 +1047,12 @@ void CppCodeGenerator::GenerateSetter(const Field* field, const ClassDeclaration
     }
 
     // Generate setter name
-    std::string setterName = "Set" + fieldName;
-    if (setterName.empty() == false && setterName.length() > 3)
+    runtime::String setterName = "Set" + fieldName;
+    if (setterName.IsEmpty() == false && setterName.GetLength() > 3)
     {
-        setterName[3] = static_cast<char>(std::toupper(setterName[3]));
+        std::string setterNameMut = setterName.GetValue();
+        setterNameMut[3]          = static_cast<char>(std::toupper(setterNameMut[3]));
+        setterName                = runtime::String(setterNameMut);
     }
 
     // Generate setter method
@@ -1063,9 +1066,9 @@ void CppCodeGenerator::GenerateSetter(const Field* field, const ClassDeclaration
     output_ << "{\n";
 
     // Get invariants for this field
-    const std::vector<const Invariant*> fieldInvariants = GetInvariantsForField(fieldName, classDecl);
+    const runtime::Array<const runtime::Invariant*> fieldInvariants = GetInvariantsForField(fieldName, classDecl);
 
-    if (fieldInvariants.empty() == false)
+    if (fieldInvariants.GetCount() > 0)
     {
         // Call checker function
         WriteIndent(2);
@@ -1086,19 +1089,19 @@ void CppCodeGenerator::GenerateSetter(const Field* field, const ClassDeclaration
     output_ << "}\n\n";
 }
 
-void CppCodeGenerator::GenerateUniversalMetadata(const ClassDeclaration* classDecl)
+void CppCodeGenerator::GenerateUniversalMetadata(const runtime::ClassDeclaration* classDecl)
 {
-    // Universal metadata fields are now inherited from bbfm::runtime::Fabric base class
+    // Universal metadata fields are now inherited from runtime::Fabric base class
     // This method is kept for future extensions but currently does nothing
     UNREFERENCED_PARAMETER(classDecl);
 }
 
-void CppCodeGenerator::GenerateConstructorImplementation(const ClassDeclaration* classDecl)
+void CppCodeGenerator::GenerateConstructorImplementation(const runtime::ClassDeclaration* classDecl)
 {
     Require(nullptr != classDecl);
 
     const auto&       fields    = classDecl->GetFields();
-    const std::string className = ApplyClassPrefix(classDecl->GetName());
+    const runtime::String className = ApplyClassPrefix(classDecl->GetName());
 
     // Generate inline constructor implementation with field initialization
     WriteIndent(1);
@@ -1113,11 +1116,11 @@ void CppCodeGenerator::GenerateConstructorImplementation(const ClassDeclaration*
         // Alias fields get initialized with reference to target field
         if (field->IsAlias() == true)
         {
-            const Expression*     expr     = field->GetInitializer();
-            const FieldReference* fieldRef = dynamic_cast<const FieldReference*>(expr);
+            const runtime::Expression*     expr     = field->GetInitializer();
+            const runtime::FieldReference* fieldRef = dynamic_cast<const runtime::FieldReference*>(expr);
             if (nullptr != fieldRef)
             {
-                const std::string targetFieldName = fieldRef->GetFieldName();
+                const runtime::String targetFieldName = fieldRef->GetFieldName();
                 if (true == firstInit)
                 {
                     WriteIndent(2);
@@ -1163,8 +1166,8 @@ void CppCodeGenerator::GenerateConstructorImplementation(const ClassDeclaration*
         }
 
         // Skip array fields (they don't use wrappers, default constructed)
-        const CardinalityModifier* cardMod = field->GetCardinalityModifier();
-        const bool                 isArray = (nullptr != cardMod) && cardMod->IsArray() == true;
+        const runtime::CardinalityModifier* cardMod = field->GetCardinalityModifier();
+        const bool                          isArray = (nullptr != cardMod) && cardMod->IsArray() == true;
         if (isArray == true)
         {
             continue;
@@ -1192,13 +1195,13 @@ void CppCodeGenerator::GenerateConstructorImplementation(const ClassDeclaration*
     output_ << "}\n\n";
 }
 
-void CppCodeGenerator::GenerateStaticCheckerFunctions(const ClassDeclaration* classDecl)
+void CppCodeGenerator::GenerateStaticCheckerFunctions(const runtime::ClassDeclaration* classDecl)
 {
     Require(nullptr != classDecl);
     Require(nullptr != analyzer_);
 
     const auto&       fields    = classDecl->GetFields();
-    const std::string className = ApplyClassPrefix(classDecl->GetName());
+    const runtime::String className = ApplyClassPrefix(classDecl->GetName());
 
     // Generate checker functions for each field that has invariants
     for (const auto& field : fields)
@@ -1210,31 +1213,31 @@ void CppCodeGenerator::GenerateStaticCheckerFunctions(const ClassDeclaration* cl
         }
 
         // Get invariants for this field
-        const std::vector<const Invariant*> fieldInvariants = GetInvariantsForField(field->GetName(), classDecl);
+        const runtime::Array<const runtime::Invariant*> fieldInvariants = GetInvariantsForField(field->GetName(), classDecl);
 
-        if (fieldInvariants.empty() == true)
+        if (fieldInvariants.GetCount() == 0)
         {
             continue;
         }
 
         // Generate a static checker function for each invariant that references this field
-        for (const Invariant* invariant : fieldInvariants)
+        for (const runtime::Invariant* invariant : fieldInvariants)
         {
             GenerateCheckerFunction(field.get(), invariant, classDecl);
         }
     }
 }
 
-void CppCodeGenerator::GenerateCheckerFunction(const Field* field, const Invariant* invariant, const ClassDeclaration* classDecl)
+void CppCodeGenerator::GenerateCheckerFunction(const runtime::Field* field, const runtime::Invariant* invariant, const runtime::ClassDeclaration* classDecl)
 {
     Require(nullptr != field);
     Require(nullptr != invariant);
     Require(nullptr != classDecl);
 
-    const std::string className     = ApplyClassPrefix(classDecl->GetName());
-    const std::string fieldName     = field->GetName();
-    const std::string invariantName = invariant->GetName();
-    const std::string cppType       = MapType(field->GetType());
+    const runtime::String className     = ApplyClassPrefix(classDecl->GetName());
+    const runtime::String fieldName     = field->GetName();
+    const runtime::String invariantName = invariant->GetName();
+    const runtime::String cppType       = MapType(field->GetType());
 
     // Generate documentation
     WriteIndent(1);
@@ -1269,9 +1272,9 @@ void CppCodeGenerator::GenerateCheckerFunction(const Field* field, const Invaria
     output_ << "}\n\n";
 }
 
-std::string CppCodeGenerator::ApplyClassPrefix(const std::string& name) const
+runtime::String CppCodeGenerator::ApplyClassPrefix(const runtime::String& name) const
 {
-    if (classPrefix_.empty() == true)
+    if (classPrefix_.IsEmpty() == true)
     {
         return name;
     }
@@ -1285,4 +1288,58 @@ void CppCodeGenerator::WriteIndent(const int level)
         output_ << "    "; // 4 spaces per indentation level
     }
 }
-} // namespace bbfm
+
+namespace {
+runtime::Array<runtime::String> CopyNamespaces(const GeneratorCreateContext* context)
+{
+    runtime::Array<runtime::String> namespaces;
+
+    if (nullptr == context || nullptr == context->namespaces)
+    {
+        return namespaces;
+    }
+
+    for (size_t i = 0; i < context->namespaceCount; ++i)
+    {
+        if (nullptr != context->namespaces[i])
+        {
+            namespaces.AddValue(runtime::String(context->namespaces[i]));
+        }
+    }
+
+    return namespaces;
+}
+} // namespace
+
+extern "C" PLUGIN_EXPORT runtime::CapabilitiesDictionary* GetCapabilities()
+{
+    auto* capabilities = new runtime::CapabilitiesDictionary();
+    capabilities->SetValue("ApiVersion", std::to_string(GENERATOR_PLUGIN_API_VERSION).c_str());
+    capabilities->SetValue("Language", "C++");
+    capabilities->SetValue("FileExtension", ".h");
+    capabilities->SetValue("Experimental", "false");
+    return capabilities;
+}
+
+extern "C" PLUGIN_EXPORT void DestroyCapabilities(runtime::CapabilitiesDictionary* capabilities)
+{
+    delete capabilities;
+}
+
+extern "C" PLUGIN_EXPORT runtime::ICodeGenerator* CreateGenerator(const GeneratorCreateContext* context)
+{
+    if (nullptr == context || nullptr == context->ast || nullptr == context->analyzer)
+    {
+        return nullptr;
+    }
+
+    const runtime::Array<runtime::String> namespaces  = CopyNamespaces(context);
+    const runtime::String              classPrefix = (nullptr != context->classPrefix) ? context->classPrefix : "";
+
+    return new CppCodeGenerator(context->ast, context->analyzer, namespaces, classPrefix);
+}
+
+extern "C" PLUGIN_EXPORT void DestroyGenerator(runtime::ICodeGenerator* generator)
+{
+    delete generator;
+}

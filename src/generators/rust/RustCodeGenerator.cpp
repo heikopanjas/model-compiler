@@ -1,25 +1,23 @@
 #include "RustCodeGenerator.h"
 #include "Console.h"
 #include "Contracts.h"
-#include <algorithm>
+#include "GeneratorPlugin.h"
 #include <cctype>
 #include <fstream>
 #include <functional>
-#include <iostream>
 
-namespace bbfm {
 RustCodeGenerator::RustCodeGenerator(
-    const AST* ast, const SemanticAnalyzer* analyzer, const std::vector<std::string>& namespaces, const std::string& classPrefix) :
-    CodeGenerator(ast, analyzer, namespaces, classPrefix)
+    const runtime::AST* ast, const runtime::SemanticAnalyzer* analyzer, const runtime::Array<runtime::String>& namespaces, const runtime::String& classPrefix) :
+    runtime::ICodeGenerator(ast, analyzer, namespaces, classPrefix)
 {
     BuildInheritanceMap();
 }
 
-bool RustCodeGenerator::Generate(const std::string& outputPath)
+bool RustCodeGenerator::Generate(const runtime::String& outputPath)
 {
     if (nullptr == ast_)
     {
-        ReportError("Cannot generate code from null AST");
+        ReportError("Cannot generate code from null runtime::AST");
         return false;
     }
 
@@ -32,11 +30,11 @@ bool RustCodeGenerator::Generate(const std::string& outputPath)
     const auto& declarations = ast_->GetDeclarations();
     for (const auto& decl : declarations)
     {
-        if (Declaration::Kind::ENUM == decl->GetKind())
+        if (runtime::Declaration::Kind::ENUM == decl->GetKind())
         {
             GenerateEnum(decl->AsEnum());
         }
-        else if (Declaration::Kind::CLASS == decl->GetKind())
+        else if (runtime::Declaration::Kind::CLASS == decl->GetKind())
         {
             GenerateClass(decl->AsClass());
         }
@@ -45,7 +43,7 @@ bool RustCodeGenerator::Generate(const std::string& outputPath)
     GenerateFileFooter();
 
     // Write to file
-    std::ofstream outFile(outputPath);
+    std::ofstream outFile(outputPath.GetValue());
     if (outFile.is_open() == false)
     {
         ReportError("Failed to open output file: " + outputPath);
@@ -59,56 +57,56 @@ bool RustCodeGenerator::Generate(const std::string& outputPath)
     return HasErrors() == false;
 }
 
-std::string RustCodeGenerator::GetFileExtension() const
+runtime::String RustCodeGenerator::GetFileExtension() const
 {
     return ".rs";
 }
 
-std::string RustCodeGenerator::GetLanguageName() const
+runtime::String RustCodeGenerator::GetLanguageName() const
 {
     return "Rust";
 }
 
-std::string RustCodeGenerator::MapPrimitiveType(PrimitiveType type) const
+runtime::String RustCodeGenerator::MapPrimitiveType(runtime::PrimitiveType type) const
 {
     switch (type)
     {
-        case PrimitiveType::STRING:
+        case runtime::PrimitiveType::STRING:
             return "String";
-        case PrimitiveType::INT:
+        case runtime::PrimitiveType::INT:
             return "i64";
-        case PrimitiveType::REAL:
+        case runtime::PrimitiveType::REAL:
             return "f64";
-        case PrimitiveType::BOOL:
+        case runtime::PrimitiveType::BOOL:
             return "bool";
-        case PrimitiveType::TIMESTAMP:
+        case runtime::PrimitiveType::TIMESTAMP:
             return "chrono::DateTime<chrono::Utc>";
-        case PrimitiveType::TIMESPAN:
+        case runtime::PrimitiveType::TIMESPAN:
             return "chrono::Duration";
-        case PrimitiveType::DATE:
+        case runtime::PrimitiveType::DATE:
             return "chrono::NaiveDate";
-        case PrimitiveType::GUID:
+        case runtime::PrimitiveType::GUID:
             return "uuid::Uuid";
         default:
             return "Unknown";
     }
 }
 
-std::string RustCodeGenerator::MapType(const TypeSpec* typeSpec, const CardinalityModifier* cardinality) const
+runtime::String RustCodeGenerator::MapType(const runtime::TypeSpec* typeSpec, const runtime::CardinalityModifier* cardinality) const
 {
-    RequireReturn(nullptr != typeSpec, std::string{"()"});
+    RequireReturn(nullptr != typeSpec, runtime::String{"()"});
 
-    std::string baseType;
+    runtime::String baseType;
 
     if (typeSpec->IsPrimitive())
     {
-        const PrimitiveTypeSpec* primType = dynamic_cast<const PrimitiveTypeSpec*>(typeSpec);
-        baseType                          = MapPrimitiveType(primType->GetType());
+        const runtime::PrimitiveTypeSpec* primType = dynamic_cast<const runtime::PrimitiveTypeSpec*>(typeSpec);
+        baseType                                   = MapPrimitiveType(primType->GetType());
     }
     else
     {
-        const UserDefinedTypeSpec* userType = dynamic_cast<const UserDefinedTypeSpec*>(typeSpec);
-        baseType                            = ApplyClassPrefix(userType->GetTypeName());
+        const runtime::UserDefinedTypeSpec* userType = dynamic_cast<const runtime::UserDefinedTypeSpec*>(typeSpec);
+        baseType                                     = ApplyClassPrefix(userType->GetTypeName());
     }
 
     // Handle optional
@@ -126,13 +124,13 @@ std::string RustCodeGenerator::MapType(const TypeSpec* typeSpec, const Cardinali
     return baseType;
 }
 
-void RustCodeGenerator::GenerateFileHeader(const std::string& filename)
+void RustCodeGenerator::GenerateFileHeader(const runtime::String& filename)
 {
     // Extract just the filename from path
-    const size_t      lastSlash    = filename.find_last_of("/\\");
-    const std::string justFilename = (lastSlash != std::string::npos) ? filename.substr(lastSlash + 1) : filename;
+    const size_t          lastSlash    = filename.GetValue().find_last_of("/\\");
+    const runtime::String justFilename = (lastSlash != std::string::npos) ? runtime::String(filename.GetValue().substr(lastSlash + 1)) : filename;
 
-    output_ << "// Generated by BBFM Model Compiler\n";
+    output_ << "// Generated by Model Compiler\n";
     output_ << "// Target: Rust 2024\n";
     output_ << "// Output: " << justFilename << "\n";
     output_ << "\n";
@@ -149,7 +147,7 @@ void RustCodeGenerator::GenerateFileHeader(const std::string& filename)
     output_ << "/// Validation error for invariant violations\n";
     output_ << "#[derive(Debug, Clone, PartialEq, Eq)]\n";
     output_ << "pub enum ValidationError {\n";
-    output_ << "    /// Invariant constraint was violated\n";
+    output_ << "    /// runtime::Invariant constraint was violated\n";
     output_ << "    InvariantViolation(&'static str),\n";
     output_ << "    /// Attempted to access/modify field on wrong enum variant\n";
     output_ << "    WrongVariant,\n";
@@ -157,7 +155,7 @@ void RustCodeGenerator::GenerateFileHeader(const std::string& filename)
     output_ << "\n";
 
     // Generate FabricMetadata
-    output_ << "/// Universal metadata fields present in all BBFM types\n";
+    output_ << "/// Universal metadata fields present in all model types\n";
     output_ << "#[derive(Debug, Clone, Serialize, Deserialize)]\n";
     output_ << "pub struct FabricMetadata {\n";
     output_ << "    /// Unique identifier for the type itself (same for all instances of a type)\n";
@@ -176,7 +174,7 @@ void RustCodeGenerator::GenerateFileHeader(const std::string& filename)
     output_ << "\n";
 
     // Open module namespace if specified
-    if (namespaces_.empty() == false)
+    if (namespaces_.GetCount() > 0)
     {
         for (const auto& ns : namespaces_)
         {
@@ -190,41 +188,41 @@ void RustCodeGenerator::GenerateFileHeader(const std::string& filename)
 void RustCodeGenerator::GenerateFileFooter()
 {
     // Close module namespaces
-    if (namespaces_.empty() == false)
+    if (namespaces_.GetCount() > 0)
     {
         output_ << "\n";
-        for (size_t i = 0; i < namespaces_.size(); ++i)
+        for (size_t i = 0; i < namespaces_.GetCount(); ++i)
         {
             output_ << "}\n";
         }
     }
 }
 
-void RustCodeGenerator::GenerateEnum(const EnumDeclaration* enumDecl)
+void RustCodeGenerator::GenerateEnum(const runtime::EnumDeclaration* enumDecl)
 {
-    const std::string enumName = ApplyClassPrefix(enumDecl->GetName());
+    const runtime::String enumName = ApplyClassPrefix(enumDecl->GetName());
 
-    WriteIndent(namespaces_.size());
+    WriteIndent(namespaces_.GetCount());
     output_ << "/// Enumeration: " << enumName << "\n";
-    WriteIndent(namespaces_.size());
+    WriteIndent(namespaces_.GetCount());
     output_ << "#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]\n";
-    WriteIndent(namespaces_.size());
+    WriteIndent(namespaces_.GetCount());
     output_ << "pub enum " << enumName << " {\n";
 
     for (const auto& value : enumDecl->GetValues())
     {
-        WriteIndent(namespaces_.size() + 1);
+        WriteIndent(namespaces_.GetCount() + 1);
         output_ << value << ",\n";
     }
 
-    WriteIndent(namespaces_.size());
+    WriteIndent(namespaces_.GetCount());
     output_ << "}\n";
     output_ << "\n";
 }
 
-void RustCodeGenerator::GenerateClass(const ClassDeclaration* classDecl)
+void RustCodeGenerator::GenerateClass(const runtime::ClassDeclaration* classDecl)
 {
-    const std::string className = classDecl->GetName();
+    const runtime::String className = classDecl->GetName();
 
     // If this class is a base class (has derived classes), generate enum
     if (IsBaseClass(className) == true)
@@ -234,7 +232,7 @@ void RustCodeGenerator::GenerateClass(const ClassDeclaration* classDecl)
     }
 
     // If this class inherits from another, it will be generated as part of the base enum
-    if (classDecl->GetBaseType().empty() == false)
+    if (classDecl->GetBaseType().IsEmpty() == false)
     {
         return; // Skip - handled by base class enum generation
     }
@@ -244,35 +242,40 @@ void RustCodeGenerator::GenerateClass(const ClassDeclaration* classDecl)
     GenerateImpl(classDecl);
 }
 
-void RustCodeGenerator::GenerateInheritedEnum(const ClassDeclaration* baseClass)
+void RustCodeGenerator::GenerateInheritedEnum(const runtime::ClassDeclaration* baseClass)
 {
-    const std::string baseName = ApplyClassPrefix(baseClass->GetName());
+    const runtime::String baseName = ApplyClassPrefix(baseClass->GetName());
 
     // Generate base struct for shared fields
     GenerateBaseStruct(baseClass);
 
     // Generate enum with variants
-    WriteIndent(namespaces_.size());
+    WriteIndent(namespaces_.GetCount());
     output_ << "/// Enum for " << baseName << " hierarchy\n";
-    WriteIndent(namespaces_.size());
+    WriteIndent(namespaces_.GetCount());
     output_ << "#[derive(Debug, Clone, Serialize, Deserialize)]\n";
-    WriteIndent(namespaces_.size());
+    WriteIndent(namespaces_.GetCount());
     output_ << "pub enum " << baseName << " {\n";
 
     // Generate variant for each derived class
-    const auto& derived = derivedClasses_[baseClass->GetName()];
-    for (const auto* derivedClass : derived)
+    const runtime::Array<const runtime::ClassDeclaration*>* derived = derivedClasses_.GetValuePtr(baseClass->GetName());
+    if (nullptr == derived)
     {
-        std::string variantName = ApplyClassPrefix(derivedClass->GetName());
+        return;
+    }
+
+    for (const auto* derivedClass : *derived)
+    {
+        runtime::String variantName = ApplyClassPrefix(derivedClass->GetName());
         // Remove base name prefix if present (AudioAsset -> Audio if base is Asset)
-        if (variantName.length() > baseName.length() && variantName.compare(0, baseName.length(), baseName) == 0)
+        if (variantName.GetLength() > baseName.GetLength() && variantName.GetValue().compare(0, baseName.GetLength(), baseName.GetValue()) == 0)
         {
-            variantName = variantName.substr(baseName.length());
+            variantName = runtime::String(variantName.GetValue().substr(baseName.GetLength()));
         }
 
-        WriteIndent(namespaces_.size() + 1);
+        WriteIndent(namespaces_.GetCount() + 1);
         output_ << variantName << " {\n";
-        WriteIndent(namespaces_.size() + 2);
+        WriteIndent(namespaces_.GetCount() + 2);
         output_ << "base: " << baseName << "Fields,\n";
 
         // Add derived class fields
@@ -283,15 +286,15 @@ void RustCodeGenerator::GenerateInheritedEnum(const ClassDeclaration* baseClass)
                 continue; // Skip computed and alias fields
             }
 
-            WriteIndent(namespaces_.size() + 2);
+            WriteIndent(namespaces_.GetCount() + 2);
             output_ << ToSnakeCase(field->GetName()) << ": " << MapType(field->GetType(), field->GetCardinalityModifier()) << ",\n";
         }
 
-        WriteIndent(namespaces_.size() + 1);
+        WriteIndent(namespaces_.GetCount() + 1);
         output_ << "},\n";
     }
 
-    WriteIndent(namespaces_.size());
+    WriteIndent(namespaces_.GetCount());
     output_ << "}\n";
     output_ << "\n";
 
@@ -299,18 +302,18 @@ void RustCodeGenerator::GenerateInheritedEnum(const ClassDeclaration* baseClass)
     GenerateInheritedEnumImpl(baseClass);
 }
 
-void RustCodeGenerator::GenerateBaseStruct(const ClassDeclaration* baseClass)
+void RustCodeGenerator::GenerateBaseStruct(const runtime::ClassDeclaration* baseClass)
 {
-    const std::string baseName = ApplyClassPrefix(baseClass->GetName());
+    const runtime::String baseName = ApplyClassPrefix(baseClass->GetName());
 
-    WriteIndent(namespaces_.size());
+    WriteIndent(namespaces_.GetCount());
     output_ << "/// Base fields for " << baseName << "\n";
-    WriteIndent(namespaces_.size());
+    WriteIndent(namespaces_.GetCount());
     output_ << "#[derive(Debug, Clone, Serialize, Deserialize)]\n";
-    WriteIndent(namespaces_.size());
+    WriteIndent(namespaces_.GetCount());
     output_ << "pub struct " << baseName << "Fields {\n";
 
-    WriteIndent(namespaces_.size() + 1);
+    WriteIndent(namespaces_.GetCount() + 1);
     output_ << "pub metadata: FabricMetadata,\n";
 
     for (const auto& field : baseClass->GetFields())
@@ -320,28 +323,28 @@ void RustCodeGenerator::GenerateBaseStruct(const ClassDeclaration* baseClass)
             continue; // Skip computed and alias fields
         }
 
-        WriteIndent(namespaces_.size() + 1);
+        WriteIndent(namespaces_.GetCount() + 1);
         output_ << "pub " << ToSnakeCase(field->GetName()) << ": " << MapType(field->GetType(), field->GetCardinalityModifier()) << ",\n";
     }
 
-    WriteIndent(namespaces_.size());
+    WriteIndent(namespaces_.GetCount());
     output_ << "}\n";
     output_ << "\n";
 }
 
-void RustCodeGenerator::GenerateStruct(const ClassDeclaration* classDecl)
+void RustCodeGenerator::GenerateStruct(const runtime::ClassDeclaration* classDecl)
 {
-    const std::string className = ApplyClassPrefix(classDecl->GetName());
+    const runtime::String className = ApplyClassPrefix(classDecl->GetName());
 
-    WriteIndent(namespaces_.size());
+    WriteIndent(namespaces_.GetCount());
     output_ << "/// Class: " << className << "\n";
-    WriteIndent(namespaces_.size());
+    WriteIndent(namespaces_.GetCount());
     output_ << "#[derive(Debug, Clone, Serialize, Deserialize)]\n";
-    WriteIndent(namespaces_.size());
+    WriteIndent(namespaces_.GetCount());
     output_ << "pub struct " << className << " {\n";
 
     // Universal metadata
-    WriteIndent(namespaces_.size() + 1);
+    WriteIndent(namespaces_.GetCount() + 1);
     output_ << "pub metadata: FabricMetadata,\n";
 
     // Fields
@@ -352,20 +355,20 @@ void RustCodeGenerator::GenerateStruct(const ClassDeclaration* classDecl)
             continue; // Skip computed and alias fields (they become methods)
         }
 
-        WriteIndent(namespaces_.size() + 1);
+        WriteIndent(namespaces_.GetCount() + 1);
         output_ << "pub " << ToSnakeCase(field->GetName()) << ": " << MapType(field->GetType(), field->GetCardinalityModifier()) << ",\n";
     }
 
-    WriteIndent(namespaces_.size());
+    WriteIndent(namespaces_.GetCount());
     output_ << "}\n";
     output_ << "\n";
 }
 
-void RustCodeGenerator::GenerateImpl(const ClassDeclaration* classDecl)
+void RustCodeGenerator::GenerateImpl(const runtime::ClassDeclaration* classDecl)
 {
-    const std::string className = ApplyClassPrefix(classDecl->GetName());
+    const runtime::String className = ApplyClassPrefix(classDecl->GetName());
 
-    WriteIndent(namespaces_.size());
+    WriteIndent(namespaces_.GetCount());
     output_ << "impl " << className << " {\n";
 
     // Generate getters
@@ -392,24 +395,28 @@ void RustCodeGenerator::GenerateImpl(const ClassDeclaration* classDecl)
         if (field->IsComputed() == false && field->IsAlias() == false)
         {
             const auto invariants = GetInvariantsForField(field->GetName(), classDecl);
-            if (invariants.empty() == false)
+            if (invariants.GetCount() > 0)
             {
                 GenerateSetter(field.get(), classDecl, false);
             }
         }
     }
 
-    WriteIndent(namespaces_.size());
+    WriteIndent(namespaces_.GetCount());
     output_ << "}\n";
     output_ << "\n";
 }
 
-void RustCodeGenerator::GenerateInheritedEnumImpl(const ClassDeclaration* baseClass)
+void RustCodeGenerator::GenerateInheritedEnumImpl(const runtime::ClassDeclaration* baseClass)
 {
-    const std::string baseName = ApplyClassPrefix(baseClass->GetName());
-    const auto&       derived  = derivedClasses_[baseClass->GetName()];
+    const runtime::String                                   baseName = ApplyClassPrefix(baseClass->GetName());
+    const runtime::Array<const runtime::ClassDeclaration*>* derived  = derivedClasses_.GetValuePtr(baseClass->GetName());
+    if (nullptr == derived)
+    {
+        return;
+    }
 
-    WriteIndent(namespaces_.size());
+    WriteIndent(namespaces_.GetCount());
     output_ << "impl " << baseName << " {\n";
 
     // Generate getters for base fields
@@ -431,12 +438,12 @@ void RustCodeGenerator::GenerateInheritedEnumImpl(const ClassDeclaration* baseCl
     }
 
     // Generate getters and setters for derived fields
-    for (const auto* derivedClass : derived)
+    for (const auto* derivedClass : *derived)
     {
-        std::string variantName = ApplyClassPrefix(derivedClass->GetName());
-        if (variantName.length() > baseName.length() && variantName.compare(0, baseName.length(), baseName) == 0)
+        runtime::String variantName = ApplyClassPrefix(derivedClass->GetName());
+        if (variantName.GetLength() > baseName.GetLength() && variantName.GetValue().compare(0, baseName.GetLength(), baseName.GetValue()) == 0)
         {
-            variantName = variantName.substr(baseName.length());
+            variantName = runtime::String(variantName.GetValue().substr(baseName.GetLength()));
         }
 
         for (const auto& field : derivedClass->GetFields())
@@ -449,62 +456,62 @@ void RustCodeGenerator::GenerateInheritedEnumImpl(const ClassDeclaration* baseCl
             if (field->IsComputed() == true)
             {
                 // Computed getter for variant-specific field
-                WriteIndent(namespaces_.size() + 1);
+                WriteIndent(namespaces_.GetCount() + 1);
                 output_ << "/// Get computed field: " << field->GetName() << " (variant: " << variantName << ")\n";
-                WriteIndent(namespaces_.size() + 1);
+                WriteIndent(namespaces_.GetCount() + 1);
                 output_ << "pub fn " << ToSnakeCase(field->GetName()) << "(&self) -> Option<";
-                const PrimitiveTypeSpec* primType = dynamic_cast<const PrimitiveTypeSpec*>(field->GetType());
+                const runtime::PrimitiveTypeSpec* primType = dynamic_cast<const runtime::PrimitiveTypeSpec*>(field->GetType());
                 output_ << MapPrimitiveType(primType->GetType()) << "> {\n";
-                WriteIndent(namespaces_.size() + 2);
+                WriteIndent(namespaces_.GetCount() + 2);
                 output_ << "if let " << baseName << "::" << variantName << " { ";
 
                 // List all fields needed for the expression
-                std::vector<std::string> fieldRefs;
+                runtime::Array<runtime::String> fieldRefs;
                 for (const auto& f : derivedClass->GetFields())
                 {
                     if (f->IsComputed() == false && f->IsAlias() == false)
                     {
-                        fieldRefs.push_back(ToSnakeCase(f->GetName()));
+                        fieldRefs.AddValue(ToSnakeCase(f->GetName()));
                     }
                 }
                 for (const auto& f : baseClass->GetFields())
                 {
                     if (f->IsComputed() == false && f->IsAlias() == false)
                     {
-                        fieldRefs.push_back(ToSnakeCase(f->GetName()));
+                        fieldRefs.AddValue(ToSnakeCase(f->GetName()));
                     }
                 }
 
                 output_ << "base, ";
-                for (size_t i = 0; i < fieldRefs.size(); ++i)
+                for (size_t i = 0; i < fieldRefs.GetCount(); ++i)
                 {
-                    output_ << fieldRefs[i];
-                    if (i < fieldRefs.size() - 1)
+                    output_ << fieldRefs.GetValueAt(i);
+                    if (i + 1 < fieldRefs.GetCount())
                     {
                         output_ << ", ";
                     }
                 }
                 output_ << ", .. } = self {\n";
-                WriteIndent(namespaces_.size() + 3);
+                WriteIndent(namespaces_.GetCount() + 3);
                 output_ << "Some(" << ExpressionToRust(field->GetInitializer(), "") << ")\n";
-                WriteIndent(namespaces_.size() + 2);
+                WriteIndent(namespaces_.GetCount() + 2);
                 output_ << "} else {\n";
-                WriteIndent(namespaces_.size() + 3);
+                WriteIndent(namespaces_.GetCount() + 3);
                 output_ << "None\n";
-                WriteIndent(namespaces_.size() + 2);
+                WriteIndent(namespaces_.GetCount() + 2);
                 output_ << "}\n";
-                WriteIndent(namespaces_.size() + 1);
+                WriteIndent(namespaces_.GetCount() + 1);
                 output_ << "}\n";
                 output_ << "\n";
             }
             else
             {
                 // Regular getter
-                WriteIndent(namespaces_.size() + 1);
+                WriteIndent(namespaces_.GetCount() + 1);
                 output_ << "/// Get field: " << field->GetName() << " (variant: " << variantName << ")\n";
-                WriteIndent(namespaces_.size() + 1);
-                const std::string rustType = MapType(field->GetType(), field->GetCardinalityModifier());
-                const bool        needsRef = (rustType.find("String") != std::string::npos || rustType.find("Vec<") != std::string::npos);
+                WriteIndent(namespaces_.GetCount() + 1);
+                const runtime::String rustType = MapType(field->GetType(), field->GetCardinalityModifier());
+                const bool needsRef = (rustType.GetValue().find("String") != std::string::npos || rustType.GetValue().find("Vec<") != std::string::npos);
                 output_ << "pub fn " << ToSnakeCase(field->GetName()) << "(&self) -> Option<";
                 if (needsRef == true)
                 {
@@ -515,9 +522,9 @@ void RustCodeGenerator::GenerateInheritedEnumImpl(const ClassDeclaration* baseCl
                     output_ << rustType;
                 }
                 output_ << "> {\n";
-                WriteIndent(namespaces_.size() + 2);
+                WriteIndent(namespaces_.GetCount() + 2);
                 output_ << "if let " << baseName << "::" << variantName << " { " << ToSnakeCase(field->GetName()) << ", .. } = self {\n";
-                WriteIndent(namespaces_.size() + 3);
+                WriteIndent(namespaces_.GetCount() + 3);
                 if (needsRef == true)
                 {
                     output_ << "Some(" << ToSnakeCase(field->GetName()) << ")\n";
@@ -526,42 +533,42 @@ void RustCodeGenerator::GenerateInheritedEnumImpl(const ClassDeclaration* baseCl
                 {
                     output_ << "Some(*" << ToSnakeCase(field->GetName()) << ")\n";
                 }
-                WriteIndent(namespaces_.size() + 2);
+                WriteIndent(namespaces_.GetCount() + 2);
                 output_ << "} else {\n";
-                WriteIndent(namespaces_.size() + 3);
+                WriteIndent(namespaces_.GetCount() + 3);
                 output_ << "None\n";
-                WriteIndent(namespaces_.size() + 2);
+                WriteIndent(namespaces_.GetCount() + 2);
                 output_ << "}\n";
-                WriteIndent(namespaces_.size() + 1);
+                WriteIndent(namespaces_.GetCount() + 1);
                 output_ << "}\n";
                 output_ << "\n";
             }
 
             // Setter if field has invariants
             const auto invariants = GetInvariantsForField(field->GetName(), derivedClass);
-            if (invariants.empty() == false && field->IsComputed() == false)
+            if (invariants.GetCount() > 0 && field->IsComputed() == false)
             {
                 GenerateSetter(field.get(), derivedClass, true);
             }
         }
     }
 
-    WriteIndent(namespaces_.size());
+    WriteIndent(namespaces_.GetCount());
     output_ << "}\n";
     output_ << "\n";
 }
 
-void RustCodeGenerator::GenerateGetter(const Field* field, const std::string& className, bool isInEnum)
+void RustCodeGenerator::GenerateGetter(const runtime::Field* field, const runtime::String& className, bool isInEnum)
 {
     Require(nullptr != field);
 
-    const std::string fieldName = ToSnakeCase(field->GetName());
-    const std::string rustType  = MapType(field->GetType(), field->GetCardinalityModifier());
-    const bool        needsRef  = (rustType.find("String") != std::string::npos || rustType.find("Vec<") != std::string::npos);
+    const runtime::String fieldName = ToSnakeCase(field->GetName());
+    const runtime::String rustType  = MapType(field->GetType(), field->GetCardinalityModifier());
+    const bool            needsRef  = (rustType.GetValue().find("String") != std::string::npos || rustType.GetValue().find("Vec<") != std::string::npos);
 
-    WriteIndent(namespaces_.size() + 1);
+    WriteIndent(namespaces_.GetCount() + 1);
     output_ << "/// Get field: " << field->GetName() << "\n";
-    WriteIndent(namespaces_.size() + 1);
+    WriteIndent(namespaces_.GetCount() + 1);
     output_ << "pub fn " << fieldName << "(&self) -> ";
 
     if (true == isInEnum)
@@ -575,22 +582,27 @@ void RustCodeGenerator::GenerateGetter(const Field* field, const std::string& cl
             output_ << rustType;
         }
         output_ << " {\n";
-        WriteIndent(namespaces_.size() + 2);
+        WriteIndent(namespaces_.GetCount() + 2);
         output_ << "match self {\n";
 
         // Generate match arms for all variants
-        const auto& derived = derivedClasses_[className];
-        for (size_t i = 0; i < derived.size(); ++i)
+        const runtime::Array<const runtime::ClassDeclaration*>* derived = derivedClasses_.GetValuePtr(className);
+        if (nullptr == derived)
         {
-            std::string variantName = ApplyClassPrefix(derived[i]->GetName());
-            if (variantName.length() > className.length() && variantName.compare(0, className.length(), className) == 0)
+            return;
+        }
+
+        for (size_t i = 0; i < derived->GetCount(); ++i)
+        {
+            runtime::String variantName = ApplyClassPrefix(derived->GetValueAt(i)->GetName());
+            if (variantName.GetLength() > className.GetLength() && variantName.GetValue().compare(0, className.GetLength(), className.GetValue()) == 0)
             {
-                variantName = variantName.substr(className.length());
+                variantName = runtime::String(variantName.GetValue().substr(className.GetLength()));
             }
 
-            WriteIndent(namespaces_.size() + 3);
+            WriteIndent(namespaces_.GetCount() + 3);
             output_ << className << "::" << variantName << " { base, .. }";
-            if (i < derived.size() - 1)
+            if (i < derived->GetCount() - 1)
             {
                 output_ << " |\n";
             }
@@ -608,7 +620,7 @@ void RustCodeGenerator::GenerateGetter(const Field* field, const std::string& cl
             }
         }
 
-        WriteIndent(namespaces_.size() + 2);
+        WriteIndent(namespaces_.GetCount() + 2);
         output_ << "}\n";
     }
     else
@@ -616,138 +628,143 @@ void RustCodeGenerator::GenerateGetter(const Field* field, const std::string& cl
         if (needsRef == true)
         {
             output_ << "&" << rustType << " {\n";
-            WriteIndent(namespaces_.size() + 2);
+            WriteIndent(namespaces_.GetCount() + 2);
             output_ << "&self." << fieldName << "\n";
         }
         else
         {
             output_ << rustType << " {\n";
-            WriteIndent(namespaces_.size() + 2);
+            WriteIndent(namespaces_.GetCount() + 2);
             output_ << "self." << fieldName << "\n";
         }
     }
 
-    WriteIndent(namespaces_.size() + 1);
+    WriteIndent(namespaces_.GetCount() + 1);
     output_ << "}\n";
     output_ << "\n";
 }
 
-void RustCodeGenerator::GenerateSetter(const Field* field, const ClassDeclaration* classDecl, bool isInEnum)
+void RustCodeGenerator::GenerateSetter(const runtime::Field* field, const runtime::ClassDeclaration* classDecl, bool isInEnum)
 {
     Require(nullptr != field);
     Require(nullptr != classDecl);
 
-    const std::string fieldName  = ToSnakeCase(field->GetName());
-    const std::string className  = ApplyClassPrefix(classDecl->GetName());
-    const std::string rustType   = MapType(field->GetType(), field->GetCardinalityModifier());
-    const auto        invariants = GetInvariantsForField(field->GetName(), classDecl);
+    const runtime::String fieldName  = ToSnakeCase(field->GetName());
+    const runtime::String className  = ApplyClassPrefix(classDecl->GetName());
+    const runtime::String rustType   = MapType(field->GetType(), field->GetCardinalityModifier());
+    const auto            invariants = GetInvariantsForField(field->GetName(), classDecl);
 
-    WriteIndent(namespaces_.size() + 1);
+    WriteIndent(namespaces_.GetCount() + 1);
     output_ << "/// Set field: " << field->GetName() << " (validates invariants)\n";
-    WriteIndent(namespaces_.size() + 1);
+    WriteIndent(namespaces_.GetCount() + 1);
     output_ << "pub fn set_" << fieldName << "(&mut self, value: " << rustType << ") -> Result<(), ValidationError> {\n";
 
     if (true == isInEnum)
     {
         // For enum variants, need to match and update
-        const std::string baseName    = classDecl->GetBaseType();
-        std::string       variantName = className;
-        if (variantName.length() > baseName.length() && variantName.compare(0, baseName.length(), baseName) == 0)
+        const runtime::String baseName    = classDecl->GetBaseType();
+        runtime::String       variantName = className;
+        if (variantName.GetLength() > baseName.GetLength() && variantName.GetValue().compare(0, baseName.GetLength(), baseName.GetValue()) == 0)
         {
-            variantName = variantName.substr(baseName.length());
+            variantName = runtime::String(variantName.GetValue().substr(baseName.GetLength()));
         }
 
-        WriteIndent(namespaces_.size() + 2);
+        WriteIndent(namespaces_.GetCount() + 2);
         output_ << "if let " << ApplyClassPrefix(baseName) << "::" << variantName << " { " << fieldName << ", .. } = self {\n";
-        WriteIndent(namespaces_.size() + 3);
+        WriteIndent(namespaces_.GetCount() + 3);
         output_ << "let old_value = " << fieldName << ".clone();\n";
-        WriteIndent(namespaces_.size() + 3);
+        WriteIndent(namespaces_.GetCount() + 3);
         output_ << "*" << fieldName << " = value;\n";
 
         // Check invariants
         for (const auto* inv : invariants)
         {
-            WriteIndent(namespaces_.size() + 3);
+            WriteIndent(namespaces_.GetCount() + 3);
             output_ << "if !(" << ExpressionToRust(inv->GetExpression(), "*") << ") {\n";
-            WriteIndent(namespaces_.size() + 4);
+            WriteIndent(namespaces_.GetCount() + 4);
             output_ << "*" << fieldName << " = old_value;\n";
-            WriteIndent(namespaces_.size() + 4);
+            WriteIndent(namespaces_.GetCount() + 4);
             output_ << "return Err(ValidationError::InvariantViolation(\"" << inv->GetName() << "\"));\n";
-            WriteIndent(namespaces_.size() + 3);
+            WriteIndent(namespaces_.GetCount() + 3);
             output_ << "}\n";
         }
 
-        WriteIndent(namespaces_.size() + 3);
+        WriteIndent(namespaces_.GetCount() + 3);
         output_ << "Ok(())\n";
-        WriteIndent(namespaces_.size() + 2);
+        WriteIndent(namespaces_.GetCount() + 2);
         output_ << "} else {\n";
-        WriteIndent(namespaces_.size() + 3);
+        WriteIndent(namespaces_.GetCount() + 3);
         output_ << "Err(ValidationError::WrongVariant)\n";
-        WriteIndent(namespaces_.size() + 2);
+        WriteIndent(namespaces_.GetCount() + 2);
         output_ << "}\n";
     }
     else
     {
-        WriteIndent(namespaces_.size() + 2);
+        WriteIndent(namespaces_.GetCount() + 2);
         output_ << "let old_value = self." << fieldName << ".clone();\n";
-        WriteIndent(namespaces_.size() + 2);
+        WriteIndent(namespaces_.GetCount() + 2);
         output_ << "self." << fieldName << " = value;\n";
 
         // Check invariants
         for (const auto* inv : invariants)
         {
-            WriteIndent(namespaces_.size() + 2);
+            WriteIndent(namespaces_.GetCount() + 2);
             output_ << "if !(";
             output_ << ExpressionToRust(inv->GetExpression()) << ") {\n";
-            WriteIndent(namespaces_.size() + 3);
+            WriteIndent(namespaces_.GetCount() + 3);
             output_ << "self." << fieldName << " = old_value;\n";
-            WriteIndent(namespaces_.size() + 3);
+            WriteIndent(namespaces_.GetCount() + 3);
             output_ << "return Err(ValidationError::InvariantViolation(\"" << inv->GetName() << "\"));\n";
-            WriteIndent(namespaces_.size() + 2);
+            WriteIndent(namespaces_.GetCount() + 2);
             output_ << "}\n";
         }
 
-        WriteIndent(namespaces_.size() + 2);
+        WriteIndent(namespaces_.GetCount() + 2);
         output_ << "Ok(())\n";
     }
 
-    WriteIndent(namespaces_.size() + 1);
+    WriteIndent(namespaces_.GetCount() + 1);
     output_ << "}\n";
     output_ << "\n";
 }
 
-void RustCodeGenerator::GenerateComputedGetter(const Field* field, const ClassDeclaration* classDecl, bool isInEnum)
+void RustCodeGenerator::GenerateComputedGetter(const runtime::Field* field, const runtime::ClassDeclaration* classDecl, bool isInEnum)
 {
     Require(nullptr != field);
     Require(nullptr != classDecl);
 
-    const std::string        fieldName = ToSnakeCase(field->GetName());
-    const PrimitiveTypeSpec* primType  = dynamic_cast<const PrimitiveTypeSpec*>(field->GetType());
-    const std::string        rustType  = MapPrimitiveType(primType->GetType());
+    const runtime::String             fieldName = ToSnakeCase(field->GetName());
+    const runtime::PrimitiveTypeSpec* primType  = dynamic_cast<const runtime::PrimitiveTypeSpec*>(field->GetType());
+    const runtime::String             rustType  = MapPrimitiveType(primType->GetType());
 
-    WriteIndent(namespaces_.size() + 1);
+    WriteIndent(namespaces_.GetCount() + 1);
     output_ << "/// Computed field: " << field->GetName() << "\n";
-    WriteIndent(namespaces_.size() + 1);
+    WriteIndent(namespaces_.GetCount() + 1);
     output_ << "pub fn " << fieldName << "(&self) -> " << rustType << " {\n";
 
     if (true == isInEnum)
     {
-        WriteIndent(namespaces_.size() + 2);
+        WriteIndent(namespaces_.GetCount() + 2);
         output_ << "match self {\n";
 
-        const std::string className = ApplyClassPrefix(classDecl->GetName());
-        const auto&       derived   = derivedClasses_[classDecl->GetName()];
-        for (size_t i = 0; i < derived.size(); ++i)
+        const runtime::String                                   className = ApplyClassPrefix(classDecl->GetName());
+        const runtime::Array<const runtime::ClassDeclaration*>* derived   = derivedClasses_.GetValuePtr(classDecl->GetName());
+        if (nullptr == derived)
         {
-            std::string variantName = ApplyClassPrefix(derived[i]->GetName());
-            if (variantName.length() > className.length() && variantName.compare(0, className.length(), className) == 0)
+            return;
+        }
+
+        for (size_t i = 0; i < derived->GetCount(); ++i)
+        {
+            runtime::String variantName = ApplyClassPrefix(derived->GetValueAt(i)->GetName());
+            if (variantName.GetLength() > className.GetLength() && variantName.GetValue().compare(0, className.GetLength(), className.GetValue()) == 0)
             {
-                variantName = variantName.substr(className.length());
+                variantName = runtime::String(variantName.GetValue().substr(className.GetLength()));
             }
 
-            WriteIndent(namespaces_.size() + 3);
+            WriteIndent(namespaces_.GetCount() + 3);
             output_ << className << "::" << variantName << " { base, .. }";
-            if (i < derived.size() - 1)
+            if (i < derived->GetCount() - 1)
             {
                 output_ << " |\n";
             }
@@ -757,48 +774,49 @@ void RustCodeGenerator::GenerateComputedGetter(const Field* field, const ClassDe
             }
         }
 
-        WriteIndent(namespaces_.size() + 2);
+        WriteIndent(namespaces_.GetCount() + 2);
         output_ << "}\n";
     }
     else
     {
-        WriteIndent(namespaces_.size() + 2);
+        WriteIndent(namespaces_.GetCount() + 2);
         output_ << ExpressionToRust(field->GetInitializer()) << "\n";
     }
 
-    WriteIndent(namespaces_.size() + 1);
+    WriteIndent(namespaces_.GetCount() + 1);
     output_ << "}\n";
     output_ << "\n";
 }
 
-std::vector<const Invariant*> RustCodeGenerator::GetInvariantsForField(const std::string& fieldName, const ClassDeclaration* classDecl) const
+runtime::Array<const runtime::Invariant*>
+    RustCodeGenerator::GetInvariantsForField(const runtime::String& fieldName, const runtime::ClassDeclaration* classDecl) const
 {
-    RequireReturn(nullptr != classDecl, std::vector<const Invariant*>{});
-    RequireReturn(fieldName.empty() == false, std::vector<const Invariant*>{});
+    RequireReturn(nullptr != classDecl, runtime::Array<const runtime::Invariant*>{});
+    RequireReturn(fieldName.IsEmpty() == false, runtime::Array<const runtime::Invariant*>{});
 
-    std::vector<const Invariant*> result;
+    runtime::Array<const runtime::Invariant*> result;
 
     for (const auto& inv : classDecl->GetInvariants())
     {
         // Simple check: does the expression reference this field?
         // This is a simplified version - full implementation would traverse the expression tree
-        std::function<bool(const Expression*)> referencesField = [&](const Expression* expr) -> bool {
+        std::function<bool(const runtime::Expression*)> referencesField = [&](const runtime::Expression* expr) -> bool {
             if (nullptr == expr)
             {
                 return false;
             }
 
-            if (const FieldReference* fieldRef = dynamic_cast<const FieldReference*>(expr))
+            if (const runtime::FieldReference* fieldRef = dynamic_cast<const runtime::FieldReference*>(expr))
             {
                 return fieldRef->GetFieldName() == fieldName;
             }
 
-            if (const BinaryExpression* binExpr = dynamic_cast<const BinaryExpression*>(expr))
+            if (const runtime::BinaryExpression* binExpr = dynamic_cast<const runtime::BinaryExpression*>(expr))
             {
                 return referencesField(binExpr->GetLeft()) || referencesField(binExpr->GetRight());
             }
 
-            if (const UnaryExpression* unExpr = dynamic_cast<const UnaryExpression*>(expr))
+            if (const runtime::UnaryExpression* unExpr = dynamic_cast<const runtime::UnaryExpression*>(expr))
             {
                 return referencesField(unExpr->GetOperand());
             }
@@ -808,14 +826,14 @@ std::vector<const Invariant*> RustCodeGenerator::GetInvariantsForField(const std
 
         if (referencesField(inv->GetExpression()) == true)
         {
-            result.push_back(inv.get());
+            result.AddValue(inv.get());
         }
     }
 
     return result;
 }
 
-std::string RustCodeGenerator::ExpressionToRust(const Expression* expr, const std::string& prefix) const
+runtime::String RustCodeGenerator::ExpressionToRust(const runtime::Expression* expr, const runtime::String& prefix) const
 {
     if (nullptr == expr)
     {
@@ -823,91 +841,91 @@ std::string RustCodeGenerator::ExpressionToRust(const Expression* expr, const st
     }
 
     // Literal expression
-    if (const LiteralExpression* litExpr = dynamic_cast<const LiteralExpression*>(expr))
+    if (const runtime::LiteralExpression* litExpr = dynamic_cast<const runtime::LiteralExpression*>(expr))
     {
-        const Expression::Type type = litExpr->GetResultType();
+        const runtime::Expression::Type type = litExpr->GetResultType();
         switch (type)
         {
-            case Expression::Type::INT:
+            case runtime::Expression::Type::INT:
                 return std::to_string(litExpr->GetIntValue());
-            case Expression::Type::REAL:
-            case Expression::Type::TIMESTAMP:
-            case Expression::Type::TIMESPAN:
+            case runtime::Expression::Type::REAL:
+            case runtime::Expression::Type::TIMESTAMP:
+            case runtime::Expression::Type::TIMESPAN:
                 return std::to_string(litExpr->GetRealValue());
-            case Expression::Type::BOOL:
+            case runtime::Expression::Type::BOOL:
                 return litExpr->GetBoolValue() == true ? "true" : "false";
-            case Expression::Type::STRING:
-            case Expression::Type::GUID:
+            case runtime::Expression::Type::STRING:
+            case runtime::Expression::Type::GUID:
                 return "\"" + litExpr->GetStringValue() + "\"";
             default:
                 return "/* unknown literal */";
         }
     }
 
-    // Field reference
-    if (const FieldReference* fieldRef = dynamic_cast<const FieldReference*>(expr))
+    // runtime::Field reference
+    if (const runtime::FieldReference* fieldRef = dynamic_cast<const runtime::FieldReference*>(expr))
     {
         return prefix + ToSnakeCase(fieldRef->GetFieldName());
     }
 
     // Member access
-    if (const MemberAccessExpression* memberExpr = dynamic_cast<const MemberAccessExpression*>(expr))
+    if (const runtime::MemberAccessExpression* memberExpr = dynamic_cast<const runtime::MemberAccessExpression*>(expr))
     {
         return ExpressionToRust(memberExpr->GetObject(), prefix) + "." + ToSnakeCase(memberExpr->GetMemberName());
     }
 
     // Parenthesized expression
-    if (const ParenthesizedExpression* parenExpr = dynamic_cast<const ParenthesizedExpression*>(expr))
+    if (const runtime::ParenthesizedExpression* parenExpr = dynamic_cast<const runtime::ParenthesizedExpression*>(expr))
     {
         return "(" + ExpressionToRust(parenExpr->GetExpression(), prefix) + ")";
     }
 
     // Binary expression
-    if (const BinaryExpression* binExpr = dynamic_cast<const BinaryExpression*>(expr))
+    if (const runtime::BinaryExpression* binExpr = dynamic_cast<const runtime::BinaryExpression*>(expr))
     {
-        const std::string left  = ExpressionToRust(binExpr->GetLeft(), prefix);
-        const std::string right = ExpressionToRust(binExpr->GetRight(), prefix);
-        std::string       op;
+        const runtime::String left  = ExpressionToRust(binExpr->GetLeft(), prefix);
+        const runtime::String right = ExpressionToRust(binExpr->GetRight(), prefix);
+        runtime::String       op;
 
         switch (binExpr->GetOperator())
         {
-            case BinaryExpression::Op::ADD:
+            case runtime::BinaryExpression::Op::ADD:
                 op = " + ";
                 break;
-            case BinaryExpression::Op::SUB:
+            case runtime::BinaryExpression::Op::SUB:
                 op = " - ";
                 break;
-            case BinaryExpression::Op::MUL:
+            case runtime::BinaryExpression::Op::MUL:
                 op = " * ";
                 break;
-            case BinaryExpression::Op::DIV:
+            case runtime::BinaryExpression::Op::DIV:
                 op = " / ";
                 break;
-            case BinaryExpression::Op::MOD:
+            case runtime::BinaryExpression::Op::MOD:
                 op = " % ";
                 break;
-            case BinaryExpression::Op::LT:
+            case runtime::BinaryExpression::Op::LT:
                 op = " < ";
                 break;
-            case BinaryExpression::Op::GT:
+            case runtime::BinaryExpression::Op::GT:
                 op = " > ";
                 break;
-            case BinaryExpression::Op::LE:
+            case runtime::BinaryExpression::Op::LE:
                 op = " <= ";
                 break;
-            case BinaryExpression::Op::GE:
+            case runtime::BinaryExpression::Op::GE:
                 op = " >= ";
                 break;
-            case BinaryExpression::Op::EQ:
+            case runtime::BinaryExpression::Op::EQ:
                 op = " == ";
                 break;
-            case BinaryExpression::Op::NE:
+            case runtime::BinaryExpression::Op::NE:
                 op = " != ";
                 break;
-            case BinaryExpression::Op::AND:
+            case runtime::BinaryExpression::Op::AND:
                 op = " && ";
                 break;
-            case BinaryExpression::Op::OR:
+            case runtime::BinaryExpression::Op::OR:
                 op = " || ";
                 break;
         }
@@ -916,15 +934,15 @@ std::string RustCodeGenerator::ExpressionToRust(const Expression* expr, const st
     }
 
     // Unary expression
-    if (const UnaryExpression* unExpr = dynamic_cast<const UnaryExpression*>(expr))
+    if (const runtime::UnaryExpression* unExpr = dynamic_cast<const runtime::UnaryExpression*>(expr))
     {
-        const std::string operand = ExpressionToRust(unExpr->GetOperand(), prefix);
+        const runtime::String operand = ExpressionToRust(unExpr->GetOperand(), prefix);
 
         switch (unExpr->GetOperator())
         {
-            case UnaryExpression::Op::NEG:
+            case runtime::UnaryExpression::Op::NEG:
                 return "-" + operand;
-            case UnaryExpression::Op::NOT:
+            case runtime::UnaryExpression::Op::NOT:
                 return "!" + operand;
         }
     }
@@ -932,23 +950,24 @@ std::string RustCodeGenerator::ExpressionToRust(const Expression* expr, const st
     return "/* unknown expression */";
 }
 
-std::string RustCodeGenerator::ApplyClassPrefix(const std::string& name) const
+runtime::String RustCodeGenerator::ApplyClassPrefix(const runtime::String& name) const
 {
-    if (classPrefix_.empty() == true)
+    if (classPrefix_.IsEmpty() == true)
     {
         return name;
     }
     return classPrefix_ + name;
 }
 
-std::string RustCodeGenerator::ToSnakeCase(const std::string& name) const
+runtime::String RustCodeGenerator::ToSnakeCase(const runtime::String& name) const
 {
-    std::string result;
-    bool        lastWasUpper = false;
+    std::string        result;
+    bool               lastWasUpper = false;
+    const std::string& nameValue    = name.GetValue();
 
-    for (size_t i = 0; i < name.length(); ++i)
+    for (size_t i = 0; i < nameValue.size(); ++i)
     {
-        const char c = name[i];
+        const char c = nameValue[i];
 
         if (std::isupper(c) != 0)
         {
@@ -956,7 +975,7 @@ std::string RustCodeGenerator::ToSnakeCase(const std::string& name) const
             {
                 result += '_';
             }
-            result       += std::tolower(c);
+            result       += static_cast<char>(std::tolower(c));
             lastWasUpper  = true;
         }
         else
@@ -966,7 +985,7 @@ std::string RustCodeGenerator::ToSnakeCase(const std::string& name) const
         }
     }
 
-    return result;
+    return runtime::String(result);
 }
 
 void RustCodeGenerator::BuildInheritanceMap()
@@ -974,20 +993,20 @@ void RustCodeGenerator::BuildInheritanceMap()
     // Build map of base class -> derived classes
     for (const auto& decl : ast_->GetDeclarations())
     {
-        if (Declaration::Kind::CLASS == decl->GetKind())
+        if (runtime::Declaration::Kind::CLASS == decl->GetKind())
         {
-            const ClassDeclaration* classDecl = decl->AsClass();
-            if (nullptr != classDecl && classDecl->GetBaseType().empty() == false)
+            const runtime::ClassDeclaration* classDecl = decl->AsClass();
+            if (nullptr != classDecl && classDecl->GetBaseType().IsEmpty() == false)
             {
-                const std::string baseClass = classDecl->GetBaseType();
-                derivedClasses_[baseClass].push_back(classDecl);
+                const runtime::String baseClass = classDecl->GetBaseType();
+                derivedClasses_.GetOrCreate(baseClass).AddValue(classDecl);
                 baseClasses_.insert(baseClass);
             }
         }
     }
 }
 
-bool RustCodeGenerator::IsBaseClass(const std::string& className) const
+bool RustCodeGenerator::IsBaseClass(const runtime::String& className) const
 {
     return baseClasses_.find(className) != baseClasses_.end();
 }
@@ -999,4 +1018,57 @@ void RustCodeGenerator::WriteIndent(int level)
         output_ << "    ";
     }
 }
-} // namespace bbfm
+
+namespace {
+runtime::Array<runtime::String> CopyNamespaces(const GeneratorCreateContext* context)
+{
+    runtime::Array<runtime::String> namespaces;
+
+    if (nullptr == context || nullptr == context->namespaces)
+    {
+        return namespaces;
+    };
+    for (size_t i = 0; i < context->namespaceCount; ++i)
+    {
+        if (nullptr != context->namespaces[i])
+        {
+            namespaces.AddValue(runtime::String(context->namespaces[i]));
+        }
+    }
+
+    return namespaces;
+}
+} // namespace
+
+extern "C" PLUGIN_EXPORT runtime::CapabilitiesDictionary* GetCapabilities()
+{
+    auto* capabilities = new runtime::CapabilitiesDictionary();
+    capabilities->SetValue("ApiVersion", std::to_string(GENERATOR_PLUGIN_API_VERSION).c_str());
+    capabilities->SetValue("Language", "Rust");
+    capabilities->SetValue("FileExtension", ".rs");
+    capabilities->SetValue("Experimental", "true");
+    return capabilities;
+}
+
+extern "C" PLUGIN_EXPORT void DestroyCapabilities(runtime::CapabilitiesDictionary* capabilities)
+{
+    delete capabilities;
+}
+
+extern "C" PLUGIN_EXPORT runtime::ICodeGenerator* CreateGenerator(const GeneratorCreateContext* context)
+{
+    if (nullptr == context || nullptr == context->ast || nullptr == context->analyzer)
+    {
+        return nullptr;
+    }
+
+    const runtime::Array<runtime::String> namespaces  = CopyNamespaces(context);
+    const runtime::String                 classPrefix = (nullptr != context->classPrefix) ? context->classPrefix : "";
+
+    return new RustCodeGenerator(context->ast, context->analyzer, namespaces, classPrefix);
+}
+
+extern "C" PLUGIN_EXPORT void DestroyGenerator(runtime::ICodeGenerator* generator)
+{
+    delete generator;
+}

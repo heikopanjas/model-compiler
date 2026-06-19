@@ -1,17 +1,17 @@
-#ifndef __BBFM_RUNTIME_FABRIC_H_INCL__
-#define __BBFM_RUNTIME_FABRIC_H_INCL__
+#ifndef __RUNTIME_FABRIC_H_INCL__
+#define __RUNTIME_FABRIC_H_INCL__
 
 // Set 8-byte alignment for all types in this header
 #pragma pack(push, 8)
 
-#include "Guid.h"
-#include "String.h"
+#include "runtime/Guid.h"
+#include "runtime/String.h"
 #include <cstdint>
 
-namespace bbfm { namespace runtime {
-/// \brief Base class for all BBFM types providing universal metadata
+namespace runtime {
+/// \brief Base class for all model types providing universal metadata
 ///
-/// Every BBFM type automatically inherits from Fabric, which provides
+/// Every model type automatically inherits from Fabric, which provides
 /// six universal metadata fields that are present on all instances:
 /// - typeId: Type identifier (same for all instances of a type)
 /// - id: Instance identifier (unique per instance)
@@ -67,9 +67,9 @@ protected:
     double  modificationDate_; // Modification timestamp (seconds since epoch)
     String  comment_;          // User comment/notes
 };
-}} // namespace bbfm::runtime
+} // namespace runtime
 
 // Restore previous alignment
 #pragma pack(pop)
 
-#endif // __BBFM_RUNTIME_FABRIC_H_INCL__
+#endif // __RUNTIME_FABRIC_H_INCL__

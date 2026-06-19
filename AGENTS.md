@@ -1,6 +1,6 @@
 # Project Instructions for AI Coding Agents
 
-**Last updated:** 2026-05-24 (just-in-time skill loading in AGENTS.md)
+**Last updated:** 2026-06-19 (shared library ABI rationale)
 
 <!-- {preamble} -->
 
@@ -14,7 +14,7 @@ Run `/init-session` at the beginning of each new session, OR read this entire fi
 
 ## Mission Statement
 
-BBFM Model Compiler is a C++23 compiler for the Big Bad Feed Machine modeling DSL. It lets developers
+Model Compiler is a C++23 compiler for the Big Bad Feed Machine modeling DSL. It lets developers
 describe podcast-domain object models, relationships, invariants, computed features, aliases, and
 namespaces in `.fm` files, then validates those models and generates target-language source code.
 
@@ -124,6 +124,16 @@ Load `cpp-coding-conventions` before writing, reviewing, or refactoring C++ code
 
 Load `cmake-build-commands` when configuring, building, testing, formatting, or packaging the project.
 
+## Shared Library ABI
+
+The compiler executable, `compiler-runtime`, and generator plugins are separate shared-library boundaries (`.dylib` / `.so` / `.dll`). **STL types must not appear in APIs that cross those boundaries.** `std::string`, `std::vector`, `std::map`, and similar standard-library types have no stable ABI across compiler versions, C++ runtimes, or independently built plugin binaries.
+
+**Policy:**
+
+- **Plugin exports** — C-compatible types only (`const char*`, raw pointers, `size_t`) plus PIMPL runtime types (`runtime::CapabilitiesDictionary`, `runtime::ICodeGenerator*`). See `GeneratorPlugin.h`.
+- **Shared compiler model** — `runtime::String`, `runtime::Array<T>`, and `runtime::Dictionary<K,V>` in `compiler-runtime` so the host and plugins share AST, semantic analysis, and generator interfaces without STL in headers they both include.
+- **Implementation internals** — STL may remain inside PIMPL bodies, parser/lexer code, iostream usage, and CLI parsing (cxxopts) that never crosses a DLL interface.
+
 <!-- {integration} -->
 
 ## Semantic Versioning
@@ -141,6 +151,106 @@ Automatically bump the project version after every code change and include it in
 <!-- {changelog} -->
 
 ## Recent Updates & Decisions
+
+### 2026-06-19
+
+- **Shared Library ABI Rationale**: Documented that STL types cannot guarantee a stable ABI across DLL/dylib interfaces; this is the primary reason for `runtime::String`/`Array`/`Dictionary`, PIMPL runtime types, and C-compatible plugin exports
+- **Version Bump**: Updated the visible project version to `v4.1.1`
+- **Reasoning**: Makes the architectural constraint explicit for future contributors and agents
+
+- **Runtime Containers in Compiler**: Replaced `std::string`, `std::vector`, and `std::map` with `runtime::String`, `runtime::Array<T>`, and `runtime::Dictionary<K,V>` throughout compiler source (AST, semantic analyzer, driver, generators, parser); `std::set` and STL at CLI/iostream boundaries remain; C++ generator emits `runtime::String` and `runtime::Array` for modeled collection types
+- **Version Bump**: Updated the visible project version to `v4.1.0`
+- **Reasoning**: STL containers cannot cross shared-library boundaries with a stable ABI; runtime types keep the host/plugin contract and compiler internals aligned with generated code
+
+- **Runtime Include Guard Prefix**: Standardized all `include/runtime/` headers on `__RUNTIME_<NAME>_H_INCL__` guards
+- **Version Bump**: Updated the visible project version to `v4.0.1`
+- **Reasoning**: Aligns runtime header guards with the directory layout and avoids collisions with top-level include names
+
+- **Model Namespace Removed**: Dropped the outer `model` C++ namespace; compiler and plugin types are now at global scope and runtime types use the top-level `runtime` namespace (`runtime::AST`, `runtime::Fabric`, etc.) instead of `model::runtime::…`
+- **Version Bump**: Updated the visible project version to `v4.0.0`
+- **Reasoning**: Removes redundant namespace nesting from compiler internals while keeping FM-declared domain namespaces in generated output unchanged
+
+- **Include Guard Prefix Removed**: Dropped the `MODEL_` segment from include guards; format is now `__CLASS_NAME_H_INCL__` (generated headers use `__GENERATED_…`) instead of `__MODEL_…`
+- **Version Bump**: Updated the visible project version to `v3.0.1`
+- **Reasoning**: Removes redundant project-prefix branding from guard macros while keeping the `_H_INCL__` suffix convention
+
+- **Runtime Namespace Consolidation**: Moved all types under `include/runtime/` into the `runtime` namespace, including `AST`, `SemanticAnalyzer`, `ICodeGenerator`, `Array`, and `Dictionary`; compiler and plugin code now references them as `runtime::…` or `runtime::…` within `namespace model`
+- **Version Bump**: Updated the visible project version to `v3.0.0`
+- **Reasoning**: Unifies compiler-runtime and generated-code runtime types under one namespace and marks the removed top-level `` runtime symbols as a breaking API change
+
+- **ICodeGenerator in Runtime**: Moved `ICodeGenerator` header into `include/runtime/` and source into `src/runtime/`
+- **Version Bump**: Updated the visible project version to `v2.0.4`
+- **Reasoning**: Keeps the generator interface alongside other compiler-runtime APIs consumed by generator plugins
+
+- **AST and SemanticAnalyzer in Runtime**: Moved `AST` and `SemanticAnalyzer` headers into `include/runtime/` and sources into `src/runtime/` alongside other compiler-runtime components
+- **Version Bump**: Updated the visible project version to `v2.0.3`
+- **Reasoning**: Treats the validated model and semantic analysis APIs as part of the shared compiler runtime consumed by generator plugins
+
+- **Runtime Header Layout**: Moved `Array.h` and `Dictionary.h` into `include/runtime/` alongside the other runtime headers; all runtime implementation files remain in `src/runtime/`
+- **Version Bump**: Updated the visible project version to `v2.0.2`
+- **Reasoning**: Keeps all runtime public headers under one directory and matches the existing `runtime/` include path used by generated code and tests
+
+- **Generator Source Layout**: Moved self-contained generator plugin implementations into `src/generators/c++/`, `src/generators/rust/`, and `src/generators/swift/` with private headers colocated beside each `.cpp`; public `include/` no longer lists generator headers
+- **Version Bump**: Updated the visible project version to `v2.0.1`
+- **Reasoning**: Keeps generator plugins as isolated implementation units while preserving the public header directory for shared compiler and runtime APIs
+
+- **BBFM Prefix Removed**: Dropped the `BBFM` prefix from source identifiers: `bbfm::` namespace is now ``, include guards initially used `__MODEL_`, plugin macros are `PLUGIN_EXPORT` and `GENERATOR_PLUGIN_API_VERSION`, and generated C++ uses `runtime::` types
+- **Version Bump**: Updated the visible project version to `v2.0.0`
+- **Reasoning**: Removes redundant project-prefix branding from code identifiers and generated output while keeping the public runtime and plugin APIs consistent under the `model` namespace
+
+- **Runtime Source Layout**: Moved runtime type implementation files (`Fabric`, `Guid`, `String`, `Date`, `Dictionary`, and `Array`) into `src/runtime/`; public runtime headers remain in `include/runtime/` or `include/`
+- **Version Bump**: Updated the visible project version to `v1.0.3`
+- **Reasoning**: Keeps public include directories header-only and places runtime implementation files under the source tree consistently
+
+- **Production Type File Split**: Split top-level reusable production types into individual files: `TypeSymbol`, `GeneratorLanguageInfo`, `GeneratorInstance`, and runtime field-wrapper templates now have dedicated headers/sources where applicable; `AST` and plugin ABI bundles remain grouped because they are tightly coupled contracts
+- **Date Runtime Source Added**: Added `Date.cpp` definitions and included `Date` in `compiler-runtime`
+- **Version Bump**: Updated the visible project version to `v1.0.2`
+- **Reasoning**: Aligns reusable production types with the one-type-per-file convention without creating empty template `.cpp` files or fragmenting tightly coupled AST and plugin ABI declarations
+
+- **ICodeGenerator in compiler-runtime**: Moved `ICodeGenerator` implementation from the `model-compiler` executable target into the `compiler-runtime` shared library
+- **Version Bump**: Updated the visible project version to `v1.0.1`
+- **Reasoning**: Lets generator plugins use the generator interface from the shared runtime alongside `AST`, `SemanticAnalyzer`, and `Console`, instead of depending on executable-owned interface implementation code
+
+- **Code Generator Interface Rename**: Renamed the generator base class and files from `CodeGenerator` to `ICodeGenerator` and updated the plugin ABI to use `ICodeGenerator*`
+- **Version Bump**: Updated the visible project version to `v1.0.0`
+- **Reasoning**: Makes the generator contract explicit in naming and marks the source-level plugin API rename as a breaking public API change
+
+- **AST and SemanticAnalyzer in compiler-runtime**: Moved `AST`, `SemanticAnalyzer`, and `Console` implementations into the `compiler-runtime` shared library so generator plugins can link against the validated model and semantic services through the runtime library
+- **Version Bump**: Updated the visible project version to `v0.5.0`
+- **Reasoning**: Makes the compiler model and semantic analysis APIs available to generator shared libraries without relying on duplicate object code in `model-compiler`
+
+- **compiler-runtime Shared Library**: Added a `compiler-runtime` shared library containing `Fabric`, `Guid`, `String`, `Dictionary`, and the new `Array` runtime/template types
+- **Array Template**: Added `Array<TValue>` with PIMPL storage and explicit `Array<const char*>` instantiation for ABI-friendly value arrays
+- **Runtime Linking**: `model-compiler`, generator plugins, and runtime tests now link against `compiler-runtime` instead of compiling runtime implementation files directly into each target
+- **Version Bump**: Updated the visible project version to `v0.4.0`
+- **Reasoning**: Centralizes reusable runtime and plugin metadata types in a shared library, avoids duplicate runtime object code, and provides an array counterpart to `Dictionary`
+
+- **Dictionary Template**: Converted `Dictionary` into `Dictionary<TKey, TValue>` and introduced `CapabilitiesDictionary` as the explicit `Dictionary<const char*, const char*>` specialization used by generator plugin capabilities
+- **Version Bump**: Updated the visible project version to `v0.3.3`
+- **Reasoning**: Keeps the plugin capability exchange STL-free while making the dictionary abstraction reusable for other key/value types
+
+- **Plugin Capability Gate**: Plugin discovery now scans platform shared libraries in the plugin directory and treats only libraries exporting `GetCapabilities` as generator plugins; shared libraries without that function are ignored as non-plugins
+- **Version Bump**: Updated the visible project version to `v0.3.2`
+- **Reasoning**: Allows plugin directories to contain unrelated shared libraries without noisy warnings or failed generator discovery
+
+- **Generator Library Suffixes**: Generator plugins now build as shared libraries with platform-native suffixes: `.dylib` on macOS, `.dll` on Windows, and `.so` on Linux
+- **Version Bump**: Updated the visible project version to `v0.3.1`
+- **Reasoning**: Aligns plugin artifacts with platform conventions while keeping generator libraries executable-adjacent for development
+
+- **List Languages CLI**: Added `--list-languages` to scan generator plugins and print discovered generator languages without requiring an input file
+- **Version Bump**: Updated the visible project version to `v0.3.0`
+- **Reasoning**: Makes plugin discovery observable from the CLI and simplifies checking which generator shared libraries are available during development
+
+- **Generator Plugin Shared Libraries**: Moved code generation behind dynamically loaded in-tree generator modules named `c++-generator`, `rust-generator`, and `swift-generator`
+- **Plugin Location**: Generator shared libraries are built directly beside `model-compiler` during development; `--plugin-dir` can point the compiler at another generator directory
+- **Plugin ABI Boundary**: Generator plugins export `GetCapabilities`, `DestroyCapabilities`, `CreateGenerator`, and `DestroyGenerator`; exported function signatures avoid STL types and use the PIMPL `Dictionary` for `String:String` capability metadata
+- **Swift Generator Added**: Added an initial experimental Swift generator plugin with `Language = "Swift"` and `.swift` output
+- **Version Bump**: Updated the visible project version to `v0.2.0`
+- **Reasoning**: Decouples generator selection from the compiler executable while keeping compiler frontend and driver code in `model-compiler`, making generator loading testable without introducing a separate compiler-core shared library
+
+- **String Runtime PIMPL**: Converted `bbfm::runtime::String` from header-owned `std::string` storage to an out-of-line PIMPL implementation with explicit copy/move operations and focused CTest coverage
+- **Version Bump**: Updated the visible project version from `v0.1.0` to `v0.1.1`
+- **Reasoning**: Hides runtime string storage details behind a stable public header while preserving source-compatible value semantics for generated code
 
 ### 2026-05-24
 

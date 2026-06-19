@@ -1,5 +1,5 @@
-#ifndef __BBFM_GENERATED_TEST_COMPUTED_INHERITANCE_H_INCL__
-#define __BBFM_GENERATED_TEST_COMPUTED_INHERITANCE_H_INCL__
+#ifndef __GENERATED_TEST_COMPUTED_INHERITANCE_H_INCL__
+#define __GENERATED_TEST_COMPUTED_INHERITANCE_H_INCL__
 
 // Set 8-byte alignment for all types in this header
 #pragma pack(push, 8)
@@ -16,7 +16,7 @@
 #include "runtime/Guid.h"
 
 /// \brief Shape struct
-struct Shape : public bbfm::runtime::Fabric
+struct Shape : public runtime::Fabric
 {
     /// \brief Constructor - initializes all fields with parent reference
     Shape()
@@ -30,9 +30,9 @@ struct Shape : public bbfm::runtime::Fabric
     virtual ~Shape() = default;
 
     // User-defined fields
-    bbfm::runtime::UnboundedValue<int64_t, Shape> width_;
-    bbfm::runtime::UnboundedValue<int64_t, Shape> height_;
-    bbfm::runtime::DynamicValue<int64_t, Shape> area_;
+    runtime::UnboundedValue<int64_t, Shape> width_;
+    runtime::UnboundedValue<int64_t, Shape> height_;
+    runtime::DynamicValue<int64_t, Shape> area_;
 };
 
 /// \brief ColoredShape struct
@@ -50,12 +50,12 @@ struct ColoredShape : public Shape
     virtual ~ColoredShape() = default;
 
     // User-defined fields
-    bbfm::runtime::UnboundedValue<int64_t, ColoredShape> depth_;
-    bbfm::runtime::DynamicValue<int64_t, ColoredShape> volume_;
-    bbfm::runtime::DynamicValue<int64_t, ColoredShape> doubleArea_;
+    runtime::UnboundedValue<int64_t, ColoredShape> depth_;
+    runtime::DynamicValue<int64_t, ColoredShape> volume_;
+    runtime::DynamicValue<int64_t, ColoredShape> doubleArea_;
 };
 
 // Restore previous alignment
 #pragma pack(pop)
 
-#endif // __BBFM_GENERATED_TEST_COMPUTED_INHERITANCE_H_INCL__
+#endif // __GENERATED_TEST_COMPUTED_INHERITANCE_H_INCL__

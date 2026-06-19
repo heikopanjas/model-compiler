@@ -1,5 +1,5 @@
-#ifndef __BBFM_GENERATED_PODCAST_H_INCL__
-#define __BBFM_GENERATED_PODCAST_H_INCL__
+#ifndef __GENERATED_PODCAST_H_INCL__
+#define __GENERATED_PODCAST_H_INCL__
 
 // Set 8-byte alignment for all types in this header
 #pragma pack(push, 8)
@@ -25,7 +25,7 @@ enum class MediaType
 };
 
 /// \brief Asset struct
-struct Asset : public bbfm::runtime::Fabric
+struct Asset : public runtime::Fabric
 {
     /// \brief Constructor - initializes all fields with parent reference
     Asset()
@@ -37,7 +37,7 @@ struct Asset : public bbfm::runtime::Fabric
     virtual ~Asset() = default;
 
     // User-defined fields
-    bbfm::runtime::UnboundedValue<bbfm::runtime::String, Asset> url_;
+    runtime::UnboundedValue<runtime::String, Asset> url_;
 };
 
 /// \brief AudioAsset struct
@@ -54,8 +54,8 @@ struct AudioAsset : public Asset
     virtual ~AudioAsset() = default;
 
     // User-defined fields
-    bbfm::runtime::UnboundedValue<bbfm::runtime::String, AudioAsset> format_;
-    bbfm::runtime::BoundedValue<int64_t, AudioAsset, &AudioAsset::Require_fileSize_maxFileSize> fileSize_;
+    runtime::UnboundedValue<runtime::String, AudioAsset> format_;
+    runtime::BoundedValue<int64_t, AudioAsset, &AudioAsset::Require_fileSize_maxFileSize> fileSize_;
     /// \brief Require invariant 'maxFileSize' for field 'fileSize'
     /// \param object Reference to the containing object
     /// \param newValue The new value being assigned to fileSize
@@ -81,8 +81,8 @@ struct PictureAsset : public Asset
     virtual ~PictureAsset() = default;
 
     // User-defined fields
-    bbfm::runtime::BoundedValue<int64_t, PictureAsset, &PictureAsset::Require_width_minWidth> width_;
-    bbfm::runtime::BoundedValue<int64_t, PictureAsset, &PictureAsset::Require_height_minHeight> height_;
+    runtime::BoundedValue<int64_t, PictureAsset, &PictureAsset::Require_width_minWidth> width_;
+    runtime::BoundedValue<int64_t, PictureAsset, &PictureAsset::Require_height_minHeight> height_;
     /// \brief Require invariant 'minWidth' for field 'width'
     /// \param object Reference to the containing object
     /// \param newValue The new value being assigned to width
@@ -104,7 +104,7 @@ struct PictureAsset : public Asset
 };
 
 /// \brief Podcast struct
-struct Podcast : public bbfm::runtime::Fabric
+struct Podcast : public runtime::Fabric
 {
     /// \brief Constructor - initializes all fields with parent reference
     Podcast()
@@ -119,15 +119,15 @@ struct Podcast : public bbfm::runtime::Fabric
     virtual ~Podcast() = default;
 
     // User-defined fields
-    bbfm::runtime::UnboundedValue<bbfm::runtime::String, Podcast> title_;
-    bbfm::runtime::UnboundedValue<bbfm::runtime::String, Podcast> description_;
-    bbfm::runtime::OptionalUnboundedValue<bbfm::runtime::String, Podcast> author_;
-    bbfm::runtime::UnboundedValue<bbfm::runtime::String, Podcast> feedUrl_; // Unique constraint
-    std::vector<model::Episode> episodes_;
+    runtime::UnboundedValue<runtime::String, Podcast> title_;
+    runtime::UnboundedValue<runtime::String, Podcast> description_;
+    runtime::OptionalUnboundedValue<runtime::String, Podcast> author_;
+    runtime::UnboundedValue<runtime::String, Podcast> feedUrl_; // Unique constraint
+    std::vector<Episode> episodes_;
 };
 
 /// \brief Episode struct
-struct Episode : public bbfm::runtime::Fabric
+struct Episode : public runtime::Fabric
 {
     /// \brief Constructor - initializes all fields with parent reference
     Episode()
@@ -144,16 +144,16 @@ struct Episode : public bbfm::runtime::Fabric
     virtual ~Episode() = default;
 
     // User-defined fields
-    bbfm::runtime::UnboundedValue<bbfm::runtime::String, Episode> title_;
-    bbfm::runtime::UnboundedValue<bbfm::runtime::Date, Episode> publicationDate_;
-    bbfm::runtime::UnboundedValue<double, Episode> duration_;
-    bbfm::runtime::UnboundedValue<model::MediaType, Episode> mediaType_;
-    bbfm::runtime::UnboundedValue<model::AudioAsset, Episode> audio_;
-    bbfm::runtime::OptionalUnboundedValue<model::Transcript, Episode> transcript_;
+    runtime::UnboundedValue<runtime::String, Episode> title_;
+    runtime::UnboundedValue<runtime::Date, Episode> publicationDate_;
+    runtime::UnboundedValue<double, Episode> duration_;
+    runtime::UnboundedValue<MediaType, Episode> mediaType_;
+    runtime::UnboundedValue<AudioAsset, Episode> audio_;
+    runtime::OptionalUnboundedValue<Transcript, Episode> transcript_;
 };
 
 /// \brief Transcript struct
-struct Transcript : public bbfm::runtime::Fabric
+struct Transcript : public runtime::Fabric
 {
     /// \brief Constructor - initializes all fields with parent reference
     Transcript()
@@ -166,13 +166,13 @@ struct Transcript : public bbfm::runtime::Fabric
     virtual ~Transcript() = default;
 
     // User-defined fields
-    bbfm::runtime::UnboundedValue<bbfm::runtime::String, Transcript> text_;
-    bbfm::runtime::UnboundedValue<bbfm::runtime::String, Transcript> language_;
-    std::vector<model::Region> regions_;
+    runtime::UnboundedValue<runtime::String, Transcript> text_;
+    runtime::UnboundedValue<runtime::String, Transcript> language_;
+    std::vector<Region> regions_;
 };
 
 /// \brief Tag struct
-struct Tag : public bbfm::runtime::Fabric
+struct Tag : public runtime::Fabric
 {
     /// \brief Constructor - initializes all fields with parent reference
     Tag()
@@ -185,8 +185,8 @@ struct Tag : public bbfm::runtime::Fabric
     virtual ~Tag() = default;
 
     // User-defined fields
-    bbfm::runtime::UnboundedValue<bbfm::runtime::String, Tag> name_;
-    bbfm::runtime::BoundedValue<double, Tag, &Tag::Require_timestamp_validTimestamp> timestamp_;
+    runtime::UnboundedValue<runtime::String, Tag> name_;
+    runtime::BoundedValue<double, Tag, &Tag::Require_timestamp_validTimestamp> timestamp_;
     /// \brief Require invariant 'validTimestamp' for field 'timestamp'
     /// \param object Reference to the containing object
     /// \param newValue The new value being assigned to timestamp
@@ -213,9 +213,9 @@ struct Region : public Tag
     virtual ~Region() = default;
 
     // User-defined fields
-    bbfm::runtime::BoundedValue<double, Region, &Region::Require_endTime_validEndTime, &Region::Require_endTime_validRegion> endTime_;
-    bbfm::runtime::DynamicValue<double, Region> duration_;
-    bbfm::runtime::AliasValue<bbfm::runtime::BoundedValue<double, Tag, &Tag::Require_timestamp_validTimestamp>> startTime_;
+    runtime::BoundedValue<double, Region, &Region::Require_endTime_validEndTime, &Region::Require_endTime_validRegion> endTime_;
+    runtime::DynamicValue<double, Region> duration_;
+    runtime::AliasValue<runtime::BoundedValue<double, Tag, &Tag::Require_timestamp_validTimestamp>> startTime_;
     /// \brief Require invariant 'validEndTime' for field 'endTime'
     /// \param object Reference to the containing object
     /// \param newValue The new value being assigned to endTime
@@ -241,4 +241,4 @@ struct Region : public Tag
 // Restore previous alignment
 #pragma pack(pop)
 
-#endif // __BBFM_GENERATED_PODCAST_H_INCL__
+#endif // __GENERATED_PODCAST_H_INCL__

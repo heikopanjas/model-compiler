@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# BBFM Model Compiler Build Script
+# Model Compiler Build Script
 # Uses CMake with Ninja generator
 
 set -e  # Exit on error

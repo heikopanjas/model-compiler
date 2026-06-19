@@ -1,7 +1,8 @@
-#include "Fabric.h"
+#include "runtime/Fabric.h"
+
 #include <chrono>
 
-namespace bbfm { namespace runtime {
+namespace runtime {
 Fabric::Fabric()
 {
     // Initialize with default values (stub implementation)
@@ -50,4 +51,4 @@ void Fabric::UpdateModificationDate()
 {
     modificationDate_ = std::chrono::duration_cast<std::chrono::duration<double>>(std::chrono::system_clock::now().time_since_epoch()).count();
 }
-}} // namespace bbfm::runtime
+} // namespace runtime

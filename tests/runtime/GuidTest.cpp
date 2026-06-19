@@ -58,7 +58,7 @@ static int g_failed = 0;
 
 // --- Tests -------------------------------------------------------------------
 
-using bbfm::runtime::Guid;
+using runtime::Guid;
 
 // --- Construction & Validity -------------------------------------------------
 

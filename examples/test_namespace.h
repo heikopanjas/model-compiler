@@ -1,5 +1,5 @@
-#ifndef __BBFM_GENERATED_TEST_NAMESPACE_H_INCL__
-#define __BBFM_GENERATED_TEST_NAMESPACE_H_INCL__
+#ifndef __GENERATED_TEST_NAMESPACE_H_INCL__
+#define __GENERATED_TEST_NAMESPACE_H_INCL__
 
 // Set 8-byte alignment for all types in this header
 #pragma pack(push, 8)
@@ -25,7 +25,7 @@ enum class Status
 };
 
 /// \brief TestClass struct
-struct TestClass : public bbfm::runtime::Fabric
+struct TestClass : public runtime::Fabric
 {
     /// \brief Constructor - initializes all fields with parent reference
     TestClass()
@@ -38,8 +38,8 @@ struct TestClass : public bbfm::runtime::Fabric
     virtual ~TestClass() = default;
 
     // User-defined fields
-    bbfm::runtime::UnboundedValue<bbfm::runtime::String, TestClass> name_;
-    bbfm::runtime::UnboundedValue<models::Status, TestClass> status_;
+    runtime::UnboundedValue<runtime::String, TestClass> name_;
+    runtime::UnboundedValue<models::Status, TestClass> status_;
 };
 
 
@@ -47,4 +47,4 @@ struct TestClass : public bbfm::runtime::Fabric
 // Restore previous alignment
 #pragma pack(pop)
 
-#endif // __BBFM_GENERATED_TEST_NAMESPACE_H_INCL__
+#endif // __GENERATED_TEST_NAMESPACE_H_INCL__

@@ -1,14 +1,14 @@
-#ifndef __BBFM_AST_H_INCL__
-#define __BBFM_AST_H_INCL__
+#ifndef __RUNTIME_AST_H_INCL__
+#define __RUNTIME_AST_H_INCL__
 
 // Set 8-byte alignment for all types in this header
 #pragma pack(push, 8)
 
 #include <memory>
-#include <string>
-#include <vector>
+#include "runtime/Array.h"
+#include "runtime/String.h"
 
-namespace bbfm {
+namespace runtime {
 // Forward declarations
 class ASTNode;
 class AST;
@@ -41,7 +41,7 @@ public:
     /// \brief Dump the AST node to stdout for debugging
     /// \param indent Indentation level for pretty printing
     /// \param nsPrefix Namespace prefix to prepend to user-defined types
-    virtual void Dump(int indent = 0, const std::string& nsPrefix = "") const = 0;
+    virtual void Dump(int indent = 0, const String& nsPrefix = "") const = 0;
 
 protected:
     /// \brief Print indentation for pretty printing
@@ -53,7 +53,7 @@ protected:
 // Type Specification
 // ============================================================================
 
-/// \brief Enumeration of primitive types in BBFM language
+/// \brief Enumeration of primitive types in model language
 enum class PrimitiveType
 {
     STRING,
@@ -97,7 +97,7 @@ public:
 
     bool IsUserDefined() const override;
 
-    void Dump(int indent = 0, const std::string& nsPrefix = "") const override;
+    void Dump(int indent = 0, const String& nsPrefix = "") const override;
 
     /// \brief Convert primitive type to string representation
     /// \param type The primitive type to convert
@@ -114,20 +114,20 @@ class UserDefinedTypeSpec : public TypeSpec
 public:
     /// \brief Construct a user-defined type specification
     /// \param name The name of the user-defined type
-    explicit UserDefinedTypeSpec(const std::string& name) : typeName_(name) {}
+    explicit UserDefinedTypeSpec(const String& name) : typeName_(name) {}
 
     /// \brief Get the type name
     /// \return The name of the user-defined type
-    const std::string& GetTypeName() const;
+    const String& GetTypeName() const;
 
     bool IsPrimitive() const override;
 
     bool IsUserDefined() const override;
 
-    void Dump(int indent = 0, const std::string& nsPrefix = "") const override;
+    void Dump(int indent = 0, const String& nsPrefix = "") const override;
 
 private:
-    std::string typeName_;
+    String typeName_;
 };
 
 // ============================================================================
@@ -192,7 +192,7 @@ public:
     /// \return True if maximum cardinality is unbounded or greater than 1
     bool IsArray() const;
 
-    void Dump(int indent = 0, const std::string& nsPrefix = "") const override;
+    void Dump(int indent = 0, const String& nsPrefix = "") const override;
 
 private:
     int minCardinality_;
@@ -206,14 +206,14 @@ public:
     /// \brief Construct a unique modifier
     UniqueModifier() : Modifier(ModifierType::UNIQUE) {}
 
-    void Dump(int indent = 0, const std::string& nsPrefix = "") const override;
+    void Dump(int indent = 0, const String& nsPrefix = "") const override;
 };
 
 // ============================================================================
 // Expression System
 // ============================================================================
 
-/// \brief Base class for all expressions in BBFM language
+/// \brief Base class for all expressions in model language
 class Expression : public ASTNode
 {
 public:
@@ -240,7 +240,7 @@ public:
 
     /// \brief Convert expression to string representation
     /// \return String representation of the expression
-    virtual std::string ToString() const = 0;
+    virtual String ToString() const = 0;
 };
 
 /// \brief Binary expression (arithmetic, comparison, logical operations)
@@ -275,8 +275,8 @@ public:
     BinaryExpression(std::unique_ptr<Expression> left, const Op op, std::unique_ptr<Expression> right);
 
     Type        GetResultType() const override;
-    std::string ToString() const override;
-    void        Dump(int indent = 0, const std::string& nsPrefix = "") const override;
+    String ToString() const override;
+    void        Dump(int indent = 0, const String& nsPrefix = "") const override;
 
     /// \brief Get the left operand
     /// \return Pointer to left expression
@@ -318,8 +318,8 @@ public:
     UnaryExpression(const Op op, std::unique_ptr<Expression> operand);
 
     Type        GetResultType() const override;
-    std::string ToString() const override;
-    void        Dump(int indent = 0, const std::string& nsPrefix = "") const override;
+    String ToString() const override;
+    void        Dump(int indent = 0, const String& nsPrefix = "") const override;
 
     /// \brief Get the operand
     /// \return Pointer to operand expression
@@ -345,18 +345,18 @@ class FieldReference : public Expression
 public:
     /// \brief Construct a field reference
     /// \param fieldName The name of the field
-    explicit FieldReference(const std::string& fieldName);
+    explicit FieldReference(const String& fieldName);
 
     Type        GetResultType() const override;
-    std::string ToString() const override;
-    void        Dump(int indent = 0, const std::string& nsPrefix = "") const override;
+    String ToString() const override;
+    void        Dump(int indent = 0, const String& nsPrefix = "") const override;
 
     /// \brief Get the field name
     /// \return The field name
-    const std::string& GetFieldName() const;
+    const String& GetFieldName() const;
 
 private:
-    std::string fieldName_;
+    String fieldName_;
 };
 
 /// \brief Member access expression (object.field)
@@ -366,11 +366,11 @@ public:
     /// \brief Construct a member access expression
     /// \param object The object expression
     /// \param memberName The name of the member being accessed
-    MemberAccessExpression(std::unique_ptr<Expression> object, const std::string& memberName);
+    MemberAccessExpression(std::unique_ptr<Expression> object, const String& memberName);
 
     Type        GetResultType() const override;
-    std::string ToString() const override;
-    void        Dump(int indent = 0, const std::string& nsPrefix = "") const override;
+    String ToString() const override;
+    void        Dump(int indent = 0, const String& nsPrefix = "") const override;
 
     /// \brief Get the object expression
     /// \return The object expression
@@ -378,11 +378,11 @@ public:
 
     /// \brief Get the member name
     /// \return The member name
-    const std::string& GetMemberName() const;
+    const String& GetMemberName() const;
 
 private:
     std::unique_ptr<Expression> object_;
-    std::string                 memberName_;
+    String                 memberName_;
 };
 
 /// \brief Literal value expression
@@ -399,15 +399,15 @@ public:
 
     /// \brief Construct a string literal
     /// \param value The string value
-    explicit LiteralExpression(const std::string& value);
+    explicit LiteralExpression(const String& value);
 
     /// \brief Construct a boolean literal
     /// \param value The boolean value
     explicit LiteralExpression(const bool value);
 
     Type        GetResultType() const override;
-    std::string ToString() const override;
-    void        Dump(int indent = 0, const std::string& nsPrefix = "") const override;
+    String ToString() const override;
+    void        Dump(int indent = 0, const String& nsPrefix = "") const override;
 
     /// \brief Get the integer value (if type is INT)
     /// \return The integer value
@@ -419,7 +419,7 @@ public:
 
     /// \brief Get the string value (if type is STRING or GUID)
     /// \return The string value
-    const std::string& GetStringValue() const;
+    const String& GetStringValue() const;
 
     /// \brief Get the boolean value (if type is BOOL)
     /// \return The boolean value
@@ -429,7 +429,7 @@ private:
     Type        type_;
     int64_t     intValue_;
     double      realValue_;
-    std::string stringValue_;
+    String stringValue_;
     bool        boolValue_;
 };
 
@@ -440,23 +440,23 @@ public:
     /// \brief Construct a function call
     /// \param functionName The name of the function
     /// \param arguments The function arguments
-    FunctionCall(const std::string& functionName, std::vector<std::unique_ptr<Expression>> arguments);
+    FunctionCall(const String& functionName, Array<std::unique_ptr<Expression>> arguments);
 
     Type        GetResultType() const override;
-    std::string ToString() const override;
-    void        Dump(int indent = 0, const std::string& nsPrefix = "") const override;
+    String ToString() const override;
+    void        Dump(int indent = 0, const String& nsPrefix = "") const override;
 
     /// \brief Get the function name
     /// \return The function name
-    const std::string& GetFunctionName() const;
+    const String& GetFunctionName() const;
 
     /// \brief Get the arguments
     /// \return Vector of argument expressions
-    const std::vector<std::unique_ptr<Expression>>& GetArguments() const;
+    const Array<std::unique_ptr<Expression>>& GetArguments() const;
 
 private:
-    std::string                              functionName_;
-    std::vector<std::unique_ptr<Expression>> arguments_;
+    String                              functionName_;
+    Array<std::unique_ptr<Expression>> arguments_;
 };
 
 /// \brief Parenthesized expression (for grouping)
@@ -468,8 +468,8 @@ public:
     explicit ParenthesizedExpression(std::unique_ptr<Expression> expr);
 
     Type        GetResultType() const override;
-    std::string ToString() const override;
-    void        Dump(int indent = 0, const std::string& nsPrefix = "") const override;
+    String ToString() const override;
+    void        Dump(int indent = 0, const String& nsPrefix = "") const override;
 
     /// \brief Get the inner expression
     /// \return Pointer to the inner expression
@@ -490,20 +490,20 @@ public:
     /// \brief Construct an invariant
     /// \param name The invariant's name
     /// \param expression The boolean expression for the invariant
-    Invariant(const std::string& name, std::unique_ptr<Expression> expression);
+    Invariant(const String& name, std::unique_ptr<Expression> expression);
 
     /// \brief Get the invariant's name
     /// \return The invariant name
-    const std::string& GetName() const;
+    const String& GetName() const;
 
     /// \brief Get the invariant's expression
     /// \return The boolean expression
     const Expression* GetExpression() const;
 
-    void Dump(int indent = 0, const std::string& nsPrefix = "") const override;
+    void Dump(int indent = 0, const String& nsPrefix = "") const override;
 
 private:
-    std::string                 name_;
+    String                 name_;
     std::unique_ptr<Expression> expression_;
 };
 
@@ -523,7 +523,7 @@ public:
     /// \param initializer Optional initializer expression for computed features or alias target
     /// \param isAlias Whether the field is an alias (true) or computed/regular field (false)
     Field(
-        std::unique_ptr<TypeSpec> type, const std::string& name, std::vector<std::unique_ptr<Modifier>> modifiers, const bool isStatic = false,
+        std::unique_ptr<TypeSpec> type, const String& name, Array<std::unique_ptr<Modifier>> modifiers, const bool isStatic = false,
         std::unique_ptr<Expression> initializer = nullptr, const bool isAlias = false) :
         type_(std::move(type)), name_(name), modifiers_(std::move(modifiers)), isStatic_(isStatic), initializer_(std::move(initializer)), isAlias_(isAlias)
     {
@@ -535,11 +535,11 @@ public:
 
     /// \brief Get the field's name
     /// \return The field name
-    const std::string& GetName() const;
+    const String& GetName() const;
 
     /// \brief Get the field's modifiers
     /// \return Vector of modifiers
-    const std::vector<std::unique_ptr<Modifier>>& GetModifiers() const;
+    const Array<std::unique_ptr<Modifier>>& GetModifiers() const;
 
     /// \brief Check if field is static
     /// \return True if field is static
@@ -565,12 +565,12 @@ public:
     /// \return True if field has unique modifier
     bool HasUniqueConstraint() const;
 
-    void Dump(int indent = 0, const std::string& nsPrefix = "") const override;
+    void Dump(int indent = 0, const String& nsPrefix = "") const override;
 
 private:
     std::unique_ptr<TypeSpec>              type_;
-    std::string                            name_;
-    std::vector<std::unique_ptr<Modifier>> modifiers_;
+    String                            name_;
+    Array<std::unique_ptr<Modifier>> modifiers_;
     bool                                   isStatic_;
     std::unique_ptr<Expression>            initializer_;
     bool                                   isAlias_;
@@ -587,21 +587,21 @@ public:
     /// \brief Construct an enum declaration
     /// \param name The enum name
     /// \param values Vector of enum value names
-    EnumDeclaration(const std::string& name, std::vector<std::string> values) : name_(name), values_(std::move(values)) {}
+    EnumDeclaration(const String& name, Array<String> values) : name_(name), values_(std::move(values)) {}
 
     /// \brief Get the enum name
     /// \return The enum name
-    const std::string& GetName() const;
+    const String& GetName() const;
 
     /// \brief Get the enum values
     /// \return Vector of enum value names
-    const std::vector<std::string>& GetValues() const;
+    const Array<String>& GetValues() const;
 
-    void Dump(int indent = 0, const std::string& nsPrefix = "") const override;
+    void Dump(int indent = 0, const String& nsPrefix = "") const override;
 
 private:
-    std::string              name_;
-    std::vector<std::string> values_;
+    String              name_;
+    Array<String> values_;
 };
 
 // ============================================================================
@@ -618,19 +618,19 @@ public:
     /// \param fields Vector of field declarations
     /// \param invariants Vector of invariant declarations
     ClassDeclaration(
-        const std::string& name, const std::string& baseType, std::vector<std::unique_ptr<Field>> fields,
-        std::vector<std::unique_ptr<Invariant>> invariants = {}) :
+        const String& name, const String& baseType, Array<std::unique_ptr<Field>> fields,
+        Array<std::unique_ptr<Invariant>> invariants = {}) :
         name_(name), baseType_(baseType), fields_(std::move(fields)), invariants_(std::move(invariants))
     {
     }
 
     /// \brief Get the class type name
     /// \return The class type name
-    const std::string& GetName() const;
+    const String& GetName() const;
 
     /// \brief Get the base type name
     /// \return The base type name (empty if no explicit base)
-    const std::string& GetBaseType() const;
+    const String& GetBaseType() const;
 
     /// \brief Check if class has explicit base type
     /// \return True if class explicitly inherits from another type
@@ -638,19 +638,19 @@ public:
 
     /// \brief Get the class's fields
     /// \return Vector of field declarations
-    const std::vector<std::unique_ptr<Field>>& GetFields() const;
+    const Array<std::unique_ptr<Field>>& GetFields() const;
 
     /// \brief Get the class's invariants
     /// \return Vector of invariant declarations
-    const std::vector<std::unique_ptr<Invariant>>& GetInvariants() const;
+    const Array<std::unique_ptr<Invariant>>& GetInvariants() const;
 
-    void Dump(int indent = 0, const std::string& nsPrefix = "") const override;
+    void Dump(int indent = 0, const String& nsPrefix = "") const override;
 
 private:
-    std::string                             name_;
-    std::string                             baseType_; // Empty string if no explicit base
-    std::vector<std::unique_ptr<Field>>     fields_;
-    std::vector<std::unique_ptr<Invariant>> invariants_;
+    String                             name_;
+    String                             baseType_; // Empty string if no explicit base
+    Array<std::unique_ptr<Field>>     fields_;
+    Array<std::unique_ptr<Invariant>> invariants_;
 };
 
 // ============================================================================
@@ -688,7 +688,7 @@ public:
     /// \return Pointer to class declaration or nullptr
     const ClassDeclaration* AsClass() const;
 
-    void Dump(int indent = 0, const std::string& nsPrefix = "") const override;
+    void Dump(int indent = 0, const String& nsPrefix = "") const override;
 
 private:
     Kind                     kind_;
@@ -699,32 +699,32 @@ private:
 // AST (Root Node)
 // ============================================================================
 
-/// \brief Represents a complete BBFM program (root AST node)
+/// \brief Represents a complete model program (root AST node)
 class AST : public ASTNode
 {
 public:
     /// \brief Construct an AST from namespace and declarations
     /// \param sourceNamespace The namespace declared in source (empty if none)
     /// \param declarations Vector of top-level declarations
-    explicit AST(const std::string& sourceNamespace, std::vector<std::unique_ptr<Declaration>> declarations);
+    explicit AST(const String& sourceNamespace, Array<std::unique_ptr<Declaration>> declarations);
 
     /// \brief Get the source namespace
     /// \return The namespace string (empty if none)
-    const std::string& GetSourceNamespace() const;
+    const String& GetSourceNamespace() const;
 
     /// \brief Get all declarations in the AST
     /// \return Vector of declarations
-    const std::vector<std::unique_ptr<Declaration>>& GetDeclarations() const;
+    const Array<std::unique_ptr<Declaration>>& GetDeclarations() const;
 
-    void Dump(int indent = 0, const std::string& nsPrefix = "") const override;
+    void Dump(int indent = 0, const String& nsPrefix = "") const override;
 
 private:
-    std::string                               sourceNamespace_;
-    std::vector<std::unique_ptr<Declaration>> declarations_;
+    String                               sourceNamespace_;
+    Array<std::unique_ptr<Declaration>> declarations_;
 };
-} // namespace bbfm
+} // namespace runtime
 
 // Restore previous alignment
 #pragma pack(pop)
 
-#endif // __BBFM_AST_H_INCL__
+#endif // __RUNTIME_AST_H_INCL__

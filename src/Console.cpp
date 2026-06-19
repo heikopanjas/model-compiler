@@ -1,14 +1,12 @@
 #include "Console.h"
 #include <iostream>
 
-namespace bbfm {
-void Console::ReportError(const std::string& message)
+void Console::ReportError(const runtime::String& message)
 {
-    std::cerr << message << std::endl;
+    std::cerr << message.GetValue() << std::endl;
 }
 
-void Console::ReportStatus(const std::string& message)
+void Console::ReportStatus(const runtime::String& message)
 {
-    std::cout << message << std::endl;
+    std::cout << message.GetValue() << std::endl;
 }
-} // namespace bbfm

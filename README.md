@@ -4,7 +4,7 @@ A Domain-Specific Language (DSL) compiler for defining podcast object models and
 
 **License:** MIT  
 **Language:** C++23 (minimum C++17)  
-**Version:** v0.1.0 — Phases 0–2 complete (C++ code generation; Rust experimental)
+**Version:** v4.1.1 — Phases 0–2 complete (compiler runtime library; generator plugins)
 
 ## Overview
 
@@ -12,6 +12,7 @@ The BBFM modeling language enables you to define data types, relationships, and 
 
 - **C++ header files** with class hierarchies, field wrappers, invariants, and computed features
 - **Rust source files** (experimental) via `--lang rust`
+- **Swift source files** (experimental) via `--lang swift`
 
 Additional target languages are planned. See [The FM Language](#the-fm-language) for the full language reference.
 
@@ -338,7 +339,7 @@ Expressions are used in invariants and computed features.
 
 ### Universal Metadata Fields
 
-Every class instance automatically carries six metadata fields. These are part of the type system and **must never be declared** in FM source. Generated C++ provides them through inheritance from `bbfm::runtime::Fabric`.
+Every class instance automatically carries six metadata fields. These are part of the type system and **must never be declared** in FM source. Generated C++ provides them through inheritance from `runtime::Fabric`.
 
 | Field | Type | Purpose |
 |-------|------|---------|
@@ -513,11 +514,21 @@ ninja clean
 # Generate C++ header
 ./_build/model-compiler --lang c++ <source_file.fm>
 
-# Generate Rust source (experimental; specify .rs output explicitly)
-./_build/model-compiler --lang rust <source_file.fm> -o output.rs
+# Generate Rust source (experimental)
+./_build/model-compiler --lang rust <source_file.fm>
+
+# Generate Swift source (experimental)
+./_build/model-compiler --lang swift <source_file.fm>
 
 # Generate with custom output file
 ./_build/model-compiler --lang c++ <source_file.fm> -o output.h
+
+# Load generator shared libraries from a custom directory
+./_build/model-compiler --lang swift --plugin-dir ./_build <source_file.fm>
+
+# List generator languages found in the default or custom plugin directory
+./_build/model-compiler --list-languages
+./_build/model-compiler --list-languages --plugin-dir ./_build
 
 # Generate with namespace and class prefix
 ./_build/model-compiler --lang c++ --target-namespace myapp --target-class-prefix FM <source_file.fm>
@@ -533,9 +544,9 @@ ninja clean
 ./_build/model-compiler --help
 ```
 
-When `--lang` is omitted, the compiler runs validation only (Phases 0 and 1). When `--lang` is specified, it also runs Phase 2 code generation. The default output extension is `.h`; use `-o` to set the path explicitly (required for Rust output). Only a single input file is supported per invocation.
+When `--lang` is omitted, the compiler runs validation only (Phases 0 and 1). When `--lang` is specified, it also runs Phase 2 code generation by loading a generator shared library. During development, generator libraries are built next to `model-compiler` (`c++-generator`, `rust-generator`, and `swift-generator` with the platform shared-library suffix: `.dylib` on macOS, `.dll` on Windows, and `.so` on Linux). Use `--plugin-dir` to point at a different generator directory. The scanner treats shared libraries without `GetCapabilities` as non-plugins and ignores them. Use `--list-languages` to scan the available plugins and print discovered generators without providing an input file. The default output extension comes from the selected generator; use `-o` to set the path explicitly. Only a single input file is supported per compilation invocation.
 
-Supported `--lang` values: `c++`, `rust` (experimental).
+Supported `--lang` values are determined by loaded generator plugins. In-tree plugins currently support `c++`, `rust` (experimental), and `swift` (experimental).
 
 Examples:
 
@@ -553,7 +564,13 @@ Examples:
 ./_build/model-compiler --lang c++ --target-namespace myapp examples/podcast.fm
 
 # Generate Rust (experimental)
-./_build/model-compiler --lang rust examples/test_computed_simple.fm -o examples/test_computed_simple.rs
+./_build/model-compiler --lang rust examples/test_computed_simple.fm
+
+# Generate Swift (experimental)
+./_build/model-compiler --lang swift examples/test_computed_simple.fm
+
+# List available generator plugins
+./_build/model-compiler --list-languages
 
 # View syntax tree (validation only, no code generation)
 ./_build/model-compiler --dump-syntax-tree examples/podcast.fm
@@ -700,7 +717,12 @@ ctest --test-dir _build --output-on-failure
 Tests include:
 
 - **`.fm` fixture tests** — positive examples must compile successfully; negative examples must fail with the expected error
-- **`guid-test`** — runtime unit tests for `bbfm::runtime::Guid` (`tests/runtime/GuidTest.cpp`)
+- **Generator plugin tests** — C++, Rust, and Swift code generation load shared libraries from the executable directory
+- **Language listing test** — `--list-languages` scans loaded generator plugins without requiring an input file
+- **`guid-test`** — runtime unit tests for `runtime::Guid` (`tests/runtime/GuidTest.cpp`)
+- **`string-test`** — runtime unit tests for `runtime::String` (`tests/runtime/StringTest.cpp`)
+- **`dictionary-test`** — plugin capability dictionary unit tests (`tests/runtime/DictionaryTest.cpp`)
+- **`array-test`** — runtime unit tests for `runtime::Array` (`tests/runtime/ArrayTest.cpp`)
 
 ## Project Structure
 
@@ -716,28 +738,52 @@ model-compiler/
 │   ├── model-compiler.y        # Bison parser specification
 │   ├── main.cpp                # CLI entry point
 │   ├── Driver.cpp              # Compilation phase orchestration
-│   ├── AST.cpp                 # AST implementation
-│   ├── SemanticAnalyzer.cpp    # Semantic analysis
-│   ├── CodeGenerator.cpp       # Code generator base class
-│   ├── CppCodeGenerator.cpp    # C++ code generation
-│   ├── RustCodeGenerator.cpp   # Rust code generation (experimental)
-│   └── Console.cpp             # Error reporting and output formatting
+│   ├── TypeSymbol.cpp          # Semantic type symbol implementation (compiler-runtime)
+│   ├── runtime/                # Compiler runtime implementations
+│   │   ├── AST.cpp
+│   │   ├── SemanticAnalyzer.cpp
+│   │   ├── ICodeGenerator.cpp
+│   │   ├── Fabric.cpp
+│   │   ├── Guid.cpp
+│   │   ├── String.cpp
+│   │   ├── Date.cpp
+│   │   ├── Dictionary.cpp
+│   │   └── Array.cpp
+│   ├── generators/             # Self-contained generator plugin implementations
+│   │   ├── c++/                # C++ generator (CppCodeGenerator.h/cpp)
+│   │   ├── rust/               # Rust generator (experimental)
+│   │   └── swift/              # Swift generator (experimental)
+│   ├── SharedLibrary.cpp       # Cross-platform dynamic library loading
+│   ├── GeneratorInstance.cpp   # RAII generator plugin instance handle
+│   ├── GeneratorPluginManager.cpp # Generator plugin discovery and loading
+│   └── Console.cpp             # Error reporting and output formatting (compiler-runtime)
 ├── include/                    # Public headers
-│   ├── AST.h
-│   ├── CodeGenerator.h
 │   ├── Common.h
 │   ├── Console.h
 │   ├── Contracts.h             # Require/RequireReturn precondition macros
-│   ├── CppCodeGenerator.h
 │   ├── Driver.h
-│   ├── RustCodeGenerator.h
-│   ├── SemanticAnalyzer.h
-│   └── runtime/                # Generated-code runtime library
+│   ├── GeneratorInstance.h
+│   ├── GeneratorLanguageInfo.h
+│   ├── GeneratorPlugin.h
+│   ├── GeneratorPluginManager.h
+│   ├── SharedLibrary.h
+│   ├── TypeSymbol.h
+│   └── runtime/                # Compiler runtime library (model + generated code)
+│       ├── AST.h               # Abstract syntax tree
+│       ├── SemanticAnalyzer.h  # Semantic analysis
+│       ├── ICodeGenerator.h    # Code generation interface
 │       ├── Fabric.h            # Universal metadata base class
-│       ├── Guid.h / Guid.cpp
+│       ├── Guid.h
 │       ├── String.h
 │       ├── Date.h
-│       └── BoundedValue.h      # Field wrapper types
+│       ├── Dictionary.h        # Key/value container (plugin capabilities)
+│       ├── Array.h             # Indexed value container
+│       ├── AliasValue.h
+│       ├── DynamicValue.h
+│       ├── BoundedValue.h      # Field wrapper umbrella plus required checked wrapper
+│       ├── UnboundedValue.h
+│       ├── OptionalBoundedValue.h
+│       └── OptionalUnboundedValue.h
 ├── examples/                   # Example and fixture `.fm` files
 ├── tests/runtime/              # Runtime unit tests
 └── _build/                     # Build artifacts (gitignored)
@@ -757,26 +803,27 @@ The compiler implements a multi-phase compilation process:
    - Field uniqueness validation (including inherited fields)
    - Invariant validation (expression AST traversal, field reference checking)
    - Expression type inference and validation
-3. **Phase 2: Code Generation** ✅ — Generates target-language source when `--lang` is specified:
+3. **Phase 2: Code Generation** ✅ — Loads a generator plugin and generates target-language source when `--lang` is specified:
    - **C++**: Header files with `Fabric` inheritance, field wrappers, getters, computed features, and invariant checkers
    - **Rust** (experimental): Source files with structs, enums, and partial validation support
+   - **Swift** (experimental): Source files with enums, classes, stored properties, and basic computed properties
 
 ## Type Mappings
 
-Current C++ mappings for BBFM primitive types:
+Current C++ mappings for model primitive types:
 
-| BBFM Type | C++ |
+| Model Type | C++ |
 |-----------|-----|
-| String | `bbfm::runtime::String` |
+| String | `runtime::String` |
 | Int | `int64_t` |
 | Real | `double` |
 | Bool | `bool` |
 | Timestamp | `double` |
 | Timespan | `double` |
-| Date | `bbfm::runtime::Date` |
-| Guid | `bbfm::runtime::Guid` |
+| Date | `runtime::Date` |
+| Guid | `runtime::Guid` |
 
-Universal metadata fields (`typeId`, `id`, `cardinality`, `creationDate`, `modificationDate`, `comment`) are provided by inheriting from `bbfm::runtime::Fabric`.
+Universal metadata fields (`typeId`, `id`, `cardinality`, `creationDate`, `modificationDate`, `comment`) are provided by inheriting from `runtime::Fabric`.
 
 ## Status
 
@@ -784,11 +831,15 @@ Universal metadata fields (`typeId`, `id`, `cardinality`, `creationDate`, `modif
 
 - Phase 0: Lexical analysis and parsing with expression grammar and diagnostics
 - Phase 1: Semantic analysis with symbol tables, inheritance checks, invariants, computed features, and aliases
-- Phase 2: C++ code generation with field wrappers, invariant checkers, namespaces, and prefixes
+- Phase 2: Generator plugin loading with executable-adjacent C++, Rust, and Swift generator shared libraries
+- `compiler-runtime` shared library containing `runtime::AST`, `TypeSymbol`, `runtime::SemanticAnalyzer`, `Console`, `runtime::ICodeGenerator`, `runtime::Fabric`, `runtime::Guid`, `runtime::String`, `runtime::Date`, `runtime::Dictionary`, and `runtime::Array`
+- `--plugin-dir` for loading generator shared libraries from an explicit directory
+- `--list-languages` for scanning available generator plugins and printing discovered target languages
 
 **Experimental:**
 
 - `--lang rust` — Rust code generation is wired in but incomplete; output may be missing features
+- `--lang swift` — Swift code generation is available as an initial backend; output may be missing features
 
 **Planned:**
 
@@ -805,22 +856,25 @@ The compiler is organized into several key components:
 
 - **Lexer** (`model-compiler.l`) - Tokenizes input using Flex
 - **Parser** (`model-compiler.y`) - Parses tokens into AST using Bison
-- **AST** (`AST.h/cpp`) - Abstract Syntax Tree node definitions
-- **SemanticAnalyzer** (`SemanticAnalyzer.h/cpp`) - Type checking and validation
-- **CodeGenerator** (`CodeGenerator.h/cpp`) - Abstract code generation interface
-- **CppCodeGenerator** (`CppCodeGenerator.h/cpp`) - C++ header generation
-- **RustCodeGenerator** (`RustCodeGenerator.h/cpp`) - Experimental Rust generation
+- **AST** (`include/runtime/AST.h`, `src/runtime/AST.cpp`) - Abstract Syntax Tree node definitions
+- **SemanticAnalyzer** (`include/runtime/SemanticAnalyzer.h`, `src/runtime/SemanticAnalyzer.cpp`) - Type checking and validation
+- **TypeSymbol** (`TypeSymbol.h/cpp`) - Symbol table entry for declared and primitive types
+- **ICodeGenerator** (`include/runtime/ICodeGenerator.h`, `src/runtime/ICodeGenerator.cpp`) - Code generation interface
+- **CppCodeGenerator** (`src/generators/c++/CppCodeGenerator.h/cpp`) - C++ header generation
+- **RustCodeGenerator** (`src/generators/rust/RustCodeGenerator.h/cpp`) - Experimental Rust generation
+- **SwiftCodeGenerator** (`src/generators/swift/SwiftCodeGenerator.h/cpp`) - Experimental Swift generation
 - **Driver** (`Driver.h/cpp`) - Orchestrates compilation phases
 - **Console** (`Console.h/cpp`) - Error reporting and output formatting
-- **Runtime** (`include/runtime/`) - Types used by generated C++ code (`Fabric`, `Guid`, field wrappers)
+- **Runtime** (`include/runtime/`) - Compiler model, semantic analysis, and types used by generated C++ code
 
 ### Coding Standards
 
 This project follows strict C++ coding standards documented in `AGENTS.md`:
 
 - C++23 standard (minimum C++17 compatibility)
-- All code in `bbfm` namespace
-- Include guards format: `__BBFM_CLASS_NAME_H_INCL__`
+- Compiler and plugin types live at global scope; runtime library types live in the `runtime` namespace
+- Shared-library boundaries (`compiler-runtime`, generator plugins) avoid STL in exported APIs because standard-library types have no stable ABI across DLL/dylib interfaces; compiler internals use `runtime::String`, `runtime::Array<T>`, and `runtime::Dictionary<K,V>` instead of `std::string`, `std::vector`, and `std::map` (CLI/parsing may still use STL at cxxopts and iostream boundaries)
+- Include guards format: `__CLASS_NAME_H_INCL__`; headers under `include/runtime/` use a `RUNTIME_` prefix (e.g. `__RUNTIME_GUID_H_INCL__`)
 - Smart pointers for resource management
 - Const correctness throughout
 - Doxygen documentation for all public APIs

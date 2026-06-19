@@ -1,5 +1,5 @@
-#ifndef __BBFM_GENERATED_TEST_TYPE_PROMOTION_OK_H_INCL__
-#define __BBFM_GENERATED_TEST_TYPE_PROMOTION_OK_H_INCL__
+#ifndef __GENERATED_TEST_TYPE_PROMOTION_OK_H_INCL__
+#define __GENERATED_TEST_TYPE_PROMOTION_OK_H_INCL__
 
 // Set 8-byte alignment for all types in this header
 #pragma pack(push, 8)
@@ -16,7 +16,7 @@
 #include "runtime/Guid.h"
 
 /// \brief Rectangle struct
-struct Rectangle : public bbfm::runtime::Fabric
+struct Rectangle : public runtime::Fabric
 {
     /// \brief Constructor - initializes all fields with parent reference
     Rectangle()
@@ -30,12 +30,12 @@ struct Rectangle : public bbfm::runtime::Fabric
     virtual ~Rectangle() = default;
 
     // User-defined fields
-    bbfm::runtime::UnboundedValue<int64_t, Rectangle> width_;
-    bbfm::runtime::UnboundedValue<int64_t, Rectangle> height_;
-    bbfm::runtime::DynamicValue<double, Rectangle> area_;
+    runtime::UnboundedValue<int64_t, Rectangle> width_;
+    runtime::UnboundedValue<int64_t, Rectangle> height_;
+    runtime::DynamicValue<double, Rectangle> area_;
 };
 
 // Restore previous alignment
 #pragma pack(pop)
 
-#endif // __BBFM_GENERATED_TEST_TYPE_PROMOTION_OK_H_INCL__
+#endif // __GENERATED_TEST_TYPE_PROMOTION_OK_H_INCL__

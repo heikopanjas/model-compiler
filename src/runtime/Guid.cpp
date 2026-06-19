@@ -1,6 +1,5 @@
-#include "Guid.h"
+#include "runtime/Guid.h"
 
-#include <algorithm>
 #include <cstring>
 #include <vector>
 
@@ -175,7 +174,7 @@ void GenerateNative(uint8_t* out)
 }
 } // anonymous namespace
 
-namespace bbfm { namespace runtime {
+namespace runtime {
 // --- Impl ----------------------------------------------------------------
 
 class Guid::Impl
@@ -331,11 +330,11 @@ bool Guid::operator<(const Guid& other) const
     const uint8_t* b = (nullptr != other.impl_) ? other.impl_->bytes_.data() : NIL_BYTES;
     return 0 > std::memcmp(a, b, UUID_SIZE);
 }
-}} // namespace bbfm::runtime
+} // namespace runtime
 
 // --- std::hash specialization ------------------------------------------------
 
-size_t std::hash<bbfm::runtime::Guid>::operator()(const bbfm::runtime::Guid& guid) const
+size_t std::hash<runtime::Guid>::operator()(const runtime::Guid& guid) const
 {
     static const uint8_t NIL[UUID_SIZE] = {};
     const uint8_t*       bytes          = (nullptr != guid.impl_) ? guid.impl_->bytes_.data() : NIL;

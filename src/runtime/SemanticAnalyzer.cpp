@@ -1,23 +1,26 @@
-#include "SemanticAnalyzer.h"
+#include "runtime/SemanticAnalyzer.h"
 #include "Common.h"
+#include "runtime/Array.h"
+#include "runtime/Dictionary.h"
+#include "runtime/String.h"
 #include "Console.h"
 #include "Contracts.h"
 #include <iostream>
 
-namespace bbfm {
-SemanticAnalyzer::SemanticAnalyzer(const AST* ast, const std::vector<std::string>& namespaces) : ast_(ast), namespaces_(namespaces), hasErrors_(false) {}
+namespace runtime {
+SemanticAnalyzer::SemanticAnalyzer(const AST* ast, const Array<String>& namespaces) : ast_(ast), namespaces_(namespaces), hasErrors_(false) {}
 
-std::string SemanticAnalyzer::FormatNamespacePrefix() const
+String SemanticAnalyzer::FormatNamespacePrefix() const
 {
-    if (namespaces_.empty() == true)
+    if (namespaces_.GetCount() == 0)
     {
         return "";
     }
 
-    std::string prefix;
-    for (const auto& ns : namespaces_)
+    String prefix;
+    for (size_t i = 0; i < namespaces_.GetCount(); ++i)
     {
-        prefix += ns + "::";
+        prefix = prefix + namespaces_.GetValueAt(i) + String("::");
     }
 
     return prefix;
@@ -45,26 +48,27 @@ bool SemanticAnalyzer::Analyze()
 
 void SemanticAnalyzer::RegisterPrimitiveTypes()
 {
-    symbolTable_.insert({"String", TypeSymbol("String")});
-    symbolTable_.insert({"Int", TypeSymbol("Int")});
-    symbolTable_.insert({"Real", TypeSymbol("Real")});
-    symbolTable_.insert({"Bool", TypeSymbol("Bool")});
-    symbolTable_.insert({"Timestamp", TypeSymbol("Timestamp")});
-    symbolTable_.insert({"Timespan", TypeSymbol("Timespan")});
-    symbolTable_.insert({"Date", TypeSymbol("Date")});
-    symbolTable_.insert({"Guid", TypeSymbol("Guid")});
+    symbolTable_.SetValue(String("String"), TypeSymbol(String("String")));
+    symbolTable_.SetValue(String("Int"), TypeSymbol(String("Int")));
+    symbolTable_.SetValue(String("Real"), TypeSymbol(String("Real")));
+    symbolTable_.SetValue(String("Bool"), TypeSymbol(String("Bool")));
+    symbolTable_.SetValue(String("Timestamp"), TypeSymbol(String("Timestamp")));
+    symbolTable_.SetValue(String("Timespan"), TypeSymbol(String("Timespan")));
+    symbolTable_.SetValue(String("Date"), TypeSymbol(String("Date")));
+    symbolTable_.SetValue(String("Guid"), TypeSymbol(String("Guid")));
 }
 
 bool SemanticAnalyzer::BuildSymbolTable()
 {
     bool success = true;
 
-    for (const auto& decl : ast_->GetDeclarations())
+    for (size_t declIndex = 0; declIndex < ast_->GetDeclarations().GetCount(); ++declIndex)
     {
+        const Declaration* decl = ast_->GetDeclarations().At(declIndex).get();
         if (Declaration::Kind::ENUM == decl->GetKind())
         {
             const EnumDeclaration* enumDecl = decl->AsEnum();
-            const std::string&     name     = enumDecl->GetName();
+            const String&     name     = enumDecl->GetName();
 
             // Check for duplicate type names
             if (TypeExists(name) == true)
@@ -75,12 +79,12 @@ bool SemanticAnalyzer::BuildSymbolTable()
             }
 
             // Add to symbol table
-            symbolTable_.insert({name, TypeSymbol(enumDecl)});
+            symbolTable_.SetValue(name, TypeSymbol(enumDecl));
         }
         else if (Declaration::Kind::CLASS == decl->GetKind())
         {
             const ClassDeclaration* classDecl = decl->AsClass();
-            const std::string&      name      = classDecl->GetName();
+            const String&      name      = classDecl->GetName();
 
             // Check for duplicate type names
             if (TypeExists(name) == true)
@@ -91,7 +95,7 @@ bool SemanticAnalyzer::BuildSymbolTable()
             }
 
             // Add to symbol table
-            symbolTable_.insert({name, TypeSymbol(classDecl)});
+            symbolTable_.SetValue(name, TypeSymbol(classDecl));
         }
     }
 
@@ -103,8 +107,9 @@ bool SemanticAnalyzer::ValidateTypeReferences()
     bool success = true;
 
     // First pass: Validate type references
-    for (const auto& decl : ast_->GetDeclarations())
+    for (size_t declIndex = 0; declIndex < ast_->GetDeclarations().GetCount(); ++declIndex)
     {
+        const Declaration* decl = ast_->GetDeclarations().At(declIndex).get();
         if (Declaration::Kind::CLASS == decl->GetKind())
         {
             const ClassDeclaration* classDecl = decl->AsClass();
@@ -118,15 +123,16 @@ bool SemanticAnalyzer::ValidateTypeReferences()
 
     // Second pass: Check for inheritance cycles
     // This must be done after all types are validated to handle forward references
-    for (const auto& decl : ast_->GetDeclarations())
+    for (size_t declIndex = 0; declIndex < ast_->GetDeclarations().GetCount(); ++declIndex)
     {
+        const Declaration* decl = ast_->GetDeclarations().At(declIndex).get();
         if (Declaration::Kind::CLASS == decl->GetKind())
         {
             const ClassDeclaration* classDecl = decl->AsClass();
 
             if (classDecl->HasExplicitBase() == true)
             {
-                std::set<std::string> visited;
+                std::set<String> visited;
                 visited.insert(classDecl->GetName());
                 if (HasInheritanceCycle(classDecl->GetBaseType(), visited) == true)
                 {
@@ -149,7 +155,7 @@ bool SemanticAnalyzer::ValidateClassDeclaration(const ClassDeclaration* classDec
     // Validate base type if specified
     if (classDecl->HasExplicitBase() == true)
     {
-        const std::string& baseType = classDecl->GetBaseType();
+        const String& baseType = classDecl->GetBaseType();
 
         if (TypeExists(baseType) == false)
         {
@@ -170,8 +176,9 @@ bool SemanticAnalyzer::ValidateClassDeclaration(const ClassDeclaration* classDec
     }
 
     // Validate field types
-    for (const auto& field : classDecl->GetFields())
+    for (size_t fieldIndex = 0; fieldIndex < classDecl->GetFields().GetCount(); ++fieldIndex)
     {
+        const Field* field = classDecl->GetFields().At(fieldIndex).get();
         // Skip alias fields - they don't have explicit types
         if (field->IsAlias() == true)
         {
@@ -183,7 +190,7 @@ bool SemanticAnalyzer::ValidateClassDeclaration(const ClassDeclaration* classDec
         if (nullptr != typeSpec && typeSpec->IsUserDefined())
         {
             const UserDefinedTypeSpec* userType = static_cast<const UserDefinedTypeSpec*>(typeSpec);
-            const std::string&         typeName = userType->GetTypeName();
+            const String&         typeName = userType->GetTypeName();
 
             if (TypeExists(typeName) == false)
             {
@@ -214,9 +221,9 @@ bool SemanticAnalyzer::ValidateClassDeclaration(const ClassDeclaration* classDec
     return success;
 }
 
-bool SemanticAnalyzer::HasInheritanceCycle(const std::string& className, std::set<std::string>& visited)
+bool SemanticAnalyzer::HasInheritanceCycle(const String& className, std::set<String>& visited)
 {
-    RequireReturn(className.empty() == false, false);
+    RequireReturn(className.IsEmpty() == false, false);
 
     // If we've visited this class before, we have a cycle
     if (visited.count(className) != 0)
@@ -249,14 +256,14 @@ bool SemanticAnalyzer::HasInheritanceCycle(const std::string& className, std::se
     return HasInheritanceCycle(classDecl->GetBaseType(), visited);
 }
 
-void SemanticAnalyzer::GetAllFields(const ClassDeclaration* classDecl, std::vector<const Field*>& allFields) const
+void SemanticAnalyzer::GetAllFields(const ClassDeclaration* classDecl, Array<const Field*>& allFields) const
 {
     // Use a set to track visited classes and prevent infinite recursion on cycles
-    std::set<std::string> visited;
+    std::set<String> visited;
     GetAllFieldsHelper(classDecl, allFields, visited);
 }
 
-void SemanticAnalyzer::GetAllFieldsHelper(const ClassDeclaration* classDecl, std::vector<const Field*>& allFields, std::set<std::string>& visited) const
+void SemanticAnalyzer::GetAllFieldsHelper(const ClassDeclaration* classDecl, Array<const Field*>& allFields, std::set<String>& visited) const
 {
     Require(nullptr != classDecl);
 
@@ -279,21 +286,21 @@ void SemanticAnalyzer::GetAllFieldsHelper(const ClassDeclaration* classDecl, std
     }
 
     // Then add this class's fields
-    for (const auto& field : classDecl->GetFields())
+    for (size_t fieldIndex = 0; fieldIndex < classDecl->GetFields().GetCount(); ++fieldIndex)
     {
-        allFields.push_back(field.get());
+        allFields.AddValue(classDecl->GetFields().At(fieldIndex).get());
     }
 }
 
-void SemanticAnalyzer::GetAllInvariants(const ClassDeclaration* classDecl, std::vector<const Invariant*>& allInvariants) const
+void SemanticAnalyzer::GetAllInvariants(const ClassDeclaration* classDecl, Array<const Invariant*>& allInvariants) const
 {
     // Use a set to track visited classes and prevent infinite recursion on cycles
-    std::set<std::string> visited;
+    std::set<String> visited;
     GetAllInvariantsHelper(classDecl, allInvariants, visited);
 }
 
 void SemanticAnalyzer::GetAllInvariantsHelper(
-    const ClassDeclaration* classDecl, std::vector<const Invariant*>& allInvariants, std::set<std::string>& visited) const
+    const ClassDeclaration* classDecl, Array<const Invariant*>& allInvariants, std::set<String>& visited) const
 {
     Require(nullptr != classDecl);
 
@@ -316,9 +323,9 @@ void SemanticAnalyzer::GetAllInvariantsHelper(
     }
 
     // Then add this class's invariants
-    for (const auto& invariant : classDecl->GetInvariants())
+    for (size_t invIndex = 0; invIndex < classDecl->GetInvariants().GetCount(); ++invIndex)
     {
-        allInvariants.push_back(invariant.get());
+        allInvariants.AddValue(classDecl->GetInvariants().At(invIndex).get());
     }
 }
 
@@ -326,15 +333,16 @@ bool SemanticAnalyzer::ValidateFieldUniqueness(const ClassDeclaration* classDecl
 {
     RequireReturn(nullptr != classDecl, false);
 
-    std::vector<const Field*> allFields;
+    Array<const Field*> allFields;
     GetAllFields(classDecl, allFields);
 
-    std::set<std::string> fieldNames;
+    std::set<String> fieldNames;
     bool                  success = true;
 
-    for (const Field* field : allFields)
+    for (size_t fieldIndex = 0; fieldIndex < allFields.GetCount(); ++fieldIndex)
     {
-        const std::string& name = field->GetName();
+        const Field* field = allFields.GetValueAt(fieldIndex);
+        const String& name = field->GetName();
         if (fieldNames.count(name) != 0)
         {
             ReportError("Duplicate field '" + name + "' in class '" + classDecl->GetName() + "' (possibly inherited)");
@@ -353,18 +361,19 @@ bool SemanticAnalyzer::ValidateInvariants(const ClassDeclaration* classDecl)
     bool success = true;
 
     // Get all fields (including inherited) for validation
-    std::vector<const Field*> allFields;
+    Array<const Field*> allFields;
     GetAllFields(classDecl, allFields);
 
-    std::set<std::string> fieldNames;
-    for (const Field* field : allFields)
+    std::set<String> fieldNames;
+    for (size_t fieldIndex = 0; fieldIndex < allFields.GetCount(); ++fieldIndex)
     {
-        fieldNames.insert(field->GetName());
+        fieldNames.insert(allFields.GetValueAt(fieldIndex)->GetName());
     }
 
     // Validate each invariant
-    for (const auto& invariant : classDecl->GetInvariants())
+    for (size_t invIndex = 0; invIndex < classDecl->GetInvariants().GetCount(); ++invIndex)
     {
+        const Invariant* invariant = classDecl->GetInvariants().At(invIndex).get();
         const Expression* expr = invariant->GetExpression();
         if (nullptr == expr)
         {
@@ -374,11 +383,11 @@ bool SemanticAnalyzer::ValidateInvariants(const ClassDeclaration* classDecl)
         }
 
         // Collect all field references in the expression
-        std::set<std::string> referencedFields;
+        std::set<String> referencedFields;
         CollectFieldReferences(expr, referencedFields);
 
         // Validate that all referenced fields exist
-        for (const std::string& fieldName : referencedFields)
+        for (const String& fieldName : referencedFields)
         {
             if (fieldNames.count(fieldName) == 0)
             {
@@ -391,7 +400,7 @@ bool SemanticAnalyzer::ValidateInvariants(const ClassDeclaration* classDecl)
     return success;
 }
 
-void SemanticAnalyzer::CollectFieldReferences(const Expression* expr, std::set<std::string>& fields) const
+void SemanticAnalyzer::CollectFieldReferences(const Expression* expr, std::set<String>& fields) const
 {
     Require(nullptr != expr);
 
@@ -441,9 +450,9 @@ void SemanticAnalyzer::CollectFieldReferences(const Expression* expr, std::set<s
     const FunctionCall* funcCall = dynamic_cast<const FunctionCall*>(expr);
     if (nullptr != funcCall)
     {
-        for (const auto& arg : funcCall->GetArguments())
+        for (size_t argIndex = 0; argIndex < funcCall->GetArguments().GetCount(); ++argIndex)
         {
-            CollectFieldReferences(arg.get(), fields);
+            CollectFieldReferences(funcCall->GetArguments().At(argIndex).get(), fields);
         }
         return;
     }
@@ -458,29 +467,30 @@ bool SemanticAnalyzer::ValidateComputedFeatures(const ClassDeclaration* classDec
     bool success = true;
 
     // Get all fields including inherited ones
-    std::vector<const Field*> allFields;
+    Array<const Field*> allFields;
     GetAllFields(classDecl, allFields);
 
     // Build set of available field names for quick lookup
-    std::set<std::string> availableFields;
-    for (const auto* field : allFields)
+    std::set<String> availableFields;
+    for (size_t fieldIndex = 0; fieldIndex < allFields.GetCount(); ++fieldIndex)
     {
-        availableFields.insert(field->GetName());
+        availableFields.insert(allFields.GetValueAt(fieldIndex)->GetName());
     }
 
     // Validate each computed feature and alias
-    for (const auto& field : classDecl->GetFields())
+    for (size_t fieldIndex = 0; fieldIndex < classDecl->GetFields().GetCount(); ++fieldIndex)
     {
+        const Field* field = classDecl->GetFields().At(fieldIndex).get();
         if (field->IsAlias() == true)
         {
-            if (ValidateAliasField(field.get(), classDecl, availableFields) == false)
+            if (ValidateAliasField(field, classDecl, availableFields) == false)
             {
                 success = false;
             }
         }
         else if (field->IsComputed() == true)
         {
-            if (ValidateComputedFeatureExpression(field.get(), classDecl, availableFields) == false)
+            if (ValidateComputedFeatureExpression(field, classDecl, availableFields) == false)
             {
                 success = false;
             }
@@ -490,7 +500,7 @@ bool SemanticAnalyzer::ValidateComputedFeatures(const ClassDeclaration* classDec
     return success;
 }
 
-bool SemanticAnalyzer::ValidateAliasField(const Field* field, const ClassDeclaration* classDecl, const std::set<std::string>& availableFields)
+bool SemanticAnalyzer::ValidateAliasField(const Field* field, const ClassDeclaration* classDecl, const std::set<String>& availableFields)
 {
     RequireReturn(nullptr != field, false);
     RequireReturn(nullptr != classDecl, false);
@@ -513,7 +523,7 @@ bool SemanticAnalyzer::ValidateAliasField(const Field* field, const ClassDeclara
     }
 
     // Validate that the target field exists
-    const std::string& targetFieldName = fieldRef->GetFieldName();
+    const String& targetFieldName = fieldRef->GetFieldName();
     if (availableFields.count(targetFieldName) == 0)
     {
         ReportError("Alias '" + field->GetName() + "' in class '" + classDecl->GetName() + "' references undefined field '" + targetFieldName + "'");
@@ -533,7 +543,7 @@ bool SemanticAnalyzer::ValidateAliasField(const Field* field, const ClassDeclara
     return success;
 }
 
-bool SemanticAnalyzer::ValidateComputedFeatureExpression(const Field* field, const ClassDeclaration* classDecl, const std::set<std::string>& availableFields)
+bool SemanticAnalyzer::ValidateComputedFeatureExpression(const Field* field, const ClassDeclaration* classDecl, const std::set<String>& availableFields)
 {
     RequireReturn(nullptr != field, false);
     RequireReturn(nullptr != classDecl, false);
@@ -560,11 +570,11 @@ bool SemanticAnalyzer::ValidateComputedFeatureExpression(const Field* field, con
     }
 
     // Collect field references from the expression
-    std::set<std::string> referencedFields;
+    std::set<String> referencedFields;
     CollectFieldReferences(expr, referencedFields);
 
     // Validate that all referenced fields exist
-    for (const std::string& refField : referencedFields)
+    for (const String& refField : referencedFields)
     {
         if (availableFields.count(refField) == 0)
         {
@@ -574,7 +584,7 @@ bool SemanticAnalyzer::ValidateComputedFeatureExpression(const Field* field, con
     }
 
     // Validate that no optional fields are referenced
-    for (const std::string& refField : referencedFields)
+    for (const String& refField : referencedFields)
     {
         const Field* referencedField = FindFieldInClass(classDecl, refField);
         if (nullptr != referencedField)
@@ -603,7 +613,7 @@ bool SemanticAnalyzer::ValidateComputedFeatureExpression(const Field* field, con
         if (IsTypeCompatible(exprType, field->GetType()) == false)
         {
             const TypeSpec* fieldTypeSpec = field->GetType();
-            std::string     fieldTypeName;
+            String     fieldTypeName;
             if (fieldTypeSpec->IsPrimitive() == true)
             {
                 const PrimitiveTypeSpec* primType = static_cast<const PrimitiveTypeSpec*>(fieldTypeSpec);
@@ -616,7 +626,7 @@ bool SemanticAnalyzer::ValidateComputedFeatureExpression(const Field* field, con
             }
 
             // Map Expression::Type to string for error message
-            std::string exprTypeName;
+            String exprTypeName;
             switch (exprType)
             {
                 case Expression::Type::INT:
@@ -655,7 +665,7 @@ bool SemanticAnalyzer::ValidateComputedFeatureExpression(const Field* field, con
     return success;
 }
 
-bool SemanticAnalyzer::ValidateMemberAccessInExpression(const Expression* expr, const ClassDeclaration* classDecl, const std::string& errorContext)
+bool SemanticAnalyzer::ValidateMemberAccessInExpression(const Expression* expr, const ClassDeclaration* classDecl, const String& errorContext)
 {
     RequireReturn(nullptr != expr, true);
 
@@ -706,9 +716,9 @@ bool SemanticAnalyzer::ValidateMemberAccessInExpression(const Expression* expr, 
     const FunctionCall* funcCall = dynamic_cast<const FunctionCall*>(expr);
     if (nullptr != funcCall)
     {
-        for (const auto& arg : funcCall->GetArguments())
+        for (size_t argIndex = 0; argIndex < funcCall->GetArguments().GetCount(); ++argIndex)
         {
-            if (ValidateMemberAccessInExpression(arg.get(), classDecl, errorContext) == false)
+            if (ValidateMemberAccessInExpression(funcCall->GetArguments().At(argIndex).get(), classDecl, errorContext) == false)
             {
                 success = false;
             }
@@ -720,7 +730,7 @@ bool SemanticAnalyzer::ValidateMemberAccessInExpression(const Expression* expr, 
     return true;
 }
 
-bool SemanticAnalyzer::ValidateMemberAccess(const MemberAccessExpression* memberAccess, const ClassDeclaration* classDecl, const std::string& errorContext)
+bool SemanticAnalyzer::ValidateMemberAccess(const MemberAccessExpression* memberAccess, const ClassDeclaration* classDecl, const String& errorContext)
 {
     RequireReturn(nullptr != memberAccess, false);
     RequireReturn(nullptr != classDecl, false);
@@ -734,7 +744,7 @@ bool SemanticAnalyzer::ValidateMemberAccess(const MemberAccessExpression* member
     const FieldReference* fieldRef = dynamic_cast<const FieldReference*>(object);
     if (nullptr != fieldRef)
     {
-        const std::string& objectFieldName = fieldRef->GetFieldName();
+        const String& objectFieldName = fieldRef->GetFieldName();
 
         // Find the field type
         const TypeSymbol* fieldType = GetFieldType(classDecl, objectFieldName);
@@ -779,18 +789,19 @@ bool SemanticAnalyzer::ValidateMemberAccess(const MemberAccessExpression* member
     return success;
 }
 
-const TypeSymbol* SemanticAnalyzer::GetFieldType(const ClassDeclaration* classDecl, const std::string& fieldName) const
+const TypeSymbol* SemanticAnalyzer::GetFieldType(const ClassDeclaration* classDecl, const String& fieldName) const
 {
     RequireReturn(nullptr != classDecl, nullptr);
-    RequireReturn(fieldName.empty() == false, nullptr);
+    RequireReturn(fieldName.IsEmpty() == false, nullptr);
 
     // Get all fields including inherited
-    std::vector<const Field*> allFields;
+    Array<const Field*> allFields;
     const_cast<SemanticAnalyzer*>(this)->GetAllFields(classDecl, allFields);
 
     // Find the field
-    for (const auto* field : allFields)
+    for (size_t fieldIndex = 0; fieldIndex < allFields.GetCount(); ++fieldIndex)
     {
+        const Field* field = allFields.GetValueAt(fieldIndex);
         if (field->GetName() == fieldName)
         {
             // Handle alias fields - get type from target field
@@ -811,7 +822,7 @@ const TypeSymbol* SemanticAnalyzer::GetFieldType(const ClassDeclaration* classDe
             if (nullptr != typeSpec && typeSpec->IsPrimitive() == true)
             {
                 const PrimitiveTypeSpec* primType = static_cast<const PrimitiveTypeSpec*>(typeSpec);
-                const std::string        typeName = PrimitiveTypeSpec::TypeToString(primType->GetType());
+                const String        typeName = PrimitiveTypeSpec::TypeToString(primType->GetType());
                 return LookupType(typeName);
             }
             else if (nullptr != typeSpec && typeSpec->IsUserDefined())
@@ -988,7 +999,7 @@ bool SemanticAnalyzer::IsTypeCompatible(Expression::Type exprType, const TypeSpe
     return false;
 }
 
-Expression::Type SemanticAnalyzer::PrimitiveNameToExpressionType(const std::string& typeName) const
+Expression::Type SemanticAnalyzer::PrimitiveNameToExpressionType(const String& typeName) const
 {
     if (typeName == "Int")
     {
@@ -1022,33 +1033,29 @@ Expression::Type SemanticAnalyzer::PrimitiveNameToExpressionType(const std::stri
     return Expression::Type::UNKNOWN;
 }
 
-bool SemanticAnalyzer::TypeExists(const std::string& typeName) const
+bool SemanticAnalyzer::TypeExists(const String& typeName) const
 {
-    return symbolTable_.count(typeName) != 0;
+    return symbolTable_.ContainsKey(typeName);
 }
 
-const TypeSymbol* SemanticAnalyzer::LookupType(const std::string& typeName) const
+const TypeSymbol* SemanticAnalyzer::LookupType(const String& typeName) const
 {
-    auto it = symbolTable_.find(typeName);
-    if (symbolTable_.end() == it)
-    {
-        return nullptr;
-    }
-    return &it->second;
+    return symbolTable_.GetValuePtr(typeName);
 }
 
-const Field* SemanticAnalyzer::FindFieldInClass(const ClassDeclaration* classDecl, const std::string& fieldName) const
+const Field* SemanticAnalyzer::FindFieldInClass(const ClassDeclaration* classDecl, const String& fieldName) const
 {
     RequireReturn(nullptr != classDecl, nullptr);
-    RequireReturn(fieldName.empty() == false, nullptr);
+    RequireReturn(fieldName.IsEmpty() == false, nullptr);
 
     // Get all fields including inherited ones
-    std::vector<const Field*> allFields;
+    Array<const Field*> allFields;
     GetAllFields(classDecl, allFields);
 
     // Search for the field by name
-    for (const Field* field : allFields)
+    for (size_t fieldIndex = 0; fieldIndex < allFields.GetCount(); ++fieldIndex)
     {
+        const Field* field = allFields.GetValueAt(fieldIndex);
         if (nullptr != field && field->GetName() == fieldName)
         {
             return field;
@@ -1058,7 +1065,7 @@ const Field* SemanticAnalyzer::FindFieldInClass(const ClassDeclaration* classDec
     return nullptr;
 }
 
-void SemanticAnalyzer::ReportError(const std::string& message)
+void SemanticAnalyzer::ReportError(const String& message)
 {
     Console::ReportError("Semantic error: " + message);
     hasErrors_ = true;
@@ -1069,7 +1076,7 @@ bool SemanticAnalyzer::HasErrors() const
     return hasErrors_;
 }
 
-const std::map<std::string, TypeSymbol>& SemanticAnalyzer::GetSymbolTable() const
+const Dictionary<String, TypeSymbol>& SemanticAnalyzer::GetSymbolTable() const
 {
     return symbolTable_;
 }
@@ -1085,23 +1092,24 @@ void SemanticAnalyzer::DumpSymbolTable() const
     int enumCount      = 0;
     int classCount     = 0;
 
-    for (const auto& entry : symbolTable_)
+    for (size_t i = 0; i < symbolTable_.GetCount(); ++i)
     {
-        if (TypeSymbol::Kind::PRIMITIVE == entry.second.kind)
+        const TypeSymbol& entry = symbolTable_.GetValueAt(i);
+        if (TypeSymbol::Kind::PRIMITIVE == entry.kind)
         {
             primitiveCount++;
         }
-        else if (TypeSymbol::Kind::ENUM == entry.second.kind)
+        else if (TypeSymbol::Kind::ENUM == entry.kind)
         {
             enumCount++;
         }
-        else if (TypeSymbol::Kind::CLASS == entry.second.kind)
+        else if (TypeSymbol::Kind::CLASS == entry.kind)
         {
             classCount++;
         }
     }
 
-    std::cout << "Total Symbols: " << symbolTable_.size() << "\n";
+    std::cout << "Total Symbols: " << symbolTable_.GetCount() << "\n";
     std::cout << "  Primitive Types: " << primitiveCount << "\n";
     std::cout << "  Enumerations: " << enumCount << "\n";
     std::cout << "  Classes: " << classCount << "\n";
@@ -1112,11 +1120,12 @@ void SemanticAnalyzer::DumpSymbolTable() const
     {
         std::cout << "Primitive Types:\n";
         std::cout << "----------------\n";
-        for (const auto& entry : symbolTable_)
+        for (size_t i = 0; i < symbolTable_.GetCount(); ++i)
         {
-            if (TypeSymbol::Kind::PRIMITIVE == entry.second.kind)
+            const TypeSymbol& entry = symbolTable_.GetValueAt(i);
+            if (TypeSymbol::Kind::PRIMITIVE == entry.kind)
             {
-                std::cout << "  <builtin>::" << entry.second.name << "\n";
+                std::cout << "  <builtin>::" << entry.name << "\n";
             }
         }
         std::cout << "\n";
@@ -1127,17 +1136,18 @@ void SemanticAnalyzer::DumpSymbolTable() const
     {
         std::cout << "Enumerations:\n";
         std::cout << "-------------\n";
-        std::string nsPrefix = FormatNamespacePrefix();
-        for (const auto& entry : symbolTable_)
+        String nsPrefix = FormatNamespacePrefix();
+        for (size_t i = 0; i < symbolTable_.GetCount(); ++i)
         {
-            if (TypeSymbol::Kind::ENUM == entry.second.kind)
+            const TypeSymbol& entry = symbolTable_.GetValueAt(i);
+            if (TypeSymbol::Kind::ENUM == entry.kind)
             {
-                std::cout << "  enum " << nsPrefix << entry.second.name << " {\n";
-                const auto& values = entry.second.enumDecl->GetValues();
-                for (size_t i = 0; i < values.size(); ++i)
+                std::cout << "  enum " << nsPrefix << entry.name << " {\n";
+                const auto& values = entry.enumDecl->GetValues();
+                for (size_t i = 0; i < values.GetCount(); ++i)
                 {
-                    std::cout << "    " << values[i];
-                    if (i < values.size() - 1)
+                    std::cout << "    " << values.GetValueAt(i);
+                    if (i + 1 < values.GetCount())
                     {
                         std::cout << ",";
                     }
@@ -1153,38 +1163,40 @@ void SemanticAnalyzer::DumpSymbolTable() const
     {
         std::cout << "Classes:\n";
         std::cout << "--------\n";
-        const std::string nsPrefix = FormatNamespacePrefix();
-        for (const auto& entry : symbolTable_)
+        const String nsPrefix = FormatNamespacePrefix();
+        for (size_t i = 0; i < symbolTable_.GetCount(); ++i)
         {
-            if (TypeSymbol::Kind::CLASS == entry.second.kind)
+            const TypeSymbol& entry = symbolTable_.GetValueAt(i);
+            if (TypeSymbol::Kind::CLASS == entry.kind)
             {
-                std::cout << "  class " << nsPrefix << entry.second.name;
+                std::cout << "  class " << nsPrefix << entry.name;
 
                 // Show inheritance
-                const std::string& baseType = entry.second.classDecl->GetBaseType();
-                if (baseType.empty() == false)
+                const String& baseType = entry.classDecl->GetBaseType();
+                if (baseType.IsEmpty() == false)
                 {
                     std::cout << " inherits " << nsPrefix << baseType;
                 }
                 std::cout << " {\n";
 
                 // Show fields (including inherited)
-                std::vector<const Field*> allFields;
-                GetAllFields(entry.second.classDecl, allFields);
+                Array<const Field*> allFields;
+                GetAllFields(entry.classDecl, allFields);
 
                 // Also get just the local fields for comparison
-                const auto&            localFields = entry.second.classDecl->GetFields();
+                const auto&            localFields = entry.classDecl->GetFields();
                 std::set<const Field*> localFieldSet;
-                for (const auto& field : localFields)
+                for (size_t lfIndex = 0; lfIndex < localFields.GetCount(); ++lfIndex)
                 {
-                    localFieldSet.insert(field.get());
+                    localFieldSet.insert(localFields.At(lfIndex).get());
                 }
 
-                if (allFields.empty() == false)
+                if (allFields.GetCount() > 0)
                 {
                     std::cout << "    Features:\n";
-                    for (const auto* field : allFields)
+                    for (size_t afIndex = 0; afIndex < allFields.GetCount(); ++afIndex)
                     {
+                        const Field* field = allFields.GetValueAt(afIndex);
                         // Determine if this is a local or inherited field
                         const bool isLocal = (localFieldSet.count(field) != 0);
                         std::cout << "      " << (isLocal == true ? "Self::" : "Base::") << field->GetName() << ": ";
@@ -1193,7 +1205,7 @@ void SemanticAnalyzer::DumpSymbolTable() const
                         if (field->IsAlias() == true)
                         {
                             // For aliases, resolve the target field's type
-                            const TypeSymbol* targetType = GetFieldType(entry.second.classDecl, field->GetName());
+                            const TypeSymbol* targetType = GetFieldType(entry.classDecl, field->GetName());
                             if (nullptr != targetType)
                             {
                                 if (TypeSymbol::Kind::PRIMITIVE == targetType->kind)
@@ -1235,21 +1247,21 @@ void SemanticAnalyzer::DumpSymbolTable() const
 
                         // Show modifiers
                         const auto& modifiers = field->GetModifiers();
-                        if (modifiers.empty() == false)
+                        if (modifiers.GetCount() > 0)
                         {
                             std::cout << " [";
-                            for (size_t i = 0; i < modifiers.size(); ++i)
+                            for (size_t i = 0; i < modifiers.GetCount(); ++i)
                             {
-                                if (const CardinalityModifier* cardMod = dynamic_cast<const CardinalityModifier*>(modifiers[i].get()))
+                                if (const CardinalityModifier* cardMod = dynamic_cast<const CardinalityModifier*>(modifiers.At(i).get()))
                                 {
                                     std::cout << cardMod->GetMin() << ".." << cardMod->GetMax();
                                 }
-                                else if (dynamic_cast<const UniqueModifier*>(modifiers[i].get()))
+                                else if (dynamic_cast<const UniqueModifier*>(modifiers.At(i).get()))
                                 {
                                     std::cout << "unique";
                                 }
 
-                                if (i < modifiers.size() - 1)
+                                if (i + 1 < modifiers.GetCount())
                                 {
                                     std::cout << ", ";
                                 }
@@ -1263,7 +1275,7 @@ void SemanticAnalyzer::DumpSymbolTable() const
                             const Expression* initializer = field->GetInitializer();
                             if (nullptr != initializer)
                             {
-                                std::string annotatedExpr = AnnotateExpressionWithOrigin(initializer, entry.second.classDecl, localFieldSet);
+                                String annotatedExpr = AnnotateExpressionWithOrigin(initializer, entry.classDecl, localFieldSet);
                                 std::cout << " = " << annotatedExpr;
                             }
                         }
@@ -1287,22 +1299,23 @@ void SemanticAnalyzer::DumpSymbolTable() const
                 }
 
                 // Show invariants (including inherited)
-                std::vector<const Invariant*> allInvariants;
-                GetAllInvariants(entry.second.classDecl, allInvariants);
+                Array<const Invariant*> allInvariants;
+                GetAllInvariants(entry.classDecl, allInvariants);
 
                 // Also get just the local invariants for comparison
-                const auto&                localInvariants = entry.second.classDecl->GetInvariants();
+                const auto&                localInvariants = entry.classDecl->GetInvariants();
                 std::set<const Invariant*> localInvariantSet;
-                for (const auto& invariant : localInvariants)
+                for (size_t liIndex = 0; liIndex < localInvariants.GetCount(); ++liIndex)
                 {
-                    localInvariantSet.insert(invariant.get());
+                    localInvariantSet.insert(localInvariants.At(liIndex).get());
                 }
 
-                if (allInvariants.empty() == false)
+                if (allInvariants.GetCount() > 0)
                 {
                     std::cout << "    Invariants:\n";
-                    for (const auto* invariant : allInvariants)
+                    for (size_t aiIndex = 0; aiIndex < allInvariants.GetCount(); ++aiIndex)
                     {
+                        const Invariant* invariant = allInvariants.GetValueAt(aiIndex);
                         // Determine if this is a local or inherited invariant
                         const bool isLocal = (localInvariantSet.count(invariant) != 0);
                         std::cout << "      " << (isLocal == true ? "Self::" : "Base::") << invariant->GetName() << ": ";
@@ -1322,17 +1335,17 @@ void SemanticAnalyzer::DumpSymbolTable() const
     std::cout << "========================================\n";
 }
 
-std::string
+String
     SemanticAnalyzer::AnnotateExpressionWithOrigin(const Expression* expr, const ClassDeclaration* classDecl, const std::set<const Field*>& localFields) const
 {
-    RequireReturn(nullptr != expr, std::string{});
+    RequireReturn(nullptr != expr, String{});
 
     // Handle different expression types
     if (const BinaryExpression* binExpr = dynamic_cast<const BinaryExpression*>(expr))
     {
-        const std::string left  = AnnotateExpressionWithOrigin(binExpr->GetLeft(), classDecl, localFields);
-        const std::string right = AnnotateExpressionWithOrigin(binExpr->GetRight(), classDecl, localFields);
-        std::string       op;
+        const String left  = AnnotateExpressionWithOrigin(binExpr->GetLeft(), classDecl, localFields);
+        const String right = AnnotateExpressionWithOrigin(binExpr->GetRight(), classDecl, localFields);
+        String       op;
 
         switch (binExpr->GetOperator())
         {
@@ -1381,7 +1394,7 @@ std::string
     }
     else if (const UnaryExpression* unaryExpr = dynamic_cast<const UnaryExpression*>(expr))
     {
-        const std::string operand = AnnotateExpressionWithOrigin(unaryExpr->GetOperand(), classDecl, localFields);
+        const String operand = AnnotateExpressionWithOrigin(unaryExpr->GetOperand(), classDecl, localFields);
         if (unaryExpr->GetOperator() == UnaryExpression::Op::NEG)
         {
             return "-" + operand;
@@ -1394,16 +1407,17 @@ std::string
     else if (const FieldReference* fieldRef = dynamic_cast<const FieldReference*>(expr))
     {
         // Look up the field to determine if it's local or inherited
-        const std::string& fieldName = fieldRef->GetFieldName();
+        const String& fieldName = fieldRef->GetFieldName();
 
         // Find this field in all fields
-        std::vector<const Field*> allFields;
+        Array<const Field*> allFields;
         GetAllFields(classDecl, allFields);
 
         bool         isLocal    = false;
         const Field* foundField = nullptr;
-        for (const auto* field : allFields)
+        for (size_t fieldIndex = 0; fieldIndex < allFields.GetCount(); ++fieldIndex)
         {
+            const Field* field = allFields.GetValueAt(fieldIndex);
             if (fieldName == field->GetName())
             {
                 foundField = field;
@@ -1424,8 +1438,8 @@ std::string
     }
     else if (const MemberAccessExpression* memberExpr = dynamic_cast<const MemberAccessExpression*>(expr))
     {
-        const std::string object = AnnotateExpressionWithOrigin(memberExpr->GetObject(), classDecl, localFields);
-        const std::string member = memberExpr->GetMemberName();
+        const String object = AnnotateExpressionWithOrigin(memberExpr->GetObject(), classDecl, localFields);
+        const String member = memberExpr->GetMemberName();
         return object + "." + member;
     }
     else if (const LiteralExpression* litExpr = dynamic_cast<const LiteralExpression*>(expr))
@@ -1434,7 +1448,7 @@ std::string
     }
     else if (const ParenthesizedExpression* parenExpr = dynamic_cast<const ParenthesizedExpression*>(expr))
     {
-        const std::string inner = AnnotateExpressionWithOrigin(parenExpr->GetExpression(), classDecl, localFields);
+        const String inner = AnnotateExpressionWithOrigin(parenExpr->GetExpression(), classDecl, localFields);
         return "(" + inner + ")";
     }
     else if (const FunctionCall* funcCall = dynamic_cast<const FunctionCall*>(expr))
@@ -1444,4 +1458,4 @@ std::string
 
     return expr->ToString(); // Fallback
 }
-} // namespace bbfm
+} // namespace runtime

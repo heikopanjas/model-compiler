@@ -1,5 +1,5 @@
-#ifndef __BBFM_GENERATED_TEST_EXPRESSIONS_H_INCL__
-#define __BBFM_GENERATED_TEST_EXPRESSIONS_H_INCL__
+#ifndef __GENERATED_TEST_EXPRESSIONS_H_INCL__
+#define __GENERATED_TEST_EXPRESSIONS_H_INCL__
 
 // Set 8-byte alignment for all types in this header
 #pragma pack(push, 8)
@@ -16,7 +16,7 @@
 #include "runtime/Guid.h"
 
 /// \brief Point struct
-struct Point : public bbfm::runtime::Fabric
+struct Point : public runtime::Fabric
 {
     /// \brief Constructor - initializes all fields with parent reference
     Point()
@@ -29,8 +29,8 @@ struct Point : public bbfm::runtime::Fabric
     virtual ~Point() = default;
 
     // User-defined fields
-    bbfm::runtime::BoundedValue<int64_t, Point, &Point::Require_x_validX, &Point::Require_x_withinBounds> x_;
-    bbfm::runtime::BoundedValue<int64_t, Point, &Point::Require_y_validY, &Point::Require_y_withinBounds> y_;
+    runtime::BoundedValue<int64_t, Point, &Point::Require_x_validX, &Point::Require_x_withinBounds> x_;
+    runtime::BoundedValue<int64_t, Point, &Point::Require_y_validY, &Point::Require_y_withinBounds> y_;
     /// \brief Require invariant 'validX' for field 'x'
     /// \param object Reference to the containing object
     /// \param newValue The new value being assigned to x
@@ -70,7 +70,7 @@ struct Point : public bbfm::runtime::Fabric
 };
 
 /// \brief Shape struct
-struct Shape : public bbfm::runtime::Fabric
+struct Shape : public runtime::Fabric
 {
     /// \brief Constructor - initializes all fields with parent reference
     Shape()
@@ -83,8 +83,8 @@ struct Shape : public bbfm::runtime::Fabric
     virtual ~Shape() = default;
 
     // User-defined fields
-    bbfm::runtime::BoundedValue<int64_t, Shape, &Shape::Require_width_positiveWidth, &Shape::Require_width_validRatio> width_;
-    bbfm::runtime::BoundedValue<int64_t, Shape, &Shape::Require_height_positiveHeight, &Shape::Require_height_validRatio> height_;
+    runtime::BoundedValue<int64_t, Shape, &Shape::Require_width_positiveWidth, &Shape::Require_width_validRatio> width_;
+    runtime::BoundedValue<int64_t, Shape, &Shape::Require_height_positiveHeight, &Shape::Require_height_validRatio> height_;
     /// \brief Require invariant 'positiveWidth' for field 'width'
     /// \param object Reference to the containing object
     /// \param newValue The new value being assigned to width
@@ -141,12 +141,12 @@ struct Rectangle : public Shape
     virtual ~Rectangle() = default;
 
     // User-defined fields
-    bbfm::runtime::UnboundedValue<Point, Rectangle> topLeft_;
-    bbfm::runtime::UnboundedValue<Point, Rectangle> bottomRight_;
-    bbfm::runtime::BoundedValue<int64_t, Rectangle, &Rectangle::Require_maxArea_validArea> maxArea_;
-    bbfm::runtime::DynamicValue<int64_t, Rectangle> computedWidth_;
-    bbfm::runtime::DynamicValue<int64_t, Rectangle> computedHeight_;
-    bbfm::runtime::DynamicValue<int64_t, Rectangle> computedArea_;
+    runtime::UnboundedValue<Point, Rectangle> topLeft_;
+    runtime::UnboundedValue<Point, Rectangle> bottomRight_;
+    runtime::BoundedValue<int64_t, Rectangle, &Rectangle::Require_maxArea_validArea> maxArea_;
+    runtime::DynamicValue<int64_t, Rectangle> computedWidth_;
+    runtime::DynamicValue<int64_t, Rectangle> computedHeight_;
+    runtime::DynamicValue<int64_t, Rectangle> computedArea_;
     /// \brief Require invariant 'validArea' for field 'maxArea'
     /// \param object Reference to the containing object
     /// \param newValue The new value being assigned to maxArea
@@ -159,7 +159,7 @@ struct Rectangle : public Shape
 };
 
 /// \brief Temperature struct
-struct Temperature : public bbfm::runtime::Fabric
+struct Temperature : public runtime::Fabric
 {
     /// \brief Constructor - initializes all fields with parent reference
     Temperature()
@@ -172,8 +172,8 @@ struct Temperature : public bbfm::runtime::Fabric
     virtual ~Temperature() = default;
 
     // User-defined fields
-    bbfm::runtime::BoundedValue<double, Temperature, &Temperature::Require_celsius_conversion, &Temperature::Require_celsius_aboveAbsoluteZero> celsius_;
-    bbfm::runtime::BoundedValue<double, Temperature, &Temperature::Require_fahrenheit_conversion> fahrenheit_;
+    runtime::BoundedValue<double, Temperature, &Temperature::Require_celsius_conversion, &Temperature::Require_celsius_aboveAbsoluteZero> celsius_;
+    runtime::BoundedValue<double, Temperature, &Temperature::Require_fahrenheit_conversion> fahrenheit_;
     /// \brief Require invariant 'conversion' for field 'celsius'
     /// \param object Reference to the containing object
     /// \param newValue The new value being assigned to celsius
@@ -204,7 +204,7 @@ struct Temperature : public bbfm::runtime::Fabric
 };
 
 /// \brief Document struct
-struct Document : public bbfm::runtime::Fabric
+struct Document : public runtime::Fabric
 {
     /// \brief Constructor - initializes all fields with parent reference
     Document()
@@ -218,9 +218,9 @@ struct Document : public bbfm::runtime::Fabric
     virtual ~Document() = default;
 
     // User-defined fields
-    bbfm::runtime::UnboundedValue<bbfm::runtime::String, Document> title_;
-    bbfm::runtime::BoundedValue<int64_t, Document, &Document::Require_minLength_validRange, &Document::Require_minLength_notEmpty> minLength_;
-    bbfm::runtime::BoundedValue<int64_t, Document, &Document::Require_maxLength_validRange> maxLength_;
+    runtime::UnboundedValue<runtime::String, Document> title_;
+    runtime::BoundedValue<int64_t, Document, &Document::Require_minLength_validRange, &Document::Require_minLength_notEmpty> minLength_;
+    runtime::BoundedValue<int64_t, Document, &Document::Require_maxLength_validRange> maxLength_;
     /// \brief Require invariant 'validRange' for field 'minLength'
     /// \param object Reference to the containing object
     /// \param newValue The new value being assigned to minLength
@@ -253,4 +253,4 @@ struct Document : public bbfm::runtime::Fabric
 // Restore previous alignment
 #pragma pack(pop)
 
-#endif // __BBFM_GENERATED_TEST_EXPRESSIONS_H_INCL__
+#endif // __GENERATED_TEST_EXPRESSIONS_H_INCL__
